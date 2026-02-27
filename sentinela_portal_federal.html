@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SENTINELA // PORTAL FEDERAL</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@700;800&display=swap');
+
+:root {
+  --bg:    #04080f;
+  --bg2:   #080d18;
+  --bg3:   #0c1220;
+  --cyan:  #00c8ff;
+  --green: #00ff88;
+  --red:   #ff2b4a;
+  --amber: #ffaa00;
+  --dim:   #3a5a6a;
+  --text:  #b8cce0;
+  --border: rgba(0,200,255,0.12);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100vh; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Share Tech Mono', monospace; }
+
+/* ── HEADER ── */
+#hdr {
+  height: 48px; display: flex; align-items: center; gap: 0;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+  position: relative; z-index: 10;
+}
+.logo {
+  font-family: 'Exo 2', sans-serif; font-weight: 800; font-size: 15px;
+  letter-spacing: 3px; color: var(--cyan); padding: 0 20px;
+  text-shadow: 0 0 20px rgba(0,200,255,0.4);
+  white-space: nowrap; border-right: 1px solid var(--border);
+}
+.logo span { color: var(--amber); }
+
+/* ── TABS ── */
+#tabs {
+  display: flex; overflow-x: auto; flex: 1;
+  scrollbar-width: none; height: 100%;
+}
+#tabs::-webkit-scrollbar { display: none; }
+
+.tab {
+  display: flex; align-items: center; gap: 7px;
+  padding: 0 16px; cursor: pointer; white-space: nowrap;
+  font-size: 10px; letter-spacing: 1.5px; color: var(--dim);
+  border-bottom: 2px solid transparent; border-right: 1px solid var(--border);
+  transition: all 0.15s; flex-shrink: 0; height: 100%;
+}
+.tab:hover { color: var(--text); background: rgba(0,200,255,0.03); }
+.tab.active { color: var(--cyan); border-bottom-color: var(--cyan); background: rgba(0,200,255,0.06); }
+.tab .ico { font-size: 13px; }
+.tab .badge {
+  background: var(--red); color: #fff; font-size: 8px;
+  padding: 1px 4px; border-radius: 2px; margin-left: 2px;
+}
+
+/* ── TOOLBAR ── */
+#toolbar {
+  height: 36px; display: flex; align-items: center; gap: 8px;
+  padding: 0 14px; background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+}
+#current-url {
+  flex: 1; font-size: 10px; color: var(--dim);
+  letter-spacing: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tbtn {
+  font-family: 'Share Tech Mono', monospace; font-size: 9px;
+  letter-spacing: 1.5px; padding: 3px 10px; border: 1px solid;
+  background: transparent; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.tbtn.cy { color: var(--cyan); border-color: rgba(0,200,255,0.3); }
+.tbtn.rd { color: var(--red);  border-color: rgba(255,43,74,0.3); }
+.tbtn.gn { color: var(--green);border-color: rgba(0,255,136,0.3); }
+.tbtn.am { color: var(--amber);border-color: rgba(255,170,0,0.3); }
+.tbtn.cy:hover { background: var(--cyan);  color: var(--bg); }
+.tbtn.rd:hover { background: var(--red);   color: var(--bg); }
+.tbtn.gn:hover { background: var(--green); color: var(--bg); }
+.tbtn.am:hover { background: var(--amber); color: var(--bg); }
+
+/* ── FRAME CONTAINER ── */
+#frame-wrap {
+  position: relative;
+  height: calc(100vh - 48px - 36px);
+}
+
+iframe {
+  width: 100%; height: 100%; border: none;
+  display: none;
+}
+iframe.active { display: block; }
+
+/* ── DENUNCIA PANEL ── */
+#den-panel {
+  display: none;
+  height: calc(100vh - 48px - 36px);
+  padding: 24px; overflow-y: auto;
+  background: var(--bg);
+}
+#den-panel.active { display: block; }
+
+.den-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+  max-width: 1200px; margin: 0 auto;
+}
+@media (max-width: 800px) { .den-grid { grid-template-columns: 1fr; } }
+
+.den-box {
+  background: var(--bg3); border: 1px solid var(--border); padding: 20px;
+}
+.den-box h3 {
+  font-family: 'Exo 2', sans-serif; font-size: 13px; letter-spacing: 2px;
+  color: var(--cyan); margin-bottom: 16px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.den-field { margin-bottom: 12px; }
+.den-field label { display: block; font-size: 9px; color: var(--dim); letter-spacing: 2px; margin-bottom: 5px; }
+.den-field select,
+.den-field input,
+.den-field textarea {
+  width: 100%; background: var(--bg2); border: 1px solid var(--border);
+  color: var(--text); font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  padding: 8px 10px; outline: none; resize: vertical;
+}
+.den-field select:focus,
+.den-field input:focus,
+.den-field textarea:focus { border-color: var(--cyan); }
+select option { background: var(--bg2); }
+
+.den-portais {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;
+}
+.den-portal {
+  display: flex; flex-direction: column; gap: 4px;
+  background: var(--bg2); border: 1px solid var(--border);
+  padding: 10px 12px; text-decoration: none;
+  transition: all 0.15s; cursor: pointer;
+}
+.den-portal:hover { border-color: var(--cyan); background: rgba(0,200,255,0.04); }
+.den-portal .dp-name { font-size: 11px; color: var(--cyan); letter-spacing: 1px; }
+.den-portal .dp-desc { font-size: 9px; color: var(--dim); }
+
+/* ── QUICK LINKS PANEL ── */
+#links-panel {
+  display: none;
+  height: calc(100vh - 48px - 36px);
+  padding: 24px; overflow-y: auto;
+}
+#links-panel.active { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 14px; align-content: start; }
+
+.link-card {
+  background: var(--bg3); border: 1px solid var(--border);
+  padding: 14px 16px; cursor: pointer; transition: all 0.15s;
+  border-left: 3px solid var(--border);
+}
+.link-card:hover { border-color: var(--cyan); background: rgba(0,200,255,0.04); border-left-color: var(--cyan); }
+.link-card.red  { border-left-color: rgba(255,43,74,0.6); }
+.link-card.amber{ border-left-color: rgba(255,170,0,0.6); }
+.link-card.green{ border-left-color: rgba(0,255,136,0.4); }
+.lc-cat { font-size: 9px; color: var(--dim); letter-spacing: 2px; margin-bottom: 5px; }
+.lc-name { font-size: 13px; color: var(--text); margin-bottom: 4px; font-family: 'Exo 2', sans-serif; font-weight: 700; }
+.lc-desc { font-size: 10px; color: var(--dim); line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="hdr">
+  <div class="logo">SENTINELA <span>◈</span> FEDERAL</div>
+  <div id="tabs">
+    <div class="tab active" onclick="goTab('licitacoes')">
+      <span class="ico">🏗️</span>LICITAÇÕES
+    </div>
+    <div class="tab" onclick="goTab('emendas')">
+      <span class="ico">💼</span>EMENDAS
+    </div>
+    <div class="tab" onclick="goTab('emendas-favor')">
+      <span class="ico">💰</span>EMENDAS/FAVORECIDO
+    </div>
+    <div class="tab" onclick="goTab('despesas')">
+      <span class="ico">📊</span>DESPESAS
+    </div>
+    <div class="tab" onclick="goTab('sancoes')">
+      <span class="ico">🔴</span>SANÇÕES <span class="badge">CEIS</span>
+    </div>
+    <div class="tab" onclick="goTab('pessoas-pj')">
+      <span class="ico">🏢</span>EMPRESAS (CNPJ)
+    </div>
+    <div class="tab" onclick="goTab('pessoas-pf')">
+      <span class="ico">👤</span>PESSOAS (CPF)
+    </div>
+    <div class="tab" onclick="goTab('servidores')">
+      <span class="ico">🗂️</span>SERVIDORES
+    </div>
+    <div class="tab" onclick="goTab('viagens')">
+      <span class="ico">✈️</span>VIAGENS/DIÁRIAS
+    </div>
+    <div class="tab" onclick="goTab('contratos')">
+      <span class="ico">📄</span>CONTRATOS
+    </div>
+    <div class="tab" onclick="goTab('convenios')">
+      <span class="ico">🤝</span>CONVÊNIOS
+    </div>
+    <div class="tab" onclick="goTab('rede')">
+      <span class="ico">🌐</span>REDE TRANSP.
+    </div>
+    <div class="tab" onclick="goTab('links')">
+      <span class="ico">⚡</span>ATALHOS
+    </div>
+    <div class="tab" onclick="goTab('denuncia')">
+      <span class="ico">📋</span>DENÚNCIA
+    </div>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <span id="current-url">portaldatransparencia.gov.br/licitacoes/consulta</span>
+  <button class="tbtn cy" onclick="openExternal()">↗ ABRIR NO PORTAL</button>
+  <button class="tbtn rd" onclick="goTab('denuncia')">📋 DENUNCIAR ISTO</button>
+  <button class="tbtn am" onclick="alert('Copie a URL acima e cole no sistema SENTINELA local para cruzar com dados municipais')">⚡ CRUZAR COM RB</button>
+</div>
+
+<!-- IFRAMES — cada aba = uma URL do portal -->
+<div id="frame-wrap">
+
+  <iframe id="f-licitacoes" class="active"
+    src="http://localhost:8000/proxy?url=https://portaldatransparencia.gov.br/licitacoes/consulta?ordenarPor=dataResultadoCompra&direcao=desc">
+  </iframe>
+
+  <iframe id="f-emendas"
+    src="http://localhost:8000/proxy?url=https://portaldatransparencia.gov.br/emendas/consulta?ordenarPor=autor&direcao=asc">
+  </iframe>
+
+  <iframe id="f-emendas-favor"
+    src="http://localhost:8000/proxy?url=https://portaldatransparencia.gov.br/emendas/consulta-por-favorecido?ordenarPor=valor&direcao=desc">
+  </iframe>
+
+  <iframe id="f-despesas"
+    src="http://localhost:8000/proxy?url=https://portaldatransparencia.gov.br/despesas/consulta">
+  </iframe>
+
+  <iframe id="f-sancoes"
+    src="http://localhost:8000/proxy?url=https://portaldatransparencia.gov.br/sancoes/consulta">
+  </iframe>
+
+  <iframe id="f-pessoas-pj"
+    src="http://localhost:8000/proxy?url=https://portaldatransparencia.gov.br/pessoa-juridica/busca/lista?pagina=1&tamanhoPagina=10">
+  </iframe>
+
+  <iframe id="f-pessoas-pf"
+    src="http://localhost:8000/proxy?url=https://portaldatransparencia.gov.br/pessoa-fisica/busca/lista?pagina=1&tamanhoPagina=10">
+  </iframe>
+
+  <iframe id="f-servidores"
+    src="http://localhost:8000/proxy?url=https://portaldatransparencia.gov.br/servidores/consulta">
+  </iframe>
+
+  <iframe id="f-viagens"
+    src="http://localhost:8000/proxy?url=https://portaldatransparencia.gov.br/viagens/consulta">
+  </iframe>
+
+  <iframe id="f-contratos"
+    src="http://localhost:8000/proxy?url=https://portaldatransparencia.gov.br/contratos/consulta">
+  </iframe>
+
+  <iframe id="f-convenios"
+    src="http://localhost:8000/proxy?url=https://portaldatransparencia.gov.br/convenios/consulta">
+  </iframe>
+
+  <iframe id="f-rede"
+    src="http://localhost:8000/proxy?url=https://portaldatransparencia.gov.br/redetransparencia">
+  </iframe>
+
+  <!-- LINKS PANEL -->
+  <div id="links-panel" id="f-links">
+    <!-- preenchido por JS -->
+  </div>
+
+  <!-- DENÚNCIA PANEL -->
+  <div id="den-panel" id="f-denuncia">
+    <div class="den-grid">
+      <div class="den-box">
+        <h3>📋 CONFIGURAR DENÚNCIA</h3>
+        <div class="den-field">
+          <label>TIPO DE IRREGULARIDADE</label>
+          <select id="den-tipo" onchange="atualizarDenuncia()">
+            <option value="fracionamento">Fracionamento de Licitação — Lei 14.133/21 art. 29 §2°</option>
+            <option value="diaria_fds">Diária em Fim de Semana — Acórdão TCU 2.484/2021</option>
+            <option value="empresa_sancionada">Contrato com Empresa Sancionada — Lei 14.133/21 / CEIS</option>
+            <option value="teto">Salário acima do Teto Constitucional — CF art. 37 XI</option>
+            <option value="nepotismo">Nepotismo — Súmula Vinculante nº 13 STF</option>
+            <option value="doacao_contrato">Doação Eleitoral → Contrato — Lei 8.429/92</option>
+            <option value="empresa_jovem">Empresa Jovem em Licitação — CNPJ < 6 meses</option>
+            <option value="duplo_vinculo">Duplo Vínculo — CF art. 37 XVI</option>
+            <option value="outro">Outro (descrever)</option>
+          </select>
+        </div>
+        <div class="den-field">
+          <label>NOME / CNPJ / CPF DO ENVOLVIDO</label>
+          <input id="den-envolvido" placeholder="Ex: CONSTRUTORA MIRANDA LTDA / 12.345.678/0001-90"
+            oninput="atualizarDenuncia()">
+        </div>
+        <div class="den-field">
+          <label>VALOR ENVOLVIDO (R$)</label>
+          <input id="den-valor" type="number" placeholder="0.00" oninput="atualizarDenuncia()">
+        </div>
+        <div class="den-field">
+          <label>DATA DA OCORRÊNCIA</label>
+          <input id="den-data" type="date" oninput="atualizarDenuncia()">
+        </div>
+        <div class="den-field">
+          <label>LINK DA EVIDÊNCIA NO PORTAL</label>
+          <input id="den-link" placeholder="https://portaldatransparencia.gov.br/..."
+            oninput="atualizarDenuncia()">
+        </div>
+        <div class="den-field">
+          <label>DETALHES</label>
+          <textarea id="den-det" rows="4" placeholder="Descreva o fato com números de contratos, processos, datas…"
+            oninput="atualizarDenuncia()"></textarea>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="tbtn cy" style="flex:1;padding:9px" onclick="copiarDenuncia()">📋 COPIAR TEXTO</button>
+          <button class="tbtn gn" style="flex:1;padding:9px" onclick="baixarDenuncia()">⬇ BAIXAR .TXT</button>
+        </div>
+
+        <div style="margin-top:16px;font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:8px">PROTOCOLAR EM:</div>
+        <div class="den-portais">
+          <a class="den-portal" href="https://falabr.cgu.gov.br/web/login?tipo=2&redirect=/manifestacao/criar?tipo=2" target="_blank">
+            <span class="dp-name">CGU / FalaBR</span>
+            <span class="dp-desc">Denúncia federal</span>
+          </a>
+          <a class="den-portal" href="https://www.tce.ac.gov.br" target="_blank">
+            <span class="dp-name">TCE-AC</span>
+            <span class="dp-desc">Tribunal de Contas do Acre</span>
+          </a>
+          <a class="den-portal" href="http://www.mpf.mp.br/servicos/denuncias-e-reclamacoes" target="_blank">
+            <span class="dp-name">MPF</span>
+            <span class="dp-desc">Ministério Público Federal</span>
+          </a>
+          <a class="den-portal" href="https://www.mpac.mp.br" target="_blank">
+            <span class="dp-name">MP-AC</span>
+            <span class="dp-desc">MP do Acre</span>
+          </a>
+          <a class="den-portal" href="https://falabr.cgu.gov.br/web/home" target="_blank">
+            <span class="dp-name">LAI / Pedido</span>
+            <span class="dp-desc">Pedir documentos via LAI</span>
+          </a>
+          <a class="den-portal" href="https://www.gov.br/cgu/pt-br/assuntos/ouvidoria" target="_blank">
+            <span class="dp-name">Ouvidoria CGU</span>
+            <span class="dp-desc">Reclamação / sugestão</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="den-box">
+        <h3>📄 PRÉVIA DO TEXTO</h3>
+        <textarea id="den-preview" readonly rows="32"
+          style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:10px;line-height:1.9;padding:12px;outline:none;resize:none"></textarea>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /frame-wrap -->
+
+<script>
+// ── MAPA DE ABAS ────────────────────────────────────────────────────────────
+const TABS = {
+  licitacoes:    { frame: 'f-licitacoes',   url: 'portaldatransparencia.gov.br/licitacoes/consulta' },
+  emendas:       { frame: 'f-emendas',      url: 'portaldatransparencia.gov.br/emendas/consulta' },
+  'emendas-favor':{ frame: 'f-emendas-favor', url: 'portaldatransparencia.gov.br/emendas/consulta-por-favorecido' },
+  despesas:      { frame: 'f-despesas',     url: 'portaldatransparencia.gov.br/despesas/consulta' },
+  sancoes:       { frame: 'f-sancoes',      url: 'portaldatransparencia.gov.br/sancoes/consulta' },
+  'pessoas-pj':  { frame: 'f-pessoas-pj',   url: 'portaldatransparencia.gov.br/pessoa-juridica/busca/lista' },
+  'pessoas-pf':  { frame: 'f-pessoas-pf',   url: 'portaldatransparencia.gov.br/pessoa-fisica/busca/lista' },
+  servidores:    { frame: 'f-servidores',   url: 'portaldatransparencia.gov.br/servidores/consulta' },
+  viagens:       { frame: 'f-viagens',      url: 'portaldatransparencia.gov.br/viagens/consulta' },
+  contratos:     { frame: 'f-contratos',    url: 'portaldatransparencia.gov.br/contratos/consulta' },
+  convenios:     { frame: 'f-convenios',    url: 'portaldatransparencia.gov.br/convenios/consulta' },
+  rede:          { frame: 'f-rede',         url: 'portaldatransparencia.gov.br/redetransparencia' },
+  links:         { panel: 'links-panel',    url: 'ATALHOS RÁPIDOS — SENTINELA' },
+  denuncia:      { panel: 'den-panel',      url: 'GERADOR DE DENÚNCIA — SENTINELA' },
+};
+
+let currentTab = 'licitacoes';
+
+function goTab(name) {
+  currentTab = name;
+  const cfg = TABS[name];
+
+  // Atualiza tabs
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const keys = Object.keys(TABS);
+    t.classList.toggle('active', keys[i] === name);
+  });
+
+  // Esconde tudo
+  document.querySelectorAll('iframe').forEach(f => f.classList.remove('active'));
+  document.getElementById('links-panel').classList.remove('active');
+  document.getElementById('den-panel').classList.remove('active');
+
+  // Mostra o certo
+  if (cfg.panel) {
+    document.getElementById(cfg.panel).classList.add('active');
+  } else {
+    const fr = document.getElementById(cfg.frame);
+    if (fr) fr.classList.add('active');
+  }
+
+  document.getElementById('current-url').textContent = cfg.url;
+
+  if (name === 'denuncia') atualizarDenuncia();
+  if (name === 'links') renderLinks();
+}
+
+function openExternal() {
+  const cfg = TABS[currentTab];
+  if (!cfg || cfg.panel) return;
+  const fr = document.getElementById(cfg.frame);
+  if (fr) window.open(fr.src, '_blank');
+}
+
+// ── ATALHOS RÁPIDOS ─────────────────────────────────────────────────────────
+const LINKS_DATA = [
+  // CRÍTICOS para anticorrupção
+  { cat:'SANÇÕES', cls:'red', name:'CEIS — Inidôneas/Suspensas', desc:'Empresas impedidas de contratar com poder público', url:'https://portaldatransparencia.gov.br/sancoes/consulta?tipoPessoa=J&codigoLista=1' },
+  { cat:'SANÇÕES', cls:'red', name:'CNEP — Lei Anticorrupção', desc:'Punidas pela Lei 12.846/13', url:'https://portaldatransparencia.gov.br/sancoes/consulta?tipoPessoa=J&codigoLista=2' },
+  { cat:'SANÇÕES', cls:'red', name:'CEAF — Servidores Expulsos', desc:'Servidores federais demitidos/exonerados', url:'https://portaldatransparencia.gov.br/sancoes/consulta?tipoPessoa=F' },
+  { cat:'SANÇÕES', cls:'red', name:'CEPIM — ONGs Impedidas', desc:'Entidades impedidas de celebrar convênios', url:'https://portaldatransparencia.gov.br/sancoes/consulta?tipoPessoa=J&codigoLista=4' },
+
+  // Emendas
+  { cat:'EMENDAS', cls:'amber', name:'Por Autor (Parlamentar)', desc:'Quem destinou emendas para o Acre/Rio Branco', url:'https://portaldatransparencia.gov.br/emendas/consulta?ordenarPor=autor&direcao=asc' },
+  { cat:'EMENDAS', cls:'amber', name:'Por Favorecido (CNPJ)', desc:'Empresa que recebeu emenda — cruzar com contratos', url:'https://portaldatransparencia.gov.br/emendas/consulta-por-favorecido?ordenarPor=valor&direcao=desc' },
+  { cat:'EMENDAS', cls:'amber', name:'Por Documento/Execução', desc:'Acompanhar execução real da emenda', url:'https://portaldatransparencia.gov.br/emendas/consulta-por-documento?ordenarPor=tipoEmenda&direcao=desc' },
+
+  // Licitações
+  { cat:'LICITAÇÕES', cls:'', name:'Últimas Licitações', desc:'Ordenadas por data de resultado', url:'https://portaldatransparencia.gov.br/licitacoes/consulta?ordenarPor=dataResultadoCompra&direcao=desc' },
+  { cat:'LICITAÇÕES', cls:'', name:'Busca por Órgão', desc:'Filtrar licitações por órgão específico', url:'https://portaldatransparencia.gov.br/licitacoes/consulta' },
+
+  // Despesas
+  { cat:'DESPESAS', cls:'', name:'Por Favorecido', desc:'Quem recebeu recursos federais', url:'https://portaldatransparencia.gov.br/despesas/recursos-recebidos' },
+  { cat:'DESPESAS', cls:'', name:'Por Órgão Executor', desc:'Despesas por ministério/autarquia', url:'https://portaldatransparencia.gov.br/despesas/orgao' },
+  { cat:'DESPESAS', cls:'', name:'Visão Gráfica Geral', desc:'Dashboard de despesas públicas', url:'https://portaldatransparencia.gov.br/despesas' },
+
+  // Pessoas
+  { cat:'CADASTRO', cls:'green', name:'Buscar Pessoa Jurídica', desc:'CNPJ — dados cadastrais completos', url:'https://portaldatransparencia.gov.br/pessoa-juridica/busca/lista?pagina=1&tamanhoPagina=10' },
+  { cat:'CADASTRO', cls:'green', name:'Buscar Pessoa Física', desc:'CPF — vínculos e recebimentos', url:'https://portaldatransparencia.gov.br/pessoa-fisica/busca/lista?pagina=1&tamanhoPagina=10' },
+
+  // Servidores
+  { cat:'SERVIDORES', cls:'', name:'Por Vínculo (Servidor)', desc:'Busca por servidor específico', url:'https://portaldatransparencia.gov.br/servidores/consulta' },
+  { cat:'SERVIDORES', cls:'', name:'Por Órgão', desc:'Todos os servidores de um órgão', url:'https://portaldatransparencia.gov.br/servidores/orgao' },
+
+  // Viagens
+  { cat:'VIAGENS', cls:'amber', name:'Viagens a Serviço', desc:'Diárias — filtrar por servidor/órgão/data', url:'https://portaldatransparencia.gov.br/viagens/consulta' },
+
+  // Outros
+  { cat:'CONTRATOS', cls:'', name:'Contratos Federais', desc:'Todos os contratos do Executivo Federal', url:'https://portaldatransparencia.gov.br/contratos/consulta' },
+  { cat:'CONVÊNIOS', cls:'', name:'Convênios e Acordos', desc:'Transferências para municípios/entidades', url:'https://portaldatransparencia.gov.br/convenios/consulta' },
+  { cat:'NOTAS', cls:'', name:'Notas Fiscais', desc:'NFs emitidas contra o Governo Federal', url:'https://portaldatransparencia.gov.br/notas-fiscais/lista-consultas' },
+  { cat:'REDE', cls:'', name:'Rede Transparência', desc:'Links para portais estaduais e municipais', url:'https://portaldatransparencia.gov.br/redetransparencia' },
+];
+
+function renderLinks() {
+  const el = document.getElementById('links-panel');
+  el.innerHTML = LINKS_DATA.map(l => `
+    <div class="link-card ${l.cls}" onclick="loadUrl('${l.url}', '${l.name}')">
+      <div class="lc-cat">${l.cat}</div>
+      <div class="lc-name">${l.name}</div>
+      <div class="lc-desc">${l.desc}</div>
+    </div>
+  `).join('');
+}
+
+function loadUrl(url, name) {
+  // Acha o primeiro iframe disponível ou usa um genérico
+  // Redireciona para a aba mais próxima
+  const mapping = {
+    'sancoes': 'sancoes', 'licitacoes': 'licitacoes',
+    'emendas': 'emendas', 'despesas': 'despesas',
+    'pessoa-juridica': 'pessoas-pj', 'pessoa-fisica': 'pessoas-pf',
+    'servidores': 'servidores', 'viagens': 'viagens',
+    'contratos': 'contratos', 'convenios': 'convenios',
+  };
+  let target = null;
+  for (const [key, tab] of Object.entries(mapping)) {
+    if (url.includes(key)) { target = tab; break; }
+  }
+  if (target) {
+    const fr = document.getElementById(TABS[target].frame);
+    if (fr) { fr.src = url; goTab(target); }
+  } else {
+    window.open(url, '_blank');
+  }
+}
+
+// ── DENÚNCIA ─────────────────────────────────────────────────────────────────
+const LEGAL = {
+  fracionamento:      'Lei 14.133/21 art. 29, §2° — é vedado o fracionamento de despesa para dispensar licitação',
+  diaria_fds:         'Acórdão TCU 2.484/2021-Plenário — diárias pagas em sábados/domingos sem programação oficial configurar dano ao erário',
+  empresa_sancionada: 'Lei 8.666/93 art. 87 / Lei 14.133/21 art. 155 / Lei 12.846/13 — contrato com empresa inidônea ou suspensa',
+  teto:               'CF art. 37, XI / Lei 9.624/98 — teto remuneratório constitucional',
+  nepotismo:          'Súmula Vinculante n° 13 STF / Resolução CNJ 7/2005 — nepotismo vedado em toda administração pública',
+  doacao_contrato:    'Lei 8.429/92 art. 10 (Lei 14.230/21) / Lei 9.840/99 art. 41-A — improbidade administrativa',
+  empresa_jovem:      'Lei 14.133/21 art. 67 — exigência de habilitação técnica e econômica',
+  duplo_vinculo:      'CF art. 37, XVI / Lei 8.112/90 art. 118 — acumulação remunerada de cargos públicos é vedada',
+  outro:              'Princípios da legalidade, moralidade e eficiência — CF art. 37 caput',
+};
+
+function atualizarDenuncia() {
+  const tipo      = document.getElementById('den-tipo').value;
+  const envolvido = document.getElementById('den-envolvido').value || '[IDENTIFICAR ENVOLVIDO]';
+  const valor     = parseFloat(document.getElementById('den-valor').value || 0);
+  const data      = document.getElementById('den-data').value || new Date().toISOString().slice(0,10);
+  const link      = document.getElementById('den-link').value;
+  const det       = document.getElementById('den-det').value;
+  const vStr      = valor > 0 ? 'R$ ' + valor.toLocaleString('pt-BR',{minimumFractionDigits:2}) : 'A apurar';
+
+  const texto = `DENÚNCIA — SISTEMA SENTINELA // CONTROLE SOCIAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TIPO DE IRREGULARIDADE:
+  ${LEGAL[tipo]}
+
+FATO DENUNCIADO:
+  Envolvido:  ${envolvido}
+  Data:       ${data}
+  Valor:      ${vStr}
+  Localidade: Rio Branco — Acre
+
+DESCRIÇÃO:
+  ${det || '[Descreva o fato detalhadamente — use os dados do portal acima]'}
+
+EVIDÊNCIA:
+  ${link || 'Dados disponíveis no Portal da Transparência Federal:'}
+  https://portaldatransparencia.gov.br
+
+PEDIDO:
+  Solicita-se instauração de procedimento administrativo para
+  apuração dos fatos, verificação da legalidade do ato questionado
+  e, se confirmada a irregularidade, adoção das medidas punitivas
+  cabíveis, ressarcimento ao erário e responsabilização dos agentes.
+
+FUNDAMENTO LEGAL:
+  ${LEGAL[tipo]}
+  Lei de Acesso à Informação — Lei 12.527/2011
+  Lei de Improbidade Administrativa — Lei 8.429/92 (Lei 14.230/21)
+
+FONTE DOS DADOS:
+  Portal da Transparência Federal — https://portaldatransparencia.gov.br
+  Sistema SENTINELA — Controle Social (github.com/walbarellos/Sentinela)
+
+Data: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+  document.getElementById('den-preview').value = texto;
+}
+
+function copiarDenuncia() {
+  const t = document.getElementById('den-preview').value;
+  navigator.clipboard.writeText(t).then(() => {
+    const btn = event.target;
+    btn.textContent = '✓ COPIADO!';
+    setTimeout(() => btn.textContent = '📋 COPIAR TEXTO', 2000);
+  });
+}
+
+function baixarDenuncia() {
+  const t = document.getElementById('den-preview').value;
+  const blob = new Blob([t], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `denuncia_sentinela_${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+}
+
+// Init
+document.getElementById('den-data').value = new Date().toISOString().slice(0,10);
+atualizarDenuncia();
+</script>
+</body>
+</html>
