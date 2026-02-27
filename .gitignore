@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+build/
+dist/
+.mypy_cache/
+.pytest_cache/
+
+# Configurações e Segredos
+.env
+
+# Dados e Bases Analíticas (Não commitar dados coletados)
+data/
+*.duckdb
+*.duckdb.*
+*.csv
+*.json
+*.parquet
+
+# Relatórios e Outputs
+relatorio_corrupcao_acre.html
+servidor_*.json
+servidores_*.json
+servidor_teste.json
+despesa.csv
+
+# IDEs
+.vscode/
+.idea/
+.project
+.pydevproject
+
+# Sistema
+.DS_Store
+Thumbs.db

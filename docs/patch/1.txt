@@ -1,0 +1,19 @@
+import os, textwrap, json, re, pathlib, shutil
+
+base="/mnt/data"
+patch_dir=os.path.join(base,"sentinela_patch")
+os.makedirs(patch_dir, exist_ok=True)
+
+# Load originals if exist
+def read_if(path):
+    try:
+        with open(path,'r',encoding='utf-8') as f: return f.read()
+    except Exception as e:
+        return None
+
+orig_files = {
+ "app.py": read_if(os.path.join(base,"app.py")),
+ "riobranco_crawler.py": read_if(os.path.join(base,"riobranco_crawler.py")),
+ "riobranco_obras.py": read_if(os.path.join(base,"riobranco_obras.py")),
+ "riobranco_obras_list.py": read_if(os.path.join(base,"riobranco_obras_list.py")),
+ "riobranco_di
