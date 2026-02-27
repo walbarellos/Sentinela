@@ -1,10 +1,11 @@
 # backend/app/main.py
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List, Dict, Any
 import duckdb
 import json
 import pandas as pd
+import requests
 from .schemas import InsightOut, SummaryOut, EntityOut, EventOut
 
 app = FastAPI(title="Sentinela API", version="2.0")
@@ -17,6 +18,17 @@ app.add_middleware(
 )
 
 DB_PATH = "./data/sentinela_analytics.duckdb"
+
+@app.get("/proxy")
+def proxy(url: str):
+    try:
+        r = requests.get(url, timeout=10)
+        # Filtra cabeçalhos que bloqueiam iframe (X-Frame-Options e CSP)
+        excluded = ['x-frame-options', 'content-security-policy', 'content-encoding', 'transfer-encoding', 'connection']
+        headers = {k: v for k, v in r.headers.items() if k.lower() not in excluded}
+        return Response(content=r.content, status_code=r.status_code, headers=headers)
+    except Exception as e:
+        return Response(content=f"Error: {str(e)}", status_code=500)
 
 def get_con():
     return duckdb.connect(DB_PATH, read_only=True)

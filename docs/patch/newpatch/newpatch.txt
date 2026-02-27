@@ -1,0 +1,18 @@
+Análise completa feita. Identifiquei 5 problemas críticos, um por tela. Vou criar o patch completo agora:Diagnóstico completo das 5 telas. Aqui está o que encontrei e o que foi entregue:
+
+---
+
+**🔴 IMAGEM 5 — Bug crítico: `BinderException: secretaria not found`**
+A query em `app.py` ~linha 146 referencia colunas `secretaria` e `cargo` que não existem na tabela `rb_servidores_mass`. As colunas reais são `servidor`, `vencimento_base`, `salario_liquido`, `outras_verbas`, `ch`. O `sentinela_patch.py` tem a query corrigida com `SPLIT_PART(servidor, ' - ', 1/2)` para extrair nome e cargo do campo composto.
+
+**⚫ IMAGEM 4 — Gráfico completamente preto no Escudo Federal**
+Plotly renderizando sem `template="plotly_dark"` — resultado: texto preto em fundo preto, invisível. O patch adiciona `template="plotly_dark"` + `paper_bgcolor="#0a0e1a"` + estado vazio informativo quando não há sanções.
+
+**🔗 IMAGEM 1 — Labels nas arestas sobrepostas, ilegível**
+Dois fixes no grafo: `charge` de `-300` → `-800` (mais repulsão entre nós) + `forceCollide` adicionado. Labels nas arestas removidos da renderização estática e movidos para **hover tooltip**. Filtros por tipo de risco (Investigados / Sancionados / Alto Risco) adicionados.
+
+**📊 IMAGEM 2 — "Auditadas Federal: 0" e "R$0,00" nos cards**
+O `0` federal ocorre porque `federal_ceis` não foi populada (token CGU não configurado). O patch mostra aviso contextual com instrução. Os `R$0,00` vinham de query sem `SUM(COALESCE(valor_total, 0))` — corrigido.
+
+**📋 IMAGEM 3 — Alertas sem ação (só leitura)**
+Adicionado botão **"📋 Gerar Denúncia"** em cada alerta que monta automaticamente o texto completo com: fato, base legal (Acórdão TCU, Lei 14.133, SV 13 etc.), e links diretos para FalaBR/CGU e TCE-AC. O sistema passa de "leitura" para "leitura → ação direta".
