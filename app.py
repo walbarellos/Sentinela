@@ -91,6 +91,30 @@ st.markdown("""
     }
     
     .status-vetted { color: #00ff88; font-family: 'Share Tech Mono'; font-size: 12px; }
+    
+    /* Ranking Luxury Style */
+    .rank-card {
+        background: rgba(0, 200, 255, 0.03);
+        border: 1px solid rgba(0, 200, 255, 0.1);
+        border-left: 4px solid #00c8ff;
+        padding: 15px 25px;
+        margin-bottom: 12px;
+        border-radius: 4px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .rank-card:hover {
+        background: rgba(0, 200, 255, 0.08);
+        border-color: rgba(0, 200, 255, 0.3);
+        transform: translateX(5px);
+        box-shadow: 0 0 20px rgba(0, 200, 255, 0.1);
+    }
+    .rank-number { font-family: 'Rajdhani', sans-serif; font-size: 12px; color: #00c8ff; letter-spacing: 3px; font-weight: 700; opacity: 0.6; }
+    .rank-name { font-family: 'Rajdhani', sans-serif; font-size: 18px; font-weight: 600; color: #fff; text-transform: uppercase; }
+    .rank-value { font-family: 'Share Tech Mono', monospace; font-size: 22px; color: #ffaa00; text-shadow: 0 0 10px rgba(255, 170, 0, 0.3); }
+    .rank-meta { font-family: 'Rajdhani', sans-serif; font-size: 10px; color: #4a6a7a; letter-spacing: 2px; text-align: right; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -99,7 +123,7 @@ with st.sidebar:
     st.title("🛡️ SENTINELA")
     st.caption("INTELLIGENCE UNIT // V5.4")
     st.divider()
-    page = st.radio("NAVEGAÇÃO INTERNA", ["🏠 CENTRO DE COMANDO", "🚩 ALERTAS CRÍTICOS", "🏛️ AUDITORIA FEDERAL (CGU)", "🏛️ PORTAL TRANSPARÊNCIA (LIVE)", "👥 BUSCA AVANÇADA"])
+    page = st.radio("NAVEGAÇÃO INTERNA", ["🏠 CENTRO DE COMANDO", "🚩 ALERTAS CRÍTICOS", "🏛️ AUDITORIA FEDERAL (CGU)", "👥 BUSCA AVANÇADA"])
     st.divider()
     st.markdown("### STATUS OPERACIONAL")
     st.success("Sincronização Local: OK")
@@ -167,7 +191,7 @@ if page == "🏠 CENTRO DE COMANDO":
             html_content = f.read()
         components.html(html_content, height=850, scrolling=False)
 
-    st.markdown('<div style="font-family:\'Rajdhani\'; font-weight:700; letter-spacing:4px; color:#fff; margin:40px 0 20px 0; text-transform:uppercase; border-left:4px solid #00c8ff; padding-left:15px;">▶ TOP 10 FORNECEDORES // EXPOSIÇÃO</div>', unsafe_allow_html=True)
+    st.markdown('<div style="font-family:\'Rajdhani\'; font-weight:700; letter-spacing:6px; color:#fff; margin:50px 0 25px 0; text-transform:uppercase; border-left:5px solid #00c8ff; padding-left:20px; font-size:14px; opacity:0.9;">▶ TOP 10 FORNECEDORES // EXPOSIÇÃO PATRIMONIAL</div>', unsafe_allow_html=True)
     try:
         query_ranking = """
             SELECT 
@@ -183,32 +207,19 @@ if page == "🏠 CENTRO DE COMANDO":
         
         for idx, row in df_ranking.iterrows():
             st.markdown(f"""
-            <div style="background: linear-gradient(90deg, rgba(0,200,255,0.08) 0%, rgba(0,0,0,0) 100%); 
-                        border: 1px solid rgba(0,200,255,0.1); 
-                        border-left: 3px solid #00c8ff;
-                        padding: 12px 20px; margin-bottom: 8px; border-radius: 2px;
-                        display: flex; justify-content: space-between; align-items: center;">
-                <div style="flex:1">
-                    <div style="font-family:'Rajdhani'; font-size:10px; color:#00c8ff; letter-spacing:2px; opacity:0.7;">RANK #{idx+1}</div>
-                    <div style="font-size:16px; font-weight:600; color:#fff;">{row['empresa_nome']}</div>
+            <div class="rank-card">
+                <div>
+                    <div class="rank-number">RANK #{idx+1:02d}</div>
+                    <div class="rank-name">{row['empresa_nome']}</div>
                 </div>
-                <div style="text-align:right">
-                    <div style="font-family:'Share Tech Mono'; font-size:18px; color:#ffaa00;">R$ {row['total_exposto']:,.2f}</div>
-                    <div style="font-size:10px; color:#4a6a7a; letter-spacing:1px;">{row['n_contratos']} CONTRATOS ATIVOS</div>
+                <div>
+                    <div class="rank-value">R$ {row['total_exposto']:,.2f}</div>
+                    <div class="rank-meta">{row['n_contratos']} CONTRATOS ATIVOS</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
     except:
         st.info("Dados de contratos (obras) ainda não carregados.")
-
-elif page == "🏛️ PORTAL TRANSPARÊNCIA (LIVE)":
-    st.markdown('<div class="main-header"><h1>Portal da Transparência Federal</h1></div>', unsafe_allow_html=True)
-    if os.path.exists("sentinela_portal_federal.html"):
-        with open("sentinela_portal_federal.html", "r", encoding="utf-8") as f:
-            html_portal = f.read()
-        components.html(html_portal, height=900, scrolling=False)
-    else:
-        st.error("Arquivo sentinela_portal_federal.html não encontrado na raiz.")
 
 elif page == "🚩 ALERTAS CRÍTICOS":
     st.markdown('<div class="main-header"><h1>Dossiê de Anomalias</h1></div>', unsafe_allow_html=True)
