@@ -136,6 +136,12 @@ def generate_insights_for_servidores(df: pd.DataFrame) -> List[Insight]:
         val = float(row[target_col])
         conf = int(_clamp(45 + (z * 8), 0, 99))
         
+        # Análise de Imposto de Renda (se disponível)
+        ir = float(row.get('imposto_de_renda', 0))
+        ir_flag = ""
+        if ir > 0:
+            ir_flag = f" | ⚠️ IR descontado: {_fmt_brl(ir)} (Requer checagem de rubricas e base legal)"
+
         # Extrair matrícula e nome (Formato: 600141/1-ABDEL BARBOSA DERZE)
         serv_str = str(row['servidor'])
         if '-' in serv_str:
@@ -145,16 +151,17 @@ def generate_insights_for_servidores(df: pd.DataFrame) -> List[Insight]:
 
         insights.append(Insight(
             id=f"SAL_{matricula}_{idx}",
-            tipo="OUTLIER SALARIAL",
+            tipo="ANOMALIA ESTATÍSTICA",
             severidade="CRITICO" if z > 4.5 else ("ALTO" if z > 3.5 else "MEDIO"),
             confianca=conf, exposicao=val,
-            titulo=f"Desvio: {nome}",
-            descricao=f"Servidor recebe **{_fmt_brl(val)}**, valor **{z:.1f}x** acima da média do segmento: **{row['cargo']}** ({row['ch']}h, {row['vinculo']}).",
+            titulo=f"Indício: {nome}",
+            descricao=f"Registro aponta valor líquido de **{_fmt_brl(val)}**, que representa **{z:.1f}x** o desvio padrão da média do grupo: **{row['cargo']}** ({row['ch']}h, {row['vinculo']}).{ir_flag}",
             pattern="CARGO+CH+VINCULO → Z-SCORE → ANOMALIA",
-            fontes=["Folha de Pagamento (Rio Branco)"],
+            fontes=["Portal da Transparência (Rio Branco)"],
             evidencias=[row.to_dict()]
         ))
     return insights
+
 
 def generate_insights_for_diarias(df: pd.DataFrame) -> List[Insight]:
     if df is None or df.empty: return []
@@ -184,14 +191,14 @@ def generate_insights_for_diarias(df: pd.DataFrame) -> List[Insight]:
         conf = int(_clamp(50 + (n * 5) + (val / 5000), 0, 99))
         
         insights.append(Insight(
-            id=f"DIA_BLOCO_{idx}",
-            tipo="VIAGEM EM BLOCO",
+            id=f"DIA_AGRUP_{idx}",
+            tipo="CONCENTRAÇÃO DE DIÁRIAS",
             severidade="CRITICO" if n >= 8 or val > 20000 else ("ALTO" if n >= 5 else "MEDIO"),
             confianca=conf, exposicao=val,
-            titulo=f"Bloco: {n} servidores → {row['destino']}",
-            descricao=f"Identificada viagem conjunta de **{n} servidores** para **{row['destino']}** em **{row['data_saida'].strftime('%d/%m/%Y')}**. Custo total: **{_fmt_brl(val)}**.",
-            pattern="DESTINO+DATA → CONCENTRAÇÃO DE SERVIDORES",
-            fontes=["Portal Transparência (Diárias)"],
+            titulo=f"Indício: {n} registros → {row['destino']}",
+            descricao=f"Identificado registro de **{n} diárias** para **{row['destino']}** com data de saída em **{row['data_saida'].strftime('%d/%m/%Y')}**. Custo agregado: **{_fmt_brl(val)}**. Risco potencial de baixa economicidade; demanda justificativa administrativa.",
+            pattern="DESTINO+DATA → AGRUPAMENTO DE REGISTROS",
+            fontes=["Portal da Transparência (Diárias)"],
             evidencias=df[(df['destino'] == row['destino']) & (df['data_saida'] == row['data_saida'])].head(10).to_dict('records')
         ))
         

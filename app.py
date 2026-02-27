@@ -36,6 +36,11 @@ with st.sidebar:
     st.title("🛡️ SENTINELA")
     st.markdown("<small style='font-family:monospace; color:#8b949e;'>ACRE GOV UNIT v3.2</small>", unsafe_allow_html=True)
     st.divider()
+    
+    # Disclaimer Jurídico
+    st.caption("⚠️ **AVISO LEGAL:** Este sistema identifica ANOMALIAS ESTATÍSTICAS e INDÍCIOS que requerem validação humana. Os dados são públicos (LAI), mas a interpretação requer análise de atos administrativos. Evite imputação de crime sem prova cabal.")
+    
+    st.divider()
     if 'page' not in st.session_state: st.session_state.page = "radar"
     if st.button("📡 RADAR DE OBRAS"): st.session_state.page = "radar"
     if st.button("👥 VÍNCULOS PESSOAL"): st.session_state.page = "pessoal"
@@ -65,7 +70,21 @@ def render_insights(insights, title_id):
         ins = next((x for x in insights if x.id == sel), None) if sel else None
         if ins:
             st.markdown(f"### 📁 DOSSIÊ {ins.id}")
-            st.markdown(f"<div class='threat-card' style='border-left:none;'><b>DETALHES:</b><br>{ins.descricao}</div>", unsafe_allow_html=True)
+            
+            # Checklist de Validação Humana
+            with st.expander("📋 CHECKLIST DE VALIDAÇÃO (AUDITORIA)", expanded=True):
+                st.info("Siga estes passos antes de qualquer conclusão:")
+                if "SAL_" in ins.id:
+                    st.write("- [ ] Identificar nome e código da rubrica em 'Outras Verbas'.")
+                    st.write("- [ ] Verificar se há decisão judicial ou pagamento retroativo.")
+                    st.write("- [ ] Checar se o valor líquido alto coincide com IR alto (indica remuneração).")
+                    st.write("- [ ] Validar subteto municipal (Subsídio do Prefeito).")
+                else:
+                    st.write("- [ ] Verificar nexo público (Certificado/Relatório de Viagem).")
+                    st.write("- [ ] Conferir base legal (Decreto Municipal de Diárias).")
+                    st.write("- [ ] Validar economicidade (Por que comitiva em vez de instrutor local?).")
+            
+            st.markdown(f"<div class='threat-card' style='border-left:none;'><b>DETALHES DA ANOMALIA:</b><br>{ins.descricao}</div>", unsafe_allow_html=True)
             st.dataframe(pd.DataFrame(ins.evidencias), use_container_width=True)
         else: st.info("AGUARDANDO SELEÇÃO")
 
