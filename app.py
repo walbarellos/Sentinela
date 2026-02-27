@@ -94,27 +94,39 @@ st.markdown("""
     
     /* Ranking Luxury Style */
     .rank-card {
-        background: rgba(0, 200, 255, 0.03);
-        border: 1px solid rgba(0, 200, 255, 0.1);
+        background: rgba(0, 200, 255, 0.02);
+        border: 1px solid rgba(0, 200, 255, 0.08);
         border-left: 4px solid #00c8ff;
-        padding: 15px 25px;
-        margin-bottom: 12px;
-        border-radius: 4px;
+        padding: 20px 30px;
+        margin-bottom: 15px;
+        border-radius: 2px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        position: relative;
+        overflow: hidden;
     }
     .rank-card:hover {
-        background: rgba(0, 200, 255, 0.08);
+        background: rgba(0, 200, 255, 0.06);
         border-color: rgba(0, 200, 255, 0.3);
-        transform: translateX(5px);
-        box-shadow: 0 0 20px rgba(0, 200, 255, 0.1);
+        transform: scale(1.01) translateX(10px);
+        box-shadow: -10px 0 30px rgba(0, 200, 255, 0.1);
     }
-    .rank-number { font-family: 'Rajdhani', sans-serif; font-size: 12px; color: #00c8ff; letter-spacing: 3px; font-weight: 700; opacity: 0.6; }
-    .rank-name { font-family: 'Rajdhani', sans-serif; font-size: 18px; font-weight: 600; color: #fff; text-transform: uppercase; }
-    .rank-value { font-family: 'Share Tech Mono', monospace; font-size: 22px; color: #ffaa00; text-shadow: 0 0 10px rgba(255, 170, 0, 0.3); }
-    .rank-meta { font-family: 'Rajdhani', sans-serif; font-size: 10px; color: #4a6a7a; letter-spacing: 2px; text-align: right; }
+    .rank-card::after {
+        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(0,200,255,0.05), transparent);
+        transform: translateX(-100%); transition: 0.6s;
+    }
+    .rank-card:hover::after { transform: translateX(100%); }
+    
+    .rank-number { font-family: 'Share Tech Mono', monospace; font-size: 14px; color: #00c8ff; letter-spacing: 4px; font-weight: 700; opacity: 0.5; margin-bottom: 5px; }
+    .rank-name { font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
+    .rank-value { font-family: 'Share Tech Mono', monospace; font-size: 24px; color: #ffaa00; text-shadow: 0 0 15px rgba(255, 170, 0, 0.4); }
+    .rank-meta { font-family: 'Rajdhani', sans-serif; font-size: 11px; color: #4a6a7a; letter-spacing: 2px; text-align: right; margin-top: 5px; }
+    
+    .progress-bg { width: 100%; height: 2px; background: rgba(255,255,255,0.05); margin-top: 10px; }
+    .progress-fill { height: 100%; background: #00c8ff; box-shadow: 0 0 10px #00c8ff; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -141,14 +153,19 @@ if page == "🏠 CENTRO DE COMANDO":
         
         # Auditadas Federal (CEIS/CNEP)
         try:
-            # Verifica se a tabela existe e tem dados
             tables = db.execute("SHOW TABLES").df()['name'].tolist()
-            if 'federal_ceis' in tables:
-                n_vetted = db.execute("SELECT COUNT(*) FROM federal_ceis").fetchone()[0]
-                federal_ok = n_vetted > 0
+            federal_exists = 'federal_ceis' in tables
+            
+            # Conta quantas empresas locais foram verificadas (distinct empresa_id em obras)
+            n_verified = db.execute("SELECT COUNT(DISTINCT empresa_id) FROM obras WHERE empresa_id IS NOT NULL").fetchone()[0]
+            
+            if federal_exists:
+                total_fed = db.execute("SELECT COUNT(*) FROM federal_ceis").fetchone()[0]
+                federal_ok = total_fed > 0
             else:
-                n_vetted = 0
                 federal_ok = False
+                
+            n_vetted = n_verified
         except:
             n_vetted = 0
             federal_ok = False
@@ -170,7 +187,8 @@ if page == "🏠 CENTRO DE COMANDO":
         </div>
         <div class="kpi-card">
             <div class="kpi-label">Auditadas (Federal)</div>
-            <div class="kpi-value" style="color:#c084fc;">{f"{n_vetted:,}" if federal_ok else "⚠️ N/D"}</div>
+            <div class="kpi-value" style="color:#c084fc;">{n_vetted}</div>
+            <div style="font-size:10px; opacity:0.6;">{"BASE ATIVA" if federal_ok else "SEM BASE LOCAL"}</div>
         </div>
         <div class="kpi-card">
             <div class="kpi-label">Alertas Ativos</div>
@@ -204,15 +222,18 @@ if page == "🏠 CENTRO DE COMANDO":
             LIMIT 10
         """
         df_ranking = db.execute(query_ranking).df()
+        max_val = df_ranking['total_exposto'].max() or 1
         
         for idx, row in df_ranking.iterrows():
+            pct = (row['total_exposto'] / max_val) * 100
             st.markdown(f"""
             <div class="rank-card">
-                <div>
+                <div style="flex: 2;">
                     <div class="rank-number">RANK #{idx+1:02d}</div>
                     <div class="rank-name">{row['empresa_nome']}</div>
+                    <div class="progress-bg"><div class="progress-fill" style="width: {pct}%"></div></div>
                 </div>
-                <div>
+                <div style="flex: 1; text-align: right;">
                     <div class="rank-value">R$ {row['total_exposto']:,.2f}</div>
                     <div class="rank-meta">{row['n_contratos']} CONTRATOS ATIVOS</div>
                 </div>
@@ -293,31 +314,63 @@ elif page == "🏛️ AUDITORIA FEDERAL (CGU)":
     with col2:
         st.subheader("🔍 Status das Empresas Locais")
         n_local = db.execute("SELECT COUNT(DISTINCT empresa_id) FROM obras").fetchone()[0]
-        st.info(f"O sistema verificou **{n_local} empresas** contratadas por Rio Branco contra a base federal.")
         
-        # Check for matches
+        # Verifica se temos dados federais para comparar
         try:
-            n_matches = db.execute("""
-                SELECT COUNT(DISTINCT o.empresa_cnpj)
-                FROM obras o
-                INNER JOIN federal_ceis fc
-                  ON REGEXP_REPLACE(o.empresa_cnpj,'[^0-9]','') =
-                     REGEXP_REPLACE(fc.cnpj,'[^0-9]','')
-            """).fetchone()[0]
-            
-            if n_matches == 0:
-                st.success("RESULTADO: Nenhuma empresa local consta atualmente como Inidônea (CEIS) ou Punida (CNEP).")
-            else:
-                st.error(f"🔴 ALERTA: {n_matches} empresas com contratos ativos possuem sanções federais vigentes.")
+            total_federal = db.execute("SELECT COUNT(*) FROM federal_ceis").fetchone()[0]
         except:
-            st.info("Aguardando sincronização com base federal.")
+            total_federal = 0
 
-    st.subheader("📄 Últimos Registros Federativos")
+        if total_federal == 0:
+            st.warning(f"⚠️ O sistema identificou **{n_local} empresas** locais, mas a base federal está vazia. Não é possível garantir a integridade sem sincronizar os dados da CGU.")
+        else:
+            st.info(f"O sistema verificou **{n_local} empresas** contratadas por Rio Branco contra uma base de **{total_federal:,} sanções federais**.")
+            
+            # Check for matches
+            try:
+                n_matches = db.execute("""
+                    SELECT COUNT(DISTINCT o.empresa_id)
+                    FROM obras o
+                    INNER JOIN federal_ceis fc
+                      ON REGEXP_REPLACE(o.empresa_id::VARCHAR,'[^0-9]','') =
+                         REGEXP_REPLACE(fc.cnpj,'[^0-9]','')
+                """).fetchone()[0]
+                
+                if n_matches == 0:
+                    st.success("✅ RESULTADO: Nenhuma das empresas locais possui sanções vigentes no CEIS/CNEP.")
+                else:
+                    st.error(f"🔴 ALERTA CRÍTICO: {n_matches} empresa(s) com contratos ativos possuem sanções federais!")
+            except:
+                st.info("Aguardando sincronização para cruzamento.")
+
+    st.markdown('<div style="font-family:\'Rajdhani\'; font-weight:700; letter-spacing:4px; color:#fff; margin:40px 0 20px 0; text-transform:uppercase; border-left:4px solid #c084fc; padding-left:15px;">📄 Últimos Registros Federativos // Radar CGU</div>', unsafe_allow_html=True)
     try:
-        df_ceis = db.execute("SELECT nome, cnpj, tipo_sancao, orgao_sancionador FROM federal_ceis LIMIT 50").df()
-        st.dataframe(df_ceis, use_container_width=True)
+        df_ceis = db.execute("SELECT nome, cnpj, tipo_sancao, orgao_sancionador FROM federal_ceis ORDER BY row_number() OVER() DESC LIMIT 10").df()
+        if df_ceis.empty:
+            st.write("Sem registros federais carregados.")
+        else:
+            for _, row in df_ceis.iterrows():
+                st.markdown(f"""
+                <div style="background: rgba(192, 132, 252, 0.03); 
+                            border: 1px solid rgba(192, 132, 252, 0.1); 
+                            border-left: 3px solid #c084fc;
+                            padding: 15px 20px; margin-bottom: 10px; border-radius: 2px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <div style="font-family:'Share Tech Mono'; font-size:10px; color:#c084fc; letter-spacing:2px;">SANCIONADO // {row['cnpj']}</div>
+                            <div style="font-size:16px; font-weight:700; color:#fff; margin:4px 0;">{row['nome']}</div>
+                            <div style="font-size:11px; color:#8eb8d4; opacity:0.8;">Órgão: {row['orgao_sancionador']}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="background:rgba(255,43,74,0.1); color:#ff2b4a; padding:4px 10px; border-radius:2px; font-family:'Share Tech Mono'; font-size:11px; border:1px solid rgba(255,43,74,0.2);">
+                                {row['tipo_sancao']}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
     except:
-        st.write("Sem registros disponíveis.")
+        st.write("A base federal ainda não foi populada.")
 
 elif page == "👥 BUSCA AVANÇADA":
     st.markdown('<div class="main-header"><h1>Rastreio de Pessoal</h1></div>', unsafe_allow_html=True)
