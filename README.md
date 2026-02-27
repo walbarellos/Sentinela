@@ -1,3 +1,9 @@
+
+<img width="1653" height="793" alt="1" src="https://github.com/user-attachments/assets/52a85202-3cf2-46fb-aa47-72f0a9d30be5" />
+<img width="1653" height="793" alt="2" src="https://github.com/user-attachments/assets/04809f6e-0e6c-4114-9b85-e2240591eff7" />
+<img width="1653" height="793" alt="3" src="https://github.com/user-attachments/assets/eab487b3-adb3-4723-8c9b-334369e94f3f" />
+
+
 # 🛡️ SENTINELA // COMMAND CENTER
 
 Sistema de inteligência e auditoria de gastos públicos focado no Estado do Acre e Município de Rio Branco. O projeto utiliza **DuckDB** para análise massiva de dados e **Neo4j** para mapeamento de grafos de influência.
