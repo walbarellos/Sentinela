@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>SENTINELA // REDE DE INFLUÊNCIA</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #020408;
+    --bg2: #060d14;
+    --panel: rgba(6, 20, 35, 0.85);
+    --border: rgba(0, 200, 255, 0.15);
+    --accent: #00c8ff;
+    --accent2: #ff3860;
+    --accent3: #f5a623;
+    --green: #00ff88;
+    --text: #8eb8d4;
+    --text-bright: #cce8f4;
+    --critical: #ff2244;
+    --warning: #ffaa00;
+    --grid: rgba(0, 180, 255, 0.04);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: gridPan 40s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  @keyframes gridPan {
+    from { transform: translateY(0); }
+    to { transform: translateY(40px); }
+  }
+
+  /* Scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  #header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 52px;
+    background: linear-gradient(180deg, rgba(0,20,40,0.98) 0%, rgba(0,10,20,0.90) 100%);
+    border-bottom: 1px solid rgba(0,200,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    font-weight: 900;
+    color: var(--accent);
+    letter-spacing: 4px;
+    text-shadow: 0 0 20px rgba(0,200,255,0.5);
+  }
+
+  .logo span { color: var(--text); font-weight: 400; }
+
+  .header-status {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+  }
+
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text);
+  }
+
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  .dot.red { background: var(--critical); box-shadow: 0 0 8px var(--critical); }
+  .dot.yellow { background: var(--warning); box-shadow: 0 0 8px var(--warning); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .header-time {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+
+  /* Left panel */
+  #left-panel {
+    position: fixed;
+    top: 52px; left: 0; bottom: 0;
+    width: 280px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    z-index: 50;
+    overflow-y: auto;
+    padding: 16px;
+  }
+
+  #left-panel::-webkit-scrollbar { width: 3px; }
+  #left-panel::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.2); }
+
+  .panel-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .entity-card {
+    background: rgba(0,200,255,0.04);
+    border: 1px solid rgba(0,200,255,0.1);
+    border-left: 3px solid var(--accent);
+    border-radius: 2px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .entity-card:hover {
+    background: rgba(0,200,255,0.08);
+    border-left-color: var(--green);
+  }
+
+  .entity-card.critical { border-left-color: var(--critical); }
+  .entity-card.warning { border-left-color: var(--warning); }
+  .entity-card.active { 
+    background: rgba(0,200,255,0.12);
+    border-color: rgba(0,200,255,0.4);
+  }
+
+  .card-type {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .card-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+
+  .card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .card-value {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--accent3);
+  }
+
+  .risk-badge {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 1px;
+    letter-spacing: 1px;
+  }
+
+  .risk-badge.CRÍTICO { background: rgba(255,34,68,0.2); color: var(--critical); border: 1px solid rgba(255,34,68,0.3); }
+  .risk-badge.ALTO { background: rgba(255,170,0,0.2); color: var(--warning); border: 1px solid rgba(255,170,0,0.3); }
+  .risk-badge.MÉDIO { background: rgba(0,200,255,0.15); color: var(--accent); border: 1px solid rgba(0,200,255,0.2); }
+
+  /* Right detail panel */
+  #right-panel {
+    position: fixed;
+    top: 52px; right: 0; bottom: 0;
+    width: 320px;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    z-index: 50;
+    padding: 16px;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  #right-panel.open { transform: translateX(0); }
+
+  /* Network canvas */
+  #network-container {
+    position: fixed;
+    top: 52px;
+    left: 280px;
+    right: 0;
+    bottom: 60px;
+    z-index: 10;
+  }
+
+  #network-container.panel-open { right: 320px; }
+
+  svg#network { width: 100%; height: 100%; }
+
+  /* Legend / bottom bar */
+  #bottom-bar {
+    position: fixed;
+    bottom: 0; left: 280px; right: 0;
+    height: 60px;
+    background: linear-gradient(0deg, rgba(0,10,20,0.98) 0%, rgba(0,10,20,0.85) 100%);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 100;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+  }
+
+  .legend {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text);
+  }
+
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+
+  .legend-line {
+    width: 20px; height: 2px;
+    position: relative;
+  }
+
+  .metric-bar {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+  }
+
+  .metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .metric-val {
+    font-size: 16px;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .metric-label {
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--text);
+    opacity: 0.6;
+  }
+
+  /* D3 styles */
+  .link {
+    stroke-opacity: 0.6;
+    fill: none;
+    transition: stroke-opacity 0.3s;
+  }
+
+  .link:hover { stroke-opacity: 1; }
+
+  .node circle {
+    stroke-width: 2;
+    transition: all 0.3s;
+    cursor: pointer;
+    filter: drop-shadow(0 0 4px currentColor);
+  }
+
+  .node circle:hover { 
+    stroke-width: 3;
+    filter: drop-shadow(0 0 12px currentColor);
+  }
+
+  .node text {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+  }
+
+  .node.selected circle {
+    stroke-width: 4;
+    filter: drop-shadow(0 0 16px currentColor);
+    animation: nodeGlow 1.5s ease-in-out infinite alternate;
+  }
+
+  @keyframes nodeGlow {
+    from { filter: drop-shadow(0 0 8px currentColor); }
+    to { filter: drop-shadow(0 0 20px currentColor); }
+  }
+
+  /* Radar sweep animation */
+  .radar-sweep {
+    animation: radarSweep 4s linear infinite;
+    transform-origin: center;
+  }
+
+  @keyframes radarSweep {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Detail panel content */
+  .detail-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .detail-type {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .detail-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-bright);
+    line-height: 1.2;
+  }
+
+  .detail-section { margin-bottom: 16px; }
+
+  .detail-section-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    opacity: 0.7;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 12px;
+  }
+
+  .detail-row-key { color: var(--text); opacity: 0.7; }
+  .detail-row-val { color: var(--text-bright); font-weight: 600; font-family: 'Share Tech Mono', monospace; font-size: 11px; }
+  .detail-row-val.red { color: var(--critical); }
+  .detail-row-val.yellow { color: var(--warning); }
+  .detail-row-val.green { color: var(--green); }
+
+  .flag-list { margin-top: 8px; }
+
+  .flag-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 8px;
+    margin-bottom: 4px;
+    background: rgba(255,34,68,0.07);
+    border: 1px solid rgba(255,34,68,0.15);
+    border-radius: 2px;
+    font-size: 11px;
+    color: var(--critical);
+    line-height: 1.4;
+  }
+
+  .flag-icon { font-size: 10px; margin-top: 1px; flex-shrink: 0; }
+
+  .close-btn {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 24px; height: 24px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .close-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Tooltip */
+  #tooltip {
+    position: fixed;
+    background: rgba(0,15,30,0.95);
+    border: 1px solid rgba(0,200,255,0.3);
+    padding: 8px 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-bright);
+    pointer-events: none;
+    z-index: 200;
+    display: none;
+    max-width: 220px;
+    line-height: 1.6;
+  }
+
+  /* Filter buttons */
+  .filter-group {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .filter-btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 3px 8px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .filter-btn:hover, .filter-btn.active {
+    background: rgba(0,200,255,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Glitch animation for critical nodes */
+  @keyframes glitch {
+    0%, 94%, 100% { transform: none; }
+    95% { transform: translate(-2px, 1px); }
+    96% { transform: translate(2px, -1px); }
+    97% { transform: translate(-1px, 2px); }
+  }
+
+  .node.critical-node { animation: glitch 5s infinite; }
+
+  /* Warning marquee */
+  #alert-ticker {
+    position: fixed;
+    bottom: 60px; left: 280px; right: 0;
+    height: 24px;
+    background: rgba(255,34,68,0.08);
+    border-top: 1px solid rgba(255,34,68,0.2);
+    overflow: hidden;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+  }
+
+  .ticker-label {
+    background: var(--critical);
+    color: #000;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 0 10px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    letter-spacing: 2px;
+  }
+
+  .ticker-content {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--critical);
+    white-space: nowrap;
+    animation: ticker 30s linear infinite;
+    padding-left: 20px;
+    letter-spacing: 1px;
+  }
+
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* Connection strength labels */
+  .link-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    fill: rgba(200,200,200,0.5);
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="logo">SENTINELA <span>// REDE DE INFLUÊNCIA</span></div>
+  <div class="header-status">
+    <div class="status-item">
+      <div class="dot"></div>
+      <span>SISTEMA ATIVO</span>
+    </div>
+    <div class="status-item">
+      <div class="dot red"></div>
+      <span>70+ ALERTAS</span>
+    </div>
+    <div class="status-item">
+      <div class="dot yellow"></div>
+      <span>ANÁLISE EM CURSO</span>
+    </div>
+    <div class="header-time" id="clock">--:--:--</div>
+  </div>
+</div>
+
+<div id="left-panel">
+  <div class="panel-title">▶ ENTIDADES MAPEADAS</div>
+  
+  <div class="filter-group">
+    <button class="filter-btn active" onclick="filterNodes('all')">TODOS</button>
+    <button class="filter-btn" onclick="filterNodes('servidor')">SERVIDOR</button>
+    <button class="filter-btn" onclick="filterNodes('empresa')">EMPRESA</button>
+    <button class="filter-btn" onclick="filterNodes('contrato')">CONTRATO</button>
+    <button class="filter-btn" onclick="filterNodes('socio')">SÓCIO</button>
+  </div>
+
+  <div id="entity-list"></div>
+</div>
+
+<div id="alert-ticker">
+  <div class="ticker-label">⚠ ALERTA</div>
+  <div class="ticker-content" id="ticker-text"></div>
+</div>
+
+<div id="network-container">
+  <svg id="network"></svg>
+</div>
+
+<div id="bottom-bar">
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#00c8ff; box-shadow:0 0 6px #00c8ff"></div>
+      <span>SERVIDOR</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#ff3860; box-shadow:0 0 6px #ff3860"></div>
+      <span>EMPRESA</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#f5a623; box-shadow:0 0 6px #f5a623"></div>
+      <span>CONTRATO</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#00ff88; box-shadow:0 0 6px #00ff88"></div>
+      <span>SÓCIO</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#c084fc; box-shadow:0 0 6px #c084fc"></div>
+      <span>POLÍTICO</span>
+    </div>
+  </div>
+  <div class="metric-bar">
+    <div class="metric">
+      <div class="metric-val" id="m-nodes">0</div>
+      <div class="metric-label">NÓS</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val" id="m-links">0</div>
+      <div class="metric-label">LIGAÇÕES</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val" style="color:var(--critical)" id="m-alerts">0</div>
+      <div class="metric-label">ALERTAS</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val" style="color:var(--accent3)" id="m-exposure">R$0</div>
+      <div class="metric-label">EXPOSIÇÃO</div>
+    </div>
+  </div>
+</div>
+
+<div id="right-panel">
+  <button class="close-btn" onclick="closePanel()">✕</button>
+  <div id="detail-content"></div>
+</div>
+
+<div id="tooltip"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+// Demo data — in production, replace with API call to FastAPI backend
+const graphData = {"nodes": [{"id": "MASTER SERVICOS LTDA", "label": "MASTER SERVICOS LTDA", "type": "empresa", "group": "empresa", "risk": "ALTO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256010", "label": "CONTRATO: 256010", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "PREDIAL CONSTRUCOES LTDA", "label": "PREDIAL CONSTRUCOES LTDA", "type": "empresa", "group": "empresa", "risk": "ALTO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256015", "label": "CONTRATO: 256015", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "EXECUTIVA SERVICOS COMERCIO IMPORTACAO E EXPORTACAO EIRELI", "label": "EXECUTIVA SERVICOS COMERC", "type": "empresa", "group": "empresa", "risk": "ALTO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256071", "label": "CONTRATO: 256071", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "AZ COMERCIO  SERVICOS E REPRESENTACOES IMP  EXP  LTDA", "label": "AZ COMERCIO  SERVICOS E R", "type": "empresa", "group": "empresa", "risk": "ALTO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256067", "label": "CONTRATO: 256067", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "EMPRESA MUNICIPAL DE URBANIZACAO DE RIO BRANCO    EMURB", "label": "EMPRESA MUNICIPAL DE URBA", "type": "empresa", "group": "empresa", "risk": "ALTO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256043", "label": "CONTRATO: 256043", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "CONSTRUTORA MIRANDA LTDA", "label": "CONSTRUTORA MIRANDA LTDA", "type": "empresa", "group": "empresa", "risk": "ALTO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256069", "label": "CONTRATO: 256069", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256041", "label": "CONTRATO: 256041", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256073", "label": "CONTRATO: 256073", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256033", "label": "CONTRATO: 256033", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "F R OLIVEIRA LIMPEZA & CONSTRUCAO LTDA", "label": "F R OLIVEIRA LIMPEZA & CO", "type": "empresa", "group": "empresa", "risk": "ALTO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256022", "label": "CONTRATO: 256022", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "J G DE MEDEIROS LTDA", "label": "J G DE MEDEIROS LTDA", "type": "empresa", "group": "empresa", "risk": "ALTO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256020", "label": "CONTRATO: 256020", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "EURO CONSTRUCOES LTDA", "label": "EURO CONSTRUCOES LTDA", "type": "empresa", "group": "empresa", "risk": "ALTO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256012", "label": "CONTRATO: 256012", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "APURINA LTDA", "label": "APURINA LTDA", "type": "empresa", "group": "empresa", "risk": "ALTO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256058", "label": "CONTRATO: 256058", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "W  T  CORREIRA LTDA", "label": "W  T  CORREIRA LTDA", "type": "empresa", "group": "empresa", "risk": "ALTO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256017", "label": "CONTRATO: 256017", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256007", "label": "CONTRATO: 256007", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256052", "label": "CONTRATO: 256052", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "RM CONSTRUCOES LTDA", "label": "RM CONSTRUCOES LTDA", "type": "empresa", "group": "empresa", "risk": "ALTO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256048", "label": "CONTRATO: 256048", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "P C MAIA OLIVEIRA CONSTRUCOES IMPORTACAO E EXPORTACAO LTDA", "label": "P C MAIA OLIVEIRA CONSTRU", "type": "empresa", "group": "empresa", "risk": "ALTO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256065", "label": "CONTRATO: 256065", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "AC CONSTRUTORA LTDA", "label": "AC CONSTRUTORA LTDA", "type": "empresa", "group": "empresa", "risk": "ALTO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256031", "label": "CONTRATO: 256031", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256024", "label": "CONTRATO: 256024", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256054", "label": "CONTRATO: 256054", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "DOUGLAS & CIA SOCIEDADE LTDA", "label": "DOUGLAS & CIA SOCIEDADE L", "type": "empresa", "group": "empresa", "risk": "ALTO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256027", "label": "CONTRATO: 256027", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256046", "label": "CONTRATO: 256046", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256062", "label": "CONTRATO: 256062", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256060", "label": "CONTRATO: 256060", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256039", "label": "CONTRATO: 256039", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "ELO ENGENHARIA LTDA", "label": "ELO ENGENHARIA LTDA", "type": "empresa", "group": "empresa", "risk": "ALTO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "256037", "label": "CONTRATO: 256037", "type": "contrato", "group": "contrato", "risk": "M\u00c9DIO", "flags": [""], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: JOAO PESSOA - PARA\u00c3\u008dBA ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["12 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: JOAO PESSOA - PARA\u00c3\u008dBA  em 2024-11-11 00:00:00. Valor total: R$63,407.00. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: RIO DE JANEIRO - RIO DE JANEIRO ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["12 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: RIO DE JANEIRO - RIO DE JANEIRO  em 2023-09-18 00:00:00. Valor total: R$56,622.50. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: FORTALEZA - CEAR\u00c3\u0081 ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["12 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: FORTALEZA - CEAR\u00c3\u0081  em 2023-11-27 00:00:00. Valor total: R$55,093.50. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: BELO HORIZONTE - MINAS GERAIS ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["11 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: BELO HORIZONTE - MINAS GERAIS  em 2022-12-25 00:00:00. Valor total: R$51,458.00. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: SAO PAULO - S\u00c3\u0083O PAULO ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["11 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: SAO PAULO - S\u00c3\u0083O PAULO  em 2024-12-16 00:00:00. Valor total: R$49,929.00. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: BRASILIA - DISTRITO FEDERAL ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["9 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: BRASILIA - DISTRITO FEDERAL  em 2022-03-14 00:00:00. Valor total: R$46,507.23. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: S\u00c3\u0083O PAULO - S\u00c3\u0083O PAULO ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["10 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: S\u00c3\u0083O PAULO - S\u00c3\u0083O PAULO  em 2025-04-07 00:00:00. Valor total: R$46,293.50. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: NATAL - RIO GRANDE DO NORTE ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["9 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: NATAL - RIO GRANDE DO NORTE  em 2023-03-27 00:00:00. Valor total: R$42,658.00. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: CURITIBA - PARAN\u00c3\u0081 ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["8 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: CURITIBA - PARAN\u00c3\u0081  em 2024-12-09 00:00:00. Valor total: R$35,200.00. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: RECIFE - PERNAMBUCO ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["7 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: RECIFE - PERNAMBUCO  em 2023-11-20 00:00:00. Valor total: R$33,164.50. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: MACEIO - ALAGOAS ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["7 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: MACEIO - ALAGOAS  em 2024-04-08 00:00:00. Valor total: R$30,800.00. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: JO\u00c3\u0083O PESSOA - PARA\u00c3\u008dBA ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["5 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: JO\u00c3\u0083O PESSOA - PARA\u00c3\u008dBA  em 2022-05-23 00:00:00. Valor total: R$30,535.05. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: FLORIAN\u00c3\u0093POLIS - SANTA CATARINA ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["5 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: FLORIAN\u00c3\u0093POLIS - SANTA CATARINA  em 2023-03-05 00:00:00. Valor total: R$27,807.00. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: ARACAJU - SERGIPE ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["11 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: ARACAJU - SERGIPE  em 2024-11-04 00:00:00. Valor total: R$26,543.17. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: SALVADOR - BAHIA ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["5 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: SALVADOR - BAHIA  em 2024-05-27 00:00:00. Valor total: R$22,764.50. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: MACEI\u00c3\u0093 - ALAGOAS ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["5 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: MACEI\u00c3\u0093 - ALAGOAS  em 2022-08-29 00:00:00. Valor total: R$22,000.00. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: PORTO VELHO - ROND\u00c3\u0094NIA ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["6 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: PORTO VELHO - ROND\u00c3\u0094NIA  em 2023-10-16 00:00:00. Valor total: R$20,012.20. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: PORTO SEGURO - BAHIA ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "ALTO", "flags": ["4 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: PORTO SEGURO - BAHIA  em 2023-02-06 00:00:00. Valor total: R$18,364.50. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: FOZ DO IGUA\u00c3\u0087U - PARAN\u00c3\u0081 ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "ALTO", "flags": ["4 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: FOZ DO IGUA\u00c3\u0087U - PARAN\u00c3\u0081  em 2022-11-07 00:00:00. Valor total: R$18,364.50. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: FOZ DO IGUACU - PARAN\u00c3\u0081 ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "ALTO", "flags": ["3 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: FOZ DO IGUACU - PARAN\u00c3\u0081  em 2018-05-22 00:00:00. Valor total: R$18,321.03. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: MANAUS - AMAZONAS ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "ALTO", "flags": ["3 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: MANAUS - AMAZONAS  em 2018-04-03 00:00:00. Valor total: R$18,321.03. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: FLORIANOPOLIS - SANTA CATARINA ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["8 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: FLORIANOPOLIS - SANTA CATARINA  em 2024-03-05 00:00:00. Valor total: R$17,925.25. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: SAO LUIS GONZAGA DO MARANHAO - MARANH\u00c3\u0083O ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "ALTO", "flags": ["4 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: SAO LUIS GONZAGA DO MARANHAO - MARANH\u00c3\u0083O  em 2024-06-17 00:00:00. Valor total: R$17,600.00. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: PORTO ALEGRE - RIO GRANDE DO SUL ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["8 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: PORTO ALEGRE - RIO GRANDE DO SUL  em 2023-11-04 00:00:00. Valor total: R$17,442.61. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}, {"id": "Grupo Prefeitura de Rio Branco \u2192 Origem: RIO BRANCO - ACRE , Destino: CAMPO GRANDE - MATO GROSSO DO SUL ", "label": "Grupo Prefeitura de Rio B", "type": "servidor", "group": "servidor", "risk": "CR\u00cdTICO", "flags": ["5 servidores viajaram juntos para Origem: RIO BRANCO - ACRE , Destino: CAMPO GRANDE - MATO GROSSO DO SUL  em 2022-06-14 00:00:00. Valor total: R$17,286.50. Verifique portaria no D.O. e programa\u00e7\u00e3o do evento."], "exposure": 0, "connections": 0}], "links": [{"source": "MASTER SERVICOS LTDA", "target": "256010", "type": "executou", "label": "R$ 7948.5", "strength": 1.0}, {"source": "PREDIAL CONSTRUCOES LTDA", "target": "256015", "type": "executou", "label": "R$ 695007.22", "strength": 1.0}, {"source": "EXECUTIVA SERVICOS COMERCIO IMPORTACAO E EXPORTACAO EIRELI", "target": "256071", "type": "executou", "label": "R$ 414182.1", "strength": 1.0}, {"source": "AZ COMERCIO  SERVICOS E REPRESENTACOES IMP  EXP  LTDA", "target": "256067", "type": "executou", "label": "R$ 161174.06", "strength": 1.0}, {"source": "EMPRESA MUNICIPAL DE URBANIZACAO DE RIO BRANCO    EMURB", "target": "256043", "type": "executou", "label": "R$ 1145806.16", "strength": 1.0}, {"source": "CONSTRUTORA MIRANDA LTDA", "target": "256069", "type": "executou", "label": "R$ 256102.98", "strength": 1.0}, {"source": "EMPRESA MUNICIPAL DE URBANIZACAO DE RIO BRANCO    EMURB", "target": "256041", "type": "executou", "label": "R$ 648514.78", "strength": 1.0}, {"source": "EMPRESA MUNICIPAL DE URBANIZACAO DE RIO BRANCO    EMURB", "target": "256073", "type": "executou", "label": "R$ 838588.26", "strength": 1.0}, {"source": "EMPRESA MUNICIPAL DE URBANIZACAO DE RIO BRANCO    EMURB", "target": "256033", "type": "executou", "label": "R$ 480834.11", "strength": 1.0}, {"source": "F R OLIVEIRA LIMPEZA & CONSTRUCAO LTDA", "target": "256022", "type": "executou", "label": "R$ 1199316.65", "strength": 1.0}, {"source": "J G DE MEDEIROS LTDA", "target": "256020", "type": "executou", "label": "R$ 327951.42", "strength": 1.0}, {"source": "EURO CONSTRUCOES LTDA", "target": "256012", "type": "executou", "label": "R$ 207641.13", "strength": 1.0}, {"source": "APURINA LTDA", "target": "256058", "type": "executou", "label": "R$ 65496.4", "strength": 1.0}, {"source": "W  T  CORREIRA LTDA", "target": "256017", "type": "executou", "label": "R$ 170615.96", "strength": 1.0}, {"source": "CONSTRUTORA MIRANDA LTDA", "target": "256007", "type": "executou", "label": "R$ 1078669.9", "strength": 1.0}, {"source": "J G DE MEDEIROS LTDA", "target": "256052", "type": "executou", "label": "R$ 234357.62", "strength": 1.0}, {"source": "RM CONSTRUCOES LTDA", "target": "256048", "type": "executou", "label": "R$ 462582.9", "strength": 1.0}, {"source": "P C MAIA OLIVEIRA CONSTRUCOES IMPORTACAO E EXPORTACAO LTDA", "target": "256065", "type": "executou", "label": "R$ 559720.81", "strength": 1.0}, {"source": "AC CONSTRUTORA LTDA", "target": "256031", "type": "executou", "label": "R$ 175268.61", "strength": 1.0}, {"source": "CONSTRUTORA MIRANDA LTDA", "target": "256024", "type": "executou", "label": "R$ 578690.33", "strength": 1.0}, {"source": "CONSTRUTORA MIRANDA LTDA", "target": "256054", "type": "executou", "label": "R$ 367999.86", "strength": 1.0}, {"source": "DOUGLAS & CIA SOCIEDADE LTDA", "target": "256027", "type": "executou", "label": "R$ 415550.6", "strength": 1.0}, {"source": "J G DE MEDEIROS LTDA", "target": "256046", "type": "executou", "label": "R$ 333454.5", "strength": 1.0}, {"source": "AC CONSTRUTORA LTDA", "target": "256062", "type": "executou", "label": "R$ 43753.13", "strength": 1.0}, {"source": "APURINA LTDA", "target": "256060", "type": "executou", "label": "R$ 1043025.34", "strength": 1.0}, {"source": "EMPRESA MUNICIPAL DE URBANIZACAO DE RIO BRANCO    EMURB", "target": "256039", "type": "executou", "label": "R$ 475600.22", "strength": 1.0}, {"source": "ELO ENGENHARIA LTDA", "target": "256037", "type": "executou", "label": "R$ 1253167.83", "strength": 1.0}]};
+
+// ─── COLORS ───────────────────────────────────────────────────────────────────
+const nodeColors = {
+  servidor:  { fill: "#00c8ff", stroke: "#00e5ff", dark: "#003344" },
+  empresa:   { fill: "#ff3860", stroke: "#ff6080", dark: "#330010" },
+  contrato:  { fill: "#f5a623", stroke: "#ffbe55", dark: "#332200" },
+  socio:     { fill: "#00ff88", stroke: "#44ffaa", dark: "#003322" },
+  politico:  { fill: "#c084fc", stroke: "#d8a4ff", dark: "#220033" },
+};
+
+const linkColors = {
+  executou:   "#f5a623",
+  socio:      "#00ff88",
+  familiar:   "#ff3860",
+  doacao:     "#c084fc",
+  votou:      "#c084fc",
+  aprovou:    "#00c8ff",
+  fiscal:     "#00c8ff",
+  viagem:     "#00c8ff",
+  secretaria: "#ff8800",
+};
+
+const nodeSizes = {
+  servidor: 18, empresa: 24, contrato: 20, socio: 16, politico: 20
+};
+
+// ─── CLOCK ────────────────────────────────────────────────────────────────────
+function updateClock() {
+  document.getElementById("clock").textContent = new Date().toLocaleTimeString("pt-BR");
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ─── TICKER ───────────────────────────────────────────────────────────────────
+const alerts = [
+  "⚠ ALERTA CRÍTICO: APURINA LTDA concentra 48% do volume da SEOP — possível cartelização",
+  "⚠ NEPOTISMO SUSPEITO: Sócio CARLOS AGILEU M. tem sobrenome idêntico ao Servidor ANTONIO AGILEU",
+  "⚠ EMPRESA JOVEM: APURINA LTDA constituída 4 meses antes do contrato de R$1.043.025,34",
+  "⚠ FRACIONAMENTO: CONSTRUTORA BETA — 3 contratos de R$95k cada (limite dispensa: R$57k)",
+  "⚠ VIAGEM EM BLOCO: 6 servidores — RIO BRANCO → JOÃO PESSOA — Saída 11/11/2024 — R$32.103,50",
+  "⚠ OUTLIER SALARIAL: Servidor 12.1σ acima da média — cargo: Professor P2 25h — Valor: R$51.072,36",
+  "⚠ DOAÇÃO ELEITORAL: APURINA LTDA → VEREADOR X — R$15.000 (OUT/2024) — Contrato assinado DEZ/2024",
+];
+const tickerText = [...alerts, ...alerts].join("          ////          ");
+document.getElementById("ticker-text").textContent = tickerText;
+
+// ─── ENTITY LIST ──────────────────────────────────────────────────────────────
+function buildEntityList(nodes) {
+  const list = document.getElementById("entity-list");
+  list.innerHTML = "";
+  const sorted = [...nodes].sort((a, b) => b.exposure - a.exposure);
+  sorted.forEach(n => {
+    const card = document.createElement("div");
+    card.className = `entity-card ${n.risk === "CRÍTICO" ? "critical" : n.risk === "ALTO" ? "warning" : ""}`;
+    card.id = `card-${n.id}`;
+    card.innerHTML = `
+      <div class="card-type">${n.type.toUpperCase()}</div>
+      <div class="card-name">${n.label}</div>
+      <div class="card-meta">
+        <div class="card-value">R$ ${n.exposure.toLocaleString("pt-BR", {minimumFractionDigits:2})}</div>
+        <div class="risk-badge ${n.risk}">${n.risk}</div>
+      </div>
+    `;
+    card.onclick = () => {
+      document.querySelectorAll(".entity-card").forEach(c => c.classList.remove("active"));
+      card.classList.add("active");
+      selectNode(n.id);
+    };
+    list.appendChild(card);
+  });
+}
+
+buildEntityList(graphData.nodes);
+
+// ─── METRICS ──────────────────────────────────────────────────────────────────
+document.getElementById("m-nodes").textContent = graphData.nodes.length;
+document.getElementById("m-links").textContent = graphData.links.length;
+document.getElementById("m-alerts").textContent = graphData.nodes.filter(n => n.flags.length > 0).length;
+const totalExposure = graphData.nodes.reduce((sum, n) => sum + (n.type === "empresa" ? n.exposure : 0), 0);
+document.getElementById("m-exposure").textContent = "R$" + (totalExposure/1e6).toFixed(1) + "M";
+
+// ─── D3 FORCE GRAPH ───────────────────────────────────────────────────────────
+const container = document.getElementById("network-container");
+const svg = d3.select("#network");
+const width = container.offsetWidth;
+const height = container.offsetHeight;
+
+svg.attr("viewBox", `0 0 ${width} ${height}`);
+
+// Defs: glow filters + arrow markers
+const defs = svg.append("defs");
+
+// Glow filter
+const filter = defs.append("filter").attr("id", "glow");
+filter.append("feGaussianBlur").attr("stdDeviation", "3").attr("result", "coloredBlur");
+const feMerge = filter.append("feMerge");
+feMerge.append("feMergeNode").attr("in", "coloredBlur");
+feMerge.append("feMergeNode").attr("in", "SourceGraphic");
+
+// Arrow markers per link type
+Object.entries(linkColors).forEach(([type, color]) => {
+  defs.append("marker")
+    .attr("id", `arrow-${type}`)
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 28).attr("refY", 0)
+    .attr("markerWidth", 6).attr("markerHeight", 6)
+    .attr("orient", "auto")
+    .append("path")
+    .attr("d", "M0,-5L10,0L0,5")
+    .attr("fill", color)
+    .attr("opacity", 0.7);
+});
+
+// Radar background circle
+const radarG = svg.append("g")
+  .attr("transform", `translate(${width/2}, ${height/2})`);
+
+[300, 200, 120, 60].forEach((r, i) => {
+  radarG.append("circle")
+    .attr("r", r)
+    .attr("fill", "none")
+    .attr("stroke", "rgba(0,200,255,0.05)")
+    .attr("stroke-width", 1)
+    .attr("stroke-dasharray", "4 4");
+});
+
+// Radar sweep
+const sweep = radarG.append("path")
+  .attr("d", `M0,0 L0,-300 A300,300 0 0,1 ${300*Math.sin(Math.PI/6)},${-300*Math.cos(Math.PI/6)} Z`)
+  .attr("fill", "url(#radarGradient)")
+  .style("opacity", 0.06)
+  .attr("class", "radar-sweep");
+
+const rGrad = defs.append("radialGradient").attr("id", "radarGradient");
+rGrad.append("stop").attr("offset", "0%").attr("stop-color", "#00c8ff").attr("stop-opacity", 0.8);
+rGrad.append("stop").attr("offset", "100%").attr("stop-color", "#00c8ff").attr("stop-opacity", 0);
+
+// Simulation
+const simulation = d3.forceSimulation(graphData.nodes)
+  .force("link", d3.forceLink(graphData.links)
+    .id(d => d.id)
+    .distance(d => {
+      const s = nodeSizes[d.source.type || "servidor"] + nodeSizes[d.target.type || "servidor"];
+      return s * 3.5;
+    })
+    .strength(d => d.strength * 0.4))
+  .force("charge", d3.forceManyBody().strength(-400))
+  .force("center", d3.forceCenter(width / 2, height / 2))
+  .force("collision", d3.forceCollide().radius(d => nodeSizes[d.type] * 2.5));
+
+// Links
+const link = svg.append("g").attr("class", "links")
+  .selectAll("line")
+  .data(graphData.links)
+  .join("line")
+  .attr("class", "link")
+  .attr("stroke", d => linkColors[d.type] || "#444")
+  .attr("stroke-width", d => d.type === "familiar" ? 2.5 : d.type === "doacao" ? 2 : 1.5)
+  .attr("stroke-dasharray", d => d.type === "viagem" ? "6 3" : d.type === "secretaria" ? "3 3" : null)
+  .attr("marker-end", d => `url(#arrow-${d.type})`);
+
+// Link labels
+const linkLabel = svg.append("g")
+  .selectAll("text")
+  .data(graphData.links)
+  .join("text")
+  .attr("class", "link-label")
+  .text(d => d.label)
+  .attr("text-anchor", "middle")
+  .attr("dy", -4);
+
+// Nodes
+const node = svg.append("g").attr("class", "nodes")
+  .selectAll("g")
+  .data(graphData.nodes)
+  .join("g")
+  .attr("class", d => `node ${d.risk === "CRÍTICO" ? "critical-node" : ""}`)
+  .call(d3.drag()
+    .on("start", dragstarted)
+    .on("drag", dragged)
+    .on("end", dragended))
+  .on("click", (event, d) => {
+    event.stopPropagation();
+    selectNode(d.id);
+  })
+  .on("mouseover", (event, d) => {
+    const tip = document.getElementById("tooltip");
+    tip.style.display = "block";
+    tip.style.left = (event.clientX + 12) + "px";
+    tip.style.top = (event.clientY - 8) + "px";
+    tip.innerHTML = `<b style="color:${nodeColors[d.type].fill}">${d.type.toUpperCase()}</b><br>${d.label}<br>Exposição: R$ ${d.exposure.toLocaleString("pt-BR",{minimumFractionDigits:2})}<br>${d.flags.length} alertas`;
+  })
+  .on("mousemove", (event) => {
+    const tip = document.getElementById("tooltip");
+    tip.style.left = (event.clientX + 12) + "px";
+    tip.style.top = (event.clientY - 8) + "px";
+  })
+  .on("mouseout", () => {
+    document.getElementById("tooltip").style.display = "none";
+  });
+
+// Outer pulse ring for critical nodes
+node.filter(d => d.risk === "CRÍTICO")
+  .append("circle")
+  .attr("r", d => nodeSizes[d.type] + 8)
+  .attr("fill", "none")
+  .attr("stroke", d => nodeColors[d.type].fill)
+  .attr("stroke-width", 1)
+  .attr("stroke-opacity", 0.3)
+  .style("animation", "pulse 2s infinite");
+
+// Main circle
+node.append("circle")
+  .attr("r", d => nodeSizes[d.type])
+  .attr("fill", d => nodeColors[d.type].dark + "cc")
+  .attr("stroke", d => nodeColors[d.type].fill)
+  .style("filter", "url(#glow)")
+  .style("color", d => nodeColors[d.type].fill);
+
+// Type icon (emoji shorthand)
+const typeIcons = { servidor: "●", empresa: "◆", contrato: "▲", socio: "■", politico: "★" };
+node.append("text")
+  .text(d => typeIcons[d.type])
+  .attr("text-anchor", "middle")
+  .attr("dy", "0.35em")
+  .attr("font-size", d => nodeSizes[d.type] * 0.65)
+  .attr("fill", d => nodeColors[d.type].fill)
+  .style("filter", "url(#glow)");
+
+// Label
+node.append("text")
+  .text(d => d.label.split("\n")[0])
+  .attr("text-anchor", "middle")
+  .attr("dy", d => nodeSizes[d.type] + 14)
+  .attr("font-size", "10px")
+  .attr("fill", d => nodeColors[d.type].fill)
+  .attr("font-weight", "600")
+  .attr("letter-spacing", "0.5px");
+
+// Risk badge
+node.filter(d => d.risk === "CRÍTICO")
+  .append("circle")
+  .attr("r", 5)
+  .attr("cx", d => nodeSizes[d.type] * 0.7)
+  .attr("cy", d => -nodeSizes[d.type] * 0.7)
+  .attr("fill", "#ff2244")
+  .style("filter", "url(#glow)");
+
+// Alert count badge
+node.filter(d => d.flags.length > 0)
+  .append("text")
+  .text(d => d.flags.length)
+  .attr("x", d => nodeSizes[d.type] * 0.7)
+  .attr("y", d => -nodeSizes[d.type] * 0.7 + 4)
+  .attr("text-anchor", "middle")
+  .attr("font-size", "7px")
+  .attr("fill", "white")
+  .attr("font-weight", "bold");
+
+// Tick
+simulation.on("tick", () => {
+  link
+    .attr("x1", d => d.source.x)
+    .attr("y1", d => d.source.y)
+    .attr("x2", d => d.target.x)
+    .attr("y2", d => d.target.y);
+
+  linkLabel
+    .attr("x", d => (d.source.x + d.target.x) / 2)
+    .attr("y", d => (d.source.y + d.target.y) / 2);
+
+  node.attr("transform", d => `translate(${d.x},${d.y})`);
+});
+
+// Zoom
+const zoom = d3.zoom()
+  .scaleExtent([0.3, 4])
+  .on("zoom", (event) => {
+    svg.selectAll(".links, .nodes, .link-label").attr("transform", event.transform);
+  });
+svg.call(zoom);
+
+// Click background to deselect
+svg.on("click", () => {
+  closePanel();
+  node.selectAll("circle:first-child").style("stroke-width", null);
+  document.querySelectorAll(".entity-card").forEach(c => c.classList.remove("active"));
+});
+
+// ─── DRAG ─────────────────────────────────────────────────────────────────────
+function dragstarted(event, d) {
+  if (!event.active) simulation.alphaTarget(0.3).restart();
+  d.fx = d.x; d.fy = d.y;
+}
+function dragged(event, d) {
+  d.fx = event.x; d.fy = event.y;
+}
+function dragended(event, d) {
+  if (!event.active) simulation.alphaTarget(0);
+  d.fx = null; d.fy = null;
+}
+
+// ─── SELECTION ────────────────────────────────────────────────────────────────
+function selectNode(id) {
+  const n = graphData.nodes.find(x => x.id === id);
+  if (!n) return;
+
+  // Highlight
+  node.classed("selected", d => d.id === id);
+  
+  // Dim non-connected
+  const connectedIds = new Set([id]);
+  graphData.links.forEach(l => {
+    if (l.source.id === id) connectedIds.add(l.target.id);
+    if (l.target.id === id) connectedIds.add(l.source.id);
+  });
+  node.style("opacity", d => connectedIds.has(d.id) ? 1 : 0.2);
+  link.style("opacity", d => (d.source.id === id || d.target.id === id) ? 1 : 0.05);
+  linkLabel.style("opacity", d => (d.source.id === id || d.target.id === id) ? 1 : 0);
+
+  // Scroll card into view
+  const card = document.getElementById(`card-${id}`);
+  if (card) {
+    card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    document.querySelectorAll(".entity-card").forEach(c => c.classList.remove("active"));
+    card.classList.add("active");
+  }
+
+  // Open detail panel
+  const panel = document.getElementById("right-panel");
+  const netContainer = document.getElementById("network-container");
+  panel.classList.add("open");
+  netContainer.classList.add("panel-open");
+
+  // Render detail
+  const color = nodeColors[n.type].fill;
+  const connectedNodes = graphData.nodes.filter(x => connectedIds.has(x.id) && x.id !== id);
+  
+  document.getElementById("detail-content").innerHTML = `
+    <div class="detail-header">
+      <div class="detail-type" style="color:${color}">${n.type.toUpperCase()} // ${n.risk}</div>
+      <div class="detail-name">${n.label}</div>
+    </div>
+    
+    <div class="detail-section">
+      <div class="detail-section-title">DADOS PRIMÁRIOS</div>
+      ${n.secretaria ? `<div class="detail-row"><span class="detail-row-key">Secretaria</span><span class="detail-row-val">${n.secretaria}</span></div>` : ""}
+      ${n.cargo ? `<div class="detail-row"><span class="detail-row-key">Cargo</span><span class="detail-row-val">${n.cargo}</span></div>` : ""}
+      ${n.cnpj ? `<div class="detail-row"><span class="detail-row-key">CNPJ</span><span class="detail-row-val">${n.cnpj}</span></div>` : ""}
+      ${n.porte ? `<div class="detail-row"><span class="detail-row-key">Porte</span><span class="detail-row-val">${n.porte}</span></div>` : ""}
+      ${n.capital_social ? `<div class="detail-row"><span class="detail-row-key">Capital Social</span><span class="detail-row-val yellow">${n.capital_social}</span></div>` : ""}
+      ${n.modalidade ? `<div class="detail-row"><span class="detail-row-key">Modalidade</span><span class="detail-row-val">${n.modalidade}</span></div>` : ""}
+      ${n.valor ? `<div class="detail-row"><span class="detail-row-key">Valor</span><span class="detail-row-val yellow">${n.valor}</span></div>` : ""}
+      ${n.exposure ? `<div class="detail-row"><span class="detail-row-key">Exposição Total</span><span class="detail-row-val red">R$ ${n.exposure.toLocaleString("pt-BR",{minimumFractionDigits:2})}</span></div>` : ""}
+      <div class="detail-row"><span class="detail-row-key">Conexões</span><span class="detail-row-val green">${connectedNodes.length} entidades</span></div>
+    </div>
+
+    ${n.flags.length > 0 ? `
+    <div class="detail-section">
+      <div class="detail-section-title">⚑ SINALIZADORES (${n.flags.length})</div>
+      <div class="flag-list">
+        ${n.flags.map(f => `<div class="flag-item"><div class="flag-icon">▶</div>${f}</div>`).join("")}
+      </div>
+    </div>` : ""}
+
+    ${connectedNodes.length > 0 ? `
+    <div class="detail-section">
+      <div class="detail-section-title">ENTIDADES CONECTADAS</div>
+      ${connectedNodes.map(cn => {
+        const lnk = graphData.links.find(l => 
+          (l.source.id === id && l.target.id === cn.id) ||
+          (l.target.id === id && l.source.id === cn.id)
+        );
+        return `<div class="detail-row" style="cursor:pointer" onclick="selectNode('${cn.id}')">
+          <span class="detail-row-key" style="color:${nodeColors[cn.type].fill}">${cn.label}</span>
+          <span class="detail-row-val" style="color:${linkColors[lnk?.type] || '#888'}">${lnk?.label || ""}</span>
+        </div>`;
+      }).join("")}
+    </div>` : ""}
+  `;
+}
+
+function closePanel() {
+  const panel = document.getElementById("right-panel");
+  const netContainer = document.getElementById("network-container");
+  panel.classList.remove("open");
+  netContainer.classList.remove("panel-open");
+  node.style("opacity", 1);
+  link.style("opacity", 0.6);
+  linkLabel.style("opacity", 1);
+  node.classed("selected", false);
+}
+
+// ─── FILTER ───────────────────────────────────────────────────────────────────
+function filterNodes(type) {
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+  event.target.classList.add("active");
+
+  if (type === "all") {
+    node.style("opacity", 1);
+    link.style("opacity", 0.6);
+    buildEntityList(graphData.nodes);
+  } else {
+    const visible = new Set(graphData.nodes.filter(n => n.type === type).map(n => n.id));
+    const visibleLinks = new Set();
+    graphData.links.forEach(l => {
+      if (visible.has(l.source.id) || visible.has(l.target.id)) {
+        visibleLinks.add(l.source.id);
+        visibleLinks.add(l.target.id);
+      }
+    });
+    node.style("opacity", d => visible.has(d.id) || visibleLinks.has(d.id) ? 1 : 0.1);
+    link.style("opacity", d => visible.has(d.source.id) || visible.has(d.target.id) ? 0.8 : 0.05);
+    buildEntityList(graphData.nodes.filter(n => n.type === type));
+  }
+}
+
+// Resize
+window.addEventListener("resize", () => {
+  const w = container.offsetWidth;
+  const h = container.offsetHeight;
+  svg.attr("viewBox", `0 0 ${w} ${h}`);
+  simulation.force("center", d3.forceCenter(w/2, h/2)).restart();
+});
+</script>
+</body>
+</html>

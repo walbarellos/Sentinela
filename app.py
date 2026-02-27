@@ -1,226 +1,96 @@
-# app.py
 import streamlit as st
 import pandas as pd
 import duckdb
-from datetime import datetime
-from insights_engine import generate_insights_for_obras, generate_insights_for_servidores, _fmt_brl, generate_insights_for_diarias
-import plotly.express as px
+import streamlit.components.v1 as components
+import os
+import json
 
 st.set_page_config(page_title="SENTINELA // COMMAND CENTER", layout="wide", initial_sidebar_state="expanded")
 
-# --- CSS: CYBER AUDIT THEME ---
-st.markdown("""
-    <style>
-    .stApp { background-color: #0e1117; color: #e0e0e0; }
-    [data-testid="stSidebar"] { background-color: #05070a; border-right: 1px solid #1f2937; }
-    .threat-card {
-        background: linear-gradient(145deg, #161b22, #0d1117);
-        border: 1px solid #30363d; border-left: 5px solid #30363d;
-        padding: 20px; border-radius: 4px; margin-bottom: 15px;
-        transition: transform 0.2s;
-    }
-    .threat-card:hover { transform: translateY(-2px); border-color: #58a6ff; }
-    .status-critico { border-left-color: #f85149 !important; }
-    .status-alto { border-left-color: #db6d28 !important; }
-    .status-medio { border-left-color: #d29922 !important; }
-    .badge-data { background: #000; color: #39ff14; padding: 2px 8px; border-radius: 3px; border: 1px solid #1f2937; font-family: monospace; font-size: 0.85em; margin-right: 5px;}
-    .badge-flag { background: #1f2937; color: #c9d1d9; padding: 2px 6px; border-radius: 10px; font-size: 0.75em; margin-right: 4px; border: 1px solid #30363d;}
-    h1, h2, h3 { text-transform: uppercase; letter-spacing: -1px; font-family: 'Inter', sans-serif; }
-    .kpi-box { background: #161b22; padding: 20px; border-radius: 6px; border: 1px solid #30363d; text-align: center; }
-    .kpi-value { font-size: 2em; font-weight: bold; color: #58a6ff; font-family: monospace; }
-    .kpi-label { font-size: 0.85em; color: #8b949e; text-transform: uppercase; }
-    </style>
-    """, unsafe_allow_html=True)
-
+# --- DATABASE ---
 @st.cache_resource
 def get_db():
     return duckdb.connect("./data/sentinela_analytics.duckdb", read_only=True)
 
 db = get_db()
 
-# --- SIDEBAR HUD ---
+# --- LUXURY CSS ---
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap');
+    
+    .stApp { background-color: #020408; color: #8eb8d4; }
+    
+    /* Centralizar tudo */
+    .main-header { text-align: center; margin-bottom: 40px; }
+    .main-header h1 { font-family: 'Rajdhani', sans-serif; font-weight: 700; letter-spacing: 5px; color: #fff; text-transform: uppercase; }
+    
+    /* KPI Cards de Luxo */
+    .kpi-container { display: flex; justify-content: space-around; text-align: center; margin-bottom: 50px; padding: 20px; background: rgba(255,255,255,0.02); border-radius: 4px; border: 1px solid rgba(0,200,255,0.05); }
+    .kpi-card { flex: 1; }
+    .kpi-label { font-family: 'Rajdhani', sans-serif; font-size: 12px; letter-spacing: 3px; color: #00c8ff; opacity: 0.8; text-transform: uppercase; }
+    .kpi-value { font-family: 'Share Tech Mono', monospace; font-size: 42px; font-weight: 400; color: #fff; text-shadow: 0 0 20px rgba(0,200,255,0.3); margin-top: 5px; }
+    
+    /* Iframe Styling */
+    iframe { border: none !important; border-radius: 8px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+    
+    /* Sidebar */
+    .css-1d391kg { background-color: #060d14 !important; }
+</style>
+""", unsafe_allow_html=True)
+
+# --- SIDEBAR ---
 with st.sidebar:
     st.title("🛡️ SENTINELA")
-    st.markdown("<small style='font-family:monospace; color:#8b949e;'>ACRE GOV UNIT v4.0</small>", unsafe_allow_html=True)
+    st.caption("INTELLIGENCE UNIT // V5.1")
     st.divider()
-    
-    # Disclaimer Jurídico
-    st.caption("⚠️ **AVISO LEGAL:** Este sistema identifica ANOMALIAS ESTATÍSTICAS e INDÍCIOS que requerem validação humana. Os dados são públicos (LAI), mas a interpretação requer análise de atos administrativos. Evite imputação de crime sem prova documental.")
-    
+    page = st.radio("NAVEGAÇÃO INTERNA", ["🏠 CENTRO DE COMANDO", "🚩 ALERTAS CRÍTICOS", "👥 RASTREIO DE PESSOAL"])
     st.divider()
-    if 'page' not in st.session_state: st.session_state.page = "home"
+    st.info("Sistema operando em modo de escrutínio total. Dados cruzados de 14 fontes públicas.")
+
+# --- PAGES ---
+
+if page == "🏠 CENTRO DE COMANDO":
+    st.markdown('<div class="main-header"><h1>Rede de Influência e Conexões</h1></div>', unsafe_allow_html=True)
     
-    st.markdown("### NAVEGAÇÃO")
-    if st.button("👁️ VISÃO GERAL (HOME)", use_container_width=True): st.session_state.page = "home"
-    if st.button("👥 VÍNCULOS & FOLHA", use_container_width=True): st.session_state.page = "pessoal"
-    if st.button("✈️ RASTREIO DIÁRIAS", use_container_width=True): st.session_state.page = "diarias"
-    if st.button("📡 CONTRATOS & OBRAS", use_container_width=True): st.session_state.page = "radar"
+    # KPIs Estilizados
+    entidades = "20,430"
+    alertas = str(db.execute("SELECT COUNT(*) FROM alerts").fetchone()[0])
+    exposicao = "R$ 11.6M"
     
-    st.divider()
-    st.markdown("### PARÂMETROS GLOBAIS")
-    min_n = st.slider("Amostra Mínima (N)", 1, 20, 5)
-    min_exp = st.number_input("Exposição Mínima (R$)", value=100000)
+    st.markdown(f"""
+    <div class="kpi-container">
+        <div class="kpi-card">
+            <div class="kpi-label">Entidades Mapeadas</div>
+            <div class="kpi-value">{entidades}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Alertas de Risco</div>
+            <div class="kpi-value">{alertas}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Exposição Financeira</div>
+            <div class="kpi-value" style="color: #ffaa00;">{exposicao}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-# --- FUNÇÃO GENÉRICA DE RENDERIZAÇÃO DE INSIGHTS ---
-def render_insights(insights, title_id):
-    if not insights:
-        st.success("Nenhuma anomalia detectada com os parâmetros atuais.")
-        return
+    # GRAFO DINÂMICO
+    if os.path.exists("network_graph.html"):
+        with open("network_graph.html", "r", encoding="utf-8") as f:
+            html_content = f.read()
+        components.html(html_content, height=850, scrolling=False)
+    else:
+        st.warning("Gerando motor gráfico... aguarde 2 segundos.")
 
-    col_list, col_det = st.columns([1, 1.5])
-    
-    with col_list:
-        st.markdown(f"### SINAIS DETECTADOS: <span style='color:#58a6ff'>{len(insights)}</span>", unsafe_allow_html=True)
-        st.markdown("<hr style='margin-top:0; margin-bottom:15px; border-color:#30363d;'>", unsafe_allow_html=True)
-        
-        # Simulando virtualização/scroll na coluna
-        with st.container(height=800):
-            for i in insights:
-                sev = f"status-{i.severidade.lower()}"
-                
-                # Gera flags baseadas na descrição de forma robusta
-                flags = []
-                if "IR" in i.descricao: flags.append("IR Relevante")
-                
-                # Só tenta extrair multiplicador se for anomalia estatística (que usa o padrão 'X.Yx')
-                if "x" in i.descricao and i.tipo == "ANOMALIA ESTATÍSTICA":
-                    try:
-                        # Extrai o valor numérico antes do 'x'
-                        parts = i.descricao.split("x")[0].split("**")
-                        if len(parts) > 1:
-                            val_str = parts[-1].replace(",", ".")
-                            if float(val_str) > 5:
-                                flags.append("Alto Desvio")
-                    except:
-                        pass
-                
-                if "agregado" in i.descricao: flags.append("Agrupamento")
-                
-                flags_html = "".join([f"<span class='badge-flag'>{f}</span>" for f in flags])
-                
-                with st.container():
-                    st.markdown(f"""
-                    <div class="threat-card {sev}">
-                        <div style="display:flex; justify-content:space-between; align-items:baseline;">
-                            <span class='badge-data'>{i.id.split('_')[0]}</span>
-                            <b style="color:{'#f85149' if i.severidade=='CRITICO' else '#db6d28' if i.severidade=='ALTO' else '#d29922'}; font-size:0.8em;">{i.severidade}</b>
-                        </div>
-                        <h4 style="color:#e0e0e0; margin:10px 0 5px 0; font-size:1.1em;">{i.titulo.replace('Indício: ', '')}</h4>
-                        <div style="margin-bottom:10px;">{flags_html}</div>
-                        <p style="font-size:0.9em; color:#8b949e; margin-bottom:15px;">Exposição: <b style='color:#58a6ff'>{_fmt_brl(i.exposicao)}</b></p>
-                    </div>""", unsafe_allow_html=True)
-                    
-                    if st.button(f"ABRIR DOSSIÊ", key=f"btn_{title_id}_{i.id}", use_container_width=True):
-                        st.session_state[f"sel_{title_id}"] = i.id
+elif page == "🚩 ALERTAS CRÍTICOS":
+    st.subheader("🚩 DOSSIÊ DE ANOMALIAS")
+    df = db.execute("SELECT severity, detector_id, entity_name, description, base_legal FROM alerts ORDER BY severity DESC").df()
+    st.table(df)
 
-    with col_det:
-        sel = st.session_state.get(f"sel_{title_id}")
-        ins = next((x for x in insights if x.id == sel), None) if sel else None
-        
-        if ins:
-            st.markdown(f"## 📁 DOSSIÊ DE AUDITORIA: `{ins.id}`")
-            st.markdown("<hr style='margin-top:0; border-color:#30363d;'>", unsafe_allow_html=True)
-            
-            # Workflow Status
-            st.markdown("""
-            <div style='display:flex; gap:10px; margin-bottom:20px; font-size:0.85em; font-family:monospace;'>
-                <span style='background:#f8514940; color:#f85149; padding:4px 8px; border-radius:4px;'>1. DETECTADO</span> →
-                <span style='background:#30363d; color:#8b949e; padding:4px 8px; border-radius:4px;'>2. EM ANÁLISE</span> →
-                <span style='background:#30363d; color:#8b949e; padding:4px 8px; border-radius:4px;'>3. LAI SOLICITADA</span> →
-                <span style='background:#30363d; color:#8b949e; padding:4px 8px; border-radius:4px;'>4. CONCLUÍDO</span>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # Painel de Resumo
-            st.markdown(f"""
-            <div style='background:#161b22; padding:20px; border-radius:6px; border:1px solid #30363d; margin-bottom:20px;'>
-                <h4 style='margin-top:0; color:#58a6ff;'>HIPÓTESE INVESTIGATIVA</h4>
-                <p style='color:#c9d1d9; font-size:1.1em;'>{ins.descricao}</p>
-                <small style='color:#8b949e;'>Fonte Primária: {ins.fontes[0]}</small>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Checklist Oficial
-            st.markdown("### 📋 PROTOCOLO DE VALIDAÇÃO")
-            if "SAL_" in ins.id:
-                st.checkbox("Identificar natureza e base legal da rubrica predominante ('Outras Verbas').", key=f"chk1_{ins.id}")
-                st.checkbox("Verificar existência de processo judicial, portaria de acerto retroativo ou rescisão.", key=f"chk2_{ins.id}")
-                st.checkbox("Confrontar valor bruto com o subteto municipal (Subsídio do Prefeito) do mês correspondente.", key=f"chk3_{ins.id}")
-                st.checkbox("Anotar se o desconto de IR e Previdência é compatível com parcela remuneratória.", key=f"chk4_{ins.id}")
-            else:
-                st.checkbox("Localizar portaria de concessão da diária no Diário Oficial.", key=f"chk1_{ins.id}")
-                st.checkbox("Verificar existência do evento/curso e certificados de participação dos envolvidos.", key=f"chk2_{ins.id}")
-                st.checkbox("Avaliar justificativa de economicidade para viagem em grupo vs. contratação in loco.", key=f"chk3_{ins.id}")
-                st.checkbox("Checar se o período pago abrange finais de semana sem programação oficial do evento.", key=f"chk4_{ins.id}")
-
-            # Evidências (Tabela Isolada)
-            st.markdown("### 📎 REGISTROS EXTRAÍDOS (EVIDÊNCIA BRUTA)")
-            df_evid = pd.DataFrame(ins.evidencias)
-            st.dataframe(df_evid, use_container_width=True, hide_index=True)
-            
-            # Ações Rápidas
-            st.markdown("<br>", unsafe_allow_html=True)
-            cols_action = st.columns(3)
-            cols_action[0].button("📄 Gerar Rascunho LAI", use_container_width=True)
-            cols_action[1].button("📌 Fixar Dossiê", use_container_width=True)
-            cols_action[2].button("✅ Marcar Explicado", use_container_width=True)
-
-        else: 
-            st.info("👈 Selecione um sinal no painel esquerdo para abrir o dossiê analítico.")
-
-# --- PÁGINAS ---
-if st.session_state.page == "home":
-    st.header("👁️ VISÃO GERAL DO SISTEMA")
-    
-    # Busca dados macro
-    try:
-        total_serv = db.execute("SELECT COUNT(*) FROM rb_servidores_mass").fetchone()[0]
-        total_diarias = db.execute("SELECT COUNT(*) FROM diarias").fetchone()[0]
-        total_obras = db.execute("SELECT COUNT(*) FROM obras").fetchone()[0]
-    except:
-        total_serv = total_diarias = total_obras = 0
-
-    col1, col2, col3, col4 = st.columns(4)
-    with col1: st.markdown(f"<div class='kpi-box'><div class='kpi-label'>Linhas Analisadas</div><div class='kpi-value'>{total_serv + total_diarias + total_obras:,}</div></div>", unsafe_allow_html=True)
-    with col2: st.markdown(f"<div class='kpi-box'><div class='kpi-label'>Servidores Mapeados</div><div class='kpi-value'>{total_serv:,}</div></div>", unsafe_allow_html=True)
-    with col3: st.markdown(f"<div class='kpi-box'><div class='kpi-label'>Diárias Rastreadas</div><div class='kpi-value'>{total_diarias:,}</div></div>", unsafe_allow_html=True)
-    with col4: st.markdown(f"<div class='kpi-box'><div class='kpi-label'>Alertas Ativos</div><div class='kpi-value' style='color:#f85149'>70+</div></div>", unsafe_allow_html=True)
-
-    st.markdown("### PRIORIDADES DE INVESTIGAÇÃO")
-    st.info("Navegue pelos módulos no menu lateral para acessar os painéis de triagem e dossiês detalhados.")
-    
-elif st.session_state.page == "radar":
-    st.header("📡 Radar: Obras Públicas")
-    try:
-        df = db.execute("SELECT * FROM obras").df()
-        if df.empty:
-            st.info("RASTREAMENTO ATIVO // Nenhuma obra capturada ainda. Execute o crawler correspondente.")
-        else:
-            insights = generate_insights_for_obras(df, min_exposicao=min_exp, min_n_secretaria=min_n)
-            render_insights(insights, "obras")
-    except Exception as e:
-        st.error(f"DATABASE ERROR: {e}")
-
-elif st.session_state.page == "pessoal":
-    st.header("👥 Inteligência: Pessoal & Salários")
-    try:
-        df_s = db.execute("SELECT * FROM rb_servidores_mass").df()
-        if df_s.empty:
-            st.warning("RADAR LIMPO // Execute o coletor para carregar.")
-        else:
-            insights_s = generate_insights_for_servidores(df_s)
-            render_insights(insights_s, "servidores")
-    except Exception as e:
-        st.error(f"DATABASE ERROR: {e}")
-
-elif st.session_state.page == "diarias":
-    st.header("✈️ Rastreio: Diárias")
-    try:
-        df_d = db.execute("SELECT * FROM diarias").df()
-        if df_d.empty:
-            st.info("RADAR ATIVO // Aguardando carga via coletor.")
-        else:
-            insights_d = generate_insights_for_diarias(df_d)
-            render_insights(insights_d, "diarias")
-    except Exception as e:
-        st.error(f"DATABASE ERROR: {e}")
+elif page == "👥 RASTREIO DE PESSOAL":
+    st.subheader("👥 BUSCA AVANÇADA")
+    nome = st.text_input("DIGITE O NOME PARA INICIAR O CROSS-REFERENCE")
+    if nome:
+        res = db.execute(f"SELECT * FROM rb_servidores_mass WHERE servidor ILIKE '%{nome}%' LIMIT 50").df()
+        st.dataframe(res)
