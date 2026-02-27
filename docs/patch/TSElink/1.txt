@@ -1,0 +1,59 @@
+Perfeito. Tenho os URLs exatos do CDN. Agora vou verificar a API CKAN do TSE (isso é ouro — dá pra listar TODOS os datasets programaticamente):Tenho tudo. URLs reais verificados ao vivo. Vou construir o integrador completo agora:## Mapa completo do que encontrei no TSE
+
+**CDN base verificado:** `https://cdn.tse.jus.br/estatistica/sead/odsele/`
+
+Todo arquivo é `ZIP → CSV (sep=";", latin1)`. Sem autenticação. Dados abertos CC-BY.
+
+---
+
+### URLs exatos verificados ao vivo
+
+| Dataset | URL (relativa ao CDN) | Tamanho est. | Prior. |
+|---|---|---|---|
+| **Doações candidatos** 🔴 | `prestacao_contas/prestacao_de_contas_eleitorais_candidatos_2024.zip` | ~300MB | 1 |
+| **Candidatos** | `consulta_cand/consulta_cand_2024.zip` | ~50MB | 1 |
+| **Bens declarados** | `bem_candidato/bem_candidato_2024.zip` | ~30MB | 1 |
+| **Cassações** | `motivo_cassacao/motivo_cassacao_2024.zip` | <5MB | 1 |
+| **Totalização AC** 🔴 | `relatorio_resultado_totalizacao/Relatorio_Resultado_Totalizacao_2024_AC.zip` | ~5MB | 1 |
+| **Votação por município** | `votacao_candidato_munzona/votacao_candidato_munzona_2024.zip` | ~100MB | 2 |
+| **FEFC/Fundo Eleitoral** | `fefc_fp/fefc_fp_2024.zip` | ~5MB | 2 |
+| **Extratos candidatos** | `prestacao_contas_anual_candidato/extrato_bancario_candidato_2024.zip` | ~20MB | 2 |
+| CNPJ de campanha | `prestacao_contas/CNPJ_campanha_2024.zip` | <1MB | 2 |
+
+---
+
+### Como usar
+
+```bash
+# Copiar para src/ingest/
+cp tse_integrator.py src/ingest/
+
+# Ver mapa completo de datasets e colunas
+python -m src.ingest.tse_integrator --info
+
+# Baixar só os críticos (prioridade 1) — começa por aqui
+python -m src.ingest.tse_integrator --priority 1
+
+# Baixar dataset específico
+python -m src.ingest.tse_integrator --dataset doacoes_candidatos
+python -m src.ingest.tse_integrator --dataset candidatos
+python -m src.ingest.tse_integrator --dataset bens_candidatos
+
+# Só Rio Branco (filtro mais restrito)
+python -m src.ingest.tse_integrator --priority 1 --municipio
+
+# Depois de ter os dados, roda só os cruzamentos
+python -m src.ingest.tse_integrator --cross
+```
+
+---
+
+### Coluna de ouro para o cruzamento
+
+```
+tse_doacoes.NR_CPF_CNPJ_DOADOR  ←→  obras.empresa_id
+```
+
+Essa é a ligação direta: CNPJ de quem doou para campanha = CNPJ de quem ganhou contrato. O script já faz esse JOIN automaticamente com filtro `data_contrato > '2024-10-06'` (pós-eleição).
+
+O arquivo de doações de candidatos tem ~300MB então vai demorar alguns minutos pra baixar, mas é baixar uma vez só. O filtro `SG_UF='AC'` reduz de ~2 milhões de linhas para alguns milhares.

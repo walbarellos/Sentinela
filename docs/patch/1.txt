@@ -1,19 +1,266 @@
-import os, textwrap, json, re, pathlib, shutil
+Analisei tudo. Não consigo clonar (sem rede), mas a página do GitHub me deu a estrutura completa. Vou te dar uma análise profunda + entregas concretas.
 
-base="/mnt/data"
-patch_dir=os.path.join(base,"sentinela_patch")
-os.makedirs(patch_dir, exist_ok=True)
+---
 
-# Load originals if exist
-def read_if(path):
-    try:
-        with open(path,'r',encoding='utf-8') as f: return f.read()
-    except Exception as e:
-        return None
+## 📊 DIAGNÓSTICO DO SISTEMA ATUAL
 
-orig_files = {
- "app.py": read_if(os.path.join(base,"app.py")),
- "riobranco_crawler.py": read_if(os.path.join(base,"riobranco_crawler.py")),
- "riobranco_obras.py": read_if(os.path.join(base,"riobranco_obras.py")),
- "riobranco_obras_list.py": read_if(os.path.join(base,"riobranco_obras_list.py")),
- "riobranco_di
+**Stack:** Streamlit + DuckDB + Neo4j + scrapers JSF/PrimeFaces
+**O que já funciona bem:** detecção por z-score (salários), agrupamento de viagens em bloco, concentração de mercado em obras, workflow dossiê com estados, rascunho LAI.
+
+**Problemas críticos que identifiquei:**
+
+---
+
+## 🔴 GAPS DE DADOS (fontes públicas que você NÃO está cruzando ainda)
+
+### 1. CNPJ Receita Federal
+Empresas em contratos precisam ser cruzadas com:
+- **Data de abertura do CNPJ** — empresa < 6 meses ganhando licitação é sinal forte
+- **Quadro societário (QSA)** — cruzar sócios com servidores públicos / familiares
+- **CNAE** — empresa de limpeza ganhando obra de engenharia
+
+```python
+# Consulta gratuita via Brasil.io (já têm dump do CNPJ)
+import requests
+
+def get_cnpj_data(cnpj: str) -> dict:
+    cnpj_clean = "".join(filter(str.isdigit, cnpj))
+    r = requests.get(
+        f"https://brasilapi.com.br/api/cnpj/v1/{cnpj_clean}",
+        timeout=10
+    )
+    return r.json()
+
+def flag_cnpj_anomalies(cnpj_data: dict, contract_date: str) -> list[str]:
+    flags = []
+    from datetime import datetime, date
+    abertura = datetime.strptime(cnpj_data["data_inicio_atividade"], "%Y-%m-%d").date()
+    contrato = datetime.strptime(contract_date[:10], "%Y-%m-%d").date()
+    idade_meses = (contrato - abertura).days / 30
+
+    if idade_meses < 6:
+        flags.append(f"EMPRESA_JOVEM: {idade_meses:.0f} meses na abertura do contrato")
+    if cnpj_data.get("porte") == "MICRO EMPRESA" and float(cnpj_data.get("capital_social", 0)) < 10000:
+        flags.append("CAPITAL_SOCIAL_IRRISÓRIO")
+
+    # Sócio com mesmo sobrenome que servidor público?
+    socios = [s["nome_socio"] for s in cnpj_data.get("qsa", [])]
+    return flags, socios
+```
+
+### 2. Doações Eleitorais (TSE)
+O TSE disponibiliza CSV por município. Cruzar: **empresa contratada → doação para candidato eleito → contratos pós-eleição**.
+
+```python
+# TSE: https://dadosabertos.tse.jus.br/dataset/prestacao-de-contas-eleitorais-2024
+# Filtrar por municipio_candidato = "Rio Branco" ou UF = "AC"
+
+def build_donation_network(doacoes_df, contratos_df):
+    """Retorna pares (empresa, candidato) com contratos pós-eleição."""
+    merged = doacoes_df.merge(
+        contratos_df,
+        left_on="cpf_cnpj_doador",
+        right_on="empresa_cnpj"
+    )
+    # Filtra contratos assinados APÓS a eleição
+    pos_eleicao = merged[merged["data_contrato"] > "2024-10-06"]
+    return pos_eleicao[["nome_doador", "nome_candidato", "valor_doacao",
+                          "nome_contrato", "valor_contrato"]]
+```
+
+### 3. Fracionamento de Licitação
+Detecção de bid-splitting: mesmo fornecedor, mesma secretaria, múltiplos contratos abaixo do limite de dispensa (R$ 57.278,16 para serviços, pós Lei 14.133/21).
+
+```python
+# Adicionar no insights_engine.py
+
+def detect_fracionamento(conn, threshold_servicos=57278.16):
+    return conn.execute("""
+        SELECT
+            empresa_nome,
+            secretaria,
+            COUNT(*) as num_contratos,
+            SUM(valor_total) as valor_agregado,
+            MAX(valor_total) as maior_contrato,
+            MIN(data_contrato) as primeiro,
+            MAX(data_contrato) as ultimo,
+            DATEDIFF('day', MIN(data_contrato), MAX(data_contrato)) as janela_dias
+        FROM obras
+        WHERE valor_total < ?
+        GROUP BY empresa_nome, secretaria
+        HAVING num_contratos >= 3
+          AND valor_agregado > ?
+          AND janela_dias <= 180
+        ORDER BY valor_agregado DESC
+    """, [threshold_servicos, threshold_servicos]).df()
+```
+
+### 4. Diário Oficial — Portaria de Diária
+Você já checklist isso manualmente. Automatize: scrape do DOMA (Diário Oficial do Município) e correlacione com as viagens detectadas.
+
+```
+URL: https://www.riobranco.ac.gov.br/diario-oficial/
+```
+
+### 5. Teto Constitucional & LRF
+```python
+def detect_teto_violations(conn):
+    # Teto = subsídio do prefeito. Consultar Diário Oficial para valor atual.
+    # Município pequeno AC: ~R$ 22.000 bruto
+    TETO_RB = 22000.00
+
+    return conn.execute("""
+        SELECT servidor_nome, cargo, valor_bruto, valor_liquido,
+               valor_bruto - ? as excesso
+        FROM servidores
+        WHERE valor_bruto > ?
+        ORDER BY excesso DESC
+    """, [TETO_RB, TETO_RB]).df()
+
+def check_lrf_limite_pessoal(conn):
+    """LRF art. 19: municípios <= 60% RCL em pessoal."""
+    # Necessita dado de RCL (Receita Corrente Líquida) — SICONFI/STN
+    pass
+```
+
+### 6. Nepotismo — Cruzamento de Sobrenomes
+```python
+def detect_nepotismo(conn):
+    """
+    Servidor público + empresa contratada com sócio de mesmo sobrenome.
+    Proxy simples mas poderoso para investigação inicial.
+    """
+    return conn.execute("""
+        WITH servidor_sobrenomes AS (
+            SELECT
+                servidor_nome,
+                -- pega último sobrenome
+                SPLIT_PART(TRIM(servidor_nome), ' ', -1) as sobrenome,
+                secretaria,
+                cargo
+            FROM servidores
+        ),
+        socio_sobrenomes AS (
+            SELECT
+                empresa_nome,
+                socio_nome,
+                SPLIT_PART(TRIM(socio_nome), ' ', -1) as sobrenome
+            FROM empresa_socios  -- tabela a criar com dados CNPJ
+        )
+        SELECT
+            s.servidor_nome,
+            s.secretaria,
+            e.empresa_nome,
+            e.socio_nome,
+            s.sobrenome as sobrenome_comum
+        FROM servidor_sobrenomes s
+        JOIN socio_sobrenomes e ON s.sobrenome = e.sobrenome
+        ORDER BY s.sobrenome
+    """).df()
+```
+
+---
+
+## 🎨 UI — AESTHETIC CIA/FBI/PALANTIR
+
+O Streamlit tem limite visual. Para o nível que você quer, recomendo migrar para **FastAPI backend + React/Next.js frontend** ou pelo menos injetar HTML customizado massivo no Streamlit.
+
+Aqui vai um componente standalone que demonstra o **network graph** estilo inteligência — D3 force-directed com visual Palantir:Vou criar o componente de network graph + dashboard redesign:Agora o roadmap completo de melhorias:
+
+---
+
+## 🗺️ ROADMAP COMPLETO — SENTINELA v5.0
+
+### PRIORIDADE 1 — Novas Fontes de Dados (sem custo)
+
+| Fonte | URL | O que extrair | Cruzamento |
+|---|---|---|---|
+| **BrasilAPI / CNPJ** | `brasilapi.com.br/api/cnpj/v1/{cnpj}` | Sócios (QSA), data abertura, capital social | Sócios vs servidores |
+| **TSE Doações 2024** | `dadosabertos.tse.jus.br` | Doador CNPJ → candidato em RB | Empresa contratada → político eleito |
+| **SICONFI/STN** | `siconfi.tesouro.fazenda.gov.br` | RCL de Rio Branco para calcular LRF | Limite pessoal 60% |
+| **TCE-Acre** | `tce.ac.gov.br` | Parecer de contas, irregularidades | Empresas com restrições |
+| **Diário Oficial Município** | `riobranco.ac.gov.br/diario-oficial/` | Portarias de diárias, nomeações | Validar autorização de viagem |
+| **Portal Obras** | Já tem | Aumentar para nível federal (obras.gov.br) | Cruzar com estadual |
+
+### PRIORIDADE 2 — Novos Detectores (insights_engine.py)
+
+```python
+# Adicionar ao insights_engine.py:
+DETECTORES = {
+    "fracionamento_licitacao": detect_fracionamento,      # bid splitting
+    "empresa_jovem":           detect_empresa_jovem,       # CNPJ < 6 meses
+    "teto_constitucional":     detect_teto_violations,     # art. 37, XI CF
+    "lrf_pessoal":             check_lrf_limite_pessoal,   # > 60% RCL
+    "nepotismo_sobrenome":     detect_nepotismo,           # cruzamento sobrenomes
+    "doacao_contrato":         detect_doacao_to_contrato,  # TSE × obras
+    "servidor_socio":          detect_servidor_is_socio,   # CPF servidor = CPF sócio
+    "fim_de_semana":           detect_weekend_diarias,     # diárias em sábado/domingo sem evento
+    "servidor_multiplos":      detect_double_payroll,      # mesmo CPF em múltiplas folhas
+}
+```
+
+### PRIORIDADE 3 — Arquitetura Frontend (migração Streamlit → React)
+
+Para rodar na sua máquina local sem servidor externo: **FastAPI + React (Vite) servido localmente**. Zero custo, mesma máquina.
+
+```
+sentinela/
+├── api/          # FastAPI — serve os dados do DuckDB via REST
+│   ├── main.py
+│   ├── routers/
+│   │   ├── servidores.py
+│   │   ├── diarias.py
+│   │   ├── obras.py
+│   │   └── graph.py      # endpoints para o grafo de rede
+│   └── db.py             # conexão DuckDB
+└── frontend/     # React + Vite — o visual CIA que fizemos
+    ├── src/
+    │   ├── views/
+    │   │   ├── NetworkGraph.jsx  # o componente que fiz acima
+    │   │   ├── DiariaRadar.jsx
+    │   │   ├── SalaryHeatmap.jsx
+    │   │   └── ContractSankey.jsx
+    │   └── App.jsx
+    └── vite.config.js
+```
+
+Se quiser manter Streamlit mas ter o grafo, embed assim:
+```python
+import streamlit.components.v1 as components
+
+with open("sentinela_network_graph.html") as f:
+    components.html(f.read(), height=700, scrolling=False)
+```
+
+### PRIORIDADE 4 — Base Legal no Dossiê
+
+Cada sinal deve citar a lei específica. Template:
+
+```python
+LEGAL_MAP = {
+    "fracionamento":     "Lei 14.133/21 art. 29, §2° — fracionamento vedado",
+    "teto":              "CF art. 37, XI — teto remuneratório constitucional",
+    "nepotismo":         "Súmula Vinculante n° 13 STF — nepotismo",
+    "empresa_jovem":     "Lei 14.133/21 art. 67 — habilitação e capacidade técnica",
+    "doacao_contrato":   "Lei 9.840/99 art. 41-A — caixa dois eleitoral / improbidade",
+    "improbidade_geral": "Lei 8.429/92 (nova redação Lei 14.230/21) — improbidade",
+    "lrf":               "LC 101/2000 art. 19, III — limite pessoal municípios",
+}
+```
+
+---
+
+## 🎨 Sobre o visual que entreguei
+
+O arquivo HTML tem:
+- **D3 force-directed graph** — arraste nós, zoom/pan, clique para expandir detalhes
+- **Radar sweep animado** de fundo
+- **Ticker de alertas** estilo OSINT/NSA
+- **Painel lateral direito** com todos os dados + flags do nó selecionado
+- **Filtros por tipo** de entidade
+- **Conexões semânticas** com cores diferentes (familiar=vermelho, doação=roxo, execução=laranja)
+- Efeito **glow + scanlines + grid animado**
+
+Pra usar com dados reais: substitui o objeto `graphData` no script por uma chamada `fetch()` ao seu endpoint FastAPI que monta o grafo a partir do DuckDB.
+
+Qual parte você quer que eu desenvolva primeiro — a API FastAPI, mais detectores, ou mais vistas do frontend?

@@ -1,0 +1,75 @@
+Ok, aqui vai a análise do portal + o sistema completo de coleta. O portal de Rio Branco é JSF puro — sem API REST. Os dados têm que ser extraídos via form POST com ViewState, que é exatamente o que o `jsf_client.py` do repo já tenta fazer.
+
+Vou escrever o engine de coleta multi-fonte completo:O ZIP contém tudo. Deixa eu te explicar o que foi entregue e como montar:
+
+---
+
+## Estrutura do que está no ZIP
+
+```
+sources_registry.py      → catálogo de todas as 20 fontes configuradas
+engine.py               → motor universal de coleta (REST/CSV/QD/SICONFI)
+riobranco_jsf_v2.py     → scraper do portal JSF de Rio Branco (engenharia reversa)
+cnpj_enricher.py        → enriquecimento CNPJ + detecção de sócios
+cross_reference_engine.py → 8 detectores de anomalias com base legal
+run_full_pipeline.sh    → script único que roda tudo em sequência
+requirements.txt        → deps atualizadas
+```
+
+---
+
+## Sequência para integrar no repo existente
+
+```bash
+# Instalar novos deps
+pip install httpx rich rapidfuzz --break-system-packages
+
+# Copiar os arquivos para o repo
+cp sources_registry.py src/ingest/
+cp engine.py src/ingest/
+cp riobranco_jsf_v2.py src/ingest/
+cp cnpj_enricher.py src/ingest/
+cp cross_reference_engine.py src/core/
+cp run_full_pipeline.sh .
+chmod +x run_full_pipeline.sh
+
+# Rodar só o que já tem dados (portal JSF)
+python -m src.ingest.riobranco_jsf_v2 --endpoint diaria
+python -m src.ingest.riobranco_jsf_v2 --endpoint obra
+
+# Rodar fontes REST (gratuitas, sem JSF)
+python -m src.ingest.engine --source pncp_contratos   # contratos federais em RB
+python -m src.ingest.engine --source tse_doacoes      # CRÍTICO: doações 2024
+python -m src.ingest.engine --source cgu_ceis         # empresas suspensas
+python -m src.ingest.engine --source qd_diario_rb     # D.O. OCR-izado
+
+# Depois dos dados: enriquecer CNPJs e cruzar
+python -m src.ingest.cnpj_enricher
+python -m src.core.cross_reference_engine
+```
+
+---
+
+## Sobre o portal JSF de Rio Branco
+
+O `riobranco_jsf_v2.py` tenta 3 estratégias em ordem:
+1. **Export CSV via botão** — se o PrimeFaces tiver `p:dataExporter`, sai direto como arquivo
+2. **Paginação AJAX** — simula clique "próxima página" via POST com ViewState
+3. **Parse HTML estático** — última opção, só a primeira página
+
+**Se tudo falhar** (o JSF pode ter anti-scraping), o script te diz exatamente o que fazer com o DevTools. Mas o `jsf_client.py` que você já tem no repo provavelmente já tem esse fluxo funcionando — o `riobranco_jsf_v2.py` é uma versão mais genérica e autodescobridora.
+
+---
+
+## Fontes mais valiosas para cruzamento (em ordem)
+
+| Prioridade | Fonte | Por que |
+|---|---|---|
+| 🔴 1 | TSE Doações 2024 | Liga dinheiro eleitoral → contrato |
+| 🔴 1 | CGU CEIS/CNEP | Empresa suspensa com contrato ativo = crime |
+| 🔴 1 | PNCP contratos | API REST limpa, sem JSF, dados federais em RB |
+| 🔴 1 | BrasilAPI CNPJ | QSA dos sócios para cruzar nepotismo |
+| 🟡 2 | Querido Diário | Portaria de diária no D.O. — valida ou derruba viagem |
+| 🟡 2 | SICONFI | RCL para calcular se LRF está estourado |
+
+Sobre a preocupação do Bruno com represálias: o projeto é literalmente dados públicos + análise estatística. Isso é jornalismo de dados, não invasão. A `lei 12.527/11 (LAI)` protege o acesso. O aviso legal que já está no app é suficiente.
