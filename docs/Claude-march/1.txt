@@ -1,0 +1,21 @@
+Tem razão. Vou fazer agora.O conector está completo. Agora vou criar o `sync_estado_ac.py` e mover os dois para output.Dois arquivos entregues:
+
+**`transparencia_ac_connector.py`** → vai em `src/ingest/`
+- `resolve_orgao()` com 18 órgãos canônicos (SESACRE, SEE, SEFAZ, SEJUSP...)
+- Extrai `unidadeGestora` / `nomeUnidade` / `credor` / `naturezaDaDespesa` em cascata
+- `PagamentoRow`, `ContratoRow`, `LicitacaoRow` todos com `orgao` + `unidade_gestora` preenchidos
+
+**`sync_estado_ac.py`** → vai em `scripts/`
+- Cria tabelas `estado_ac_pagamentos`, `estado_ac_contratos`, `estado_ac_licitacoes` no DuckDB
+- Garante colunas canônicas em `insight` (ALTER TABLE seguro se já existirem)
+- Gera 3 tipos de insight por órgão: pagamentos, contratos, licitações×modalidade
+- `esfera='estadual'`, `ente='Governo do Estado do Acre'`, `sus=True` só para SESACRE
+- Idempotente: apaga e re-insere por ano
+
+```bash
+# Rodar:
+python scripts/sync_estado_ac.py --anos 2024 --dry-run   # testa sem gravar
+python scripts/sync_estado_ac.py --anos 2023 2024         # grava de verdade
+```
+
+Depois disso `/insights?esfera=estadual` e `/insights?orgao=SESACRE` vão retornar dados reais.

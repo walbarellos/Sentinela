@@ -92,6 +92,10 @@ def merge_classification(existing: Dict[str, Any], computed: Dict[str, Any]) -> 
     return merged
 
 
+def has_canonical_classification(row: Dict[str, Any]) -> bool:
+    return bool(row.get("esfera") and row.get("ente") and row.get("uf"))
+
+
 def hydrate_insight_records(
     con: duckdb.DuckDBPyConnection,
     df: pd.DataFrame,
@@ -110,11 +114,14 @@ def hydrate_insight_records(
     for row in hydrated_df.to_dict("records"):
         row["sources"] = parse_json_field(row.get("sources")) or []
         row["tags"] = parse_json_field(row.get("tags")) or []
-        computed = classify_insight_record(
-            row,
-            extra_text=extra_text_by_id.get(row["id"], ""),
-        )
-        row.update(merge_classification(row, computed))
+        if has_canonical_classification(row):
+            row["sus"] = bool(row.get("sus"))
+        else:
+            computed = classify_insight_record(
+                row,
+                extra_text=extra_text_by_id.get(row["id"], ""),
+            )
+            row.update(merge_classification(row, computed))
         for key in ["title", "description_md", "ente", "orgao", "municipio", "uf", "area_tematica"]:
             row[key] = fix_mojibake(row.get(key))
         records.append(row)
@@ -211,13 +218,24 @@ def sync_insight_classification() -> None:
         for row in df.to_dict("records"):
             row["sources"] = parse_json_field(row.get("sources")) or []
             row["tags"] = parse_json_field(row.get("tags")) or []
-            classification = merge_classification(
-                row,
-                classify_insight_record(
+            if has_canonical_classification(row):
+                classification = {
+                    "esfera": row.get("esfera"),
+                    "ente": row.get("ente"),
+                    "orgao": row.get("orgao"),
+                    "municipio": row.get("municipio"),
+                    "uf": row.get("uf"),
+                    "area_tematica": row.get("area_tematica"),
+                    "sus": bool(row.get("sus")),
+                }
+            else:
+                classification = merge_classification(
                     row,
-                    extra_text=extra_text_by_id.get(row["id"], ""),
-                ),
-            )
+                    classify_insight_record(
+                        row,
+                        extra_text=extra_text_by_id.get(row["id"], ""),
+                    ),
+                )
             updates.append(
                 [
                     classification["esfera"],
