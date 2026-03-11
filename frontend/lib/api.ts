@@ -1,5 +1,5 @@
 // frontend/lib/api.ts
-import type { Insight, Summary } from "./types";
+import type { Insight, InsightFacets, Summary } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
 
@@ -17,6 +17,16 @@ export async function fetchInsights(params: Record<string, string | number | und
   const r = await fetch(`${API_BASE}/insights?${qs.toString()}`, { cache: "no-store" });
   if (!r.ok) throw new Error("insights failed");
   return (await r.json()) as Insight[];
+}
+
+export async function fetchInsightFacets(params: Record<string, string | number | undefined> = {}): Promise<InsightFacets> {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== "") qs.set(k, String(v));
+  });
+  const r = await fetch(`${API_BASE}/meta/facets?${qs.toString()}`, { cache: "no-store" });
+  if (!r.ok) throw new Error("facets failed");
+  return r.json();
 }
 
 export async function fetchEntityTimeline(entityId: string) {

@@ -1,0 +1,148 @@
+Ótimo progresso na etapa 1. Já existe uma taxonomia canônica no backend para `esfera`, `ente`, `orgao`, `municipio`, `uf`, `area_tematica` e `sus`, e a API já expõe filtros/facetas para esses campos.
+
+Parte que quero atacar primeiro:
+Etapa 2 — Governo do Acre / SESACRE.
+
+Motivo:
+- O filtro institucional já está pronto, mas hoje o DuckDB canônico ainda está praticamente todo municipal.
+- No snapshot atual, `/insights?esfera=estadual` retorna 0.
+- O pipeline estadual existe, mas está mais voltado para Neo4j e não grava o recorte institucional canônico no DuckDB.
+
+Resumo do estado atual:
+- `insight` agora tem colunas: `esfera`, `ente`, `orgao`, `municipio`, `uf`, `area_tematica`, `sus`.
+- Banco atual:
+  - 70 insights municipais
+  - 27 insights marcados como SUS/SEMSA
+  - 43 insights de gestão municipal geral
+  - 0 insights estaduais no recorte canônico
+- Tabelas ainda zeradas: `empresas_cnpj`, `empresa_socios`, `federal_ceis`, `federal_cnep`, `federal_servidores`, `edge`.
+
+Arquivos que você precisa revisar primeiro:
+
+Etapa 1 já pronta / base do filtro institucional:
+- `src/core/insight_classification.py`
+- `backend/app/main.py`
+- `backend/app/schemas.py`
+- `scripts/sync_v2.py`
+- `v2_core.sql`
+
+Etapa 2 — Governo do Acre / SESACRE:
+- `src/ingest/transparencia_ac_connector.py`
+- `src/cli.py`
+- `src/core/graph.py`
+- `src/core/entities.py`
+- `scripts/sync_v2.py`
+- `src/core/insight_classification.py`
+
+Observações para Etapa 2:
+- `PagamentoRow` já tem campo `orgao`, mas ele não está sendo preenchido no conector estadual.
+- O pipeline em `src/cli.py` baixa pagamentos/contratos/licitações do estado e envia para Neo4j.
+- Em `src/core/graph.py`, os pagamentos estaduais ainda colapsam em um único nó `GOVERNO_ESTADO_ACRE`.
+- O que falta é persistir isso no DuckDB com `orgao` real, principalmente `SESACRE`, e com classificação canônica.
+
+Etapa 3 — Lotação/unidade Rio Branco:
+- `ingest_servidores_to_duckdb.py`
+- `src/ingest/riobranco_servidores_mass.py`
+- `src/ingest/riobranco_servidor_detail.py`
+- `src/ingest/riobranco_servidor_list.py`
+- `src/core/insight_classification.py`
+- `scripts/sync_v2.py`
+
+Observações para Etapa 3:
+- `ingest_servidores_to_duckdb.py` já prevê `lotacao`, `secretaria` e `unidade` em `rb_servidores_meta`.
+- Essas tabelas detalhadas ainda não estão presentes/populadas no banco atual.
+- Hoje a classificação SUS municipal ainda depende muito de heurística por cargo/termo.
+- O ideal é substituir isso por `lotacao/unidade`, por exemplo UBS, UPA, CAPS, Fundo Municipal de Saúde, SEMSA etc.
+
+Etapa 4 — JSF pendentes de Rio Branco:
+- `src/ingest/engine.py`
+- `src/ingest/sources_registry.py`
+- `src/ingest/riobranco_jsf.py`
+- `src/ingest/riobranco_jsf_v2.py`
+- `src/ingest/riobranco_crawler.py`
+- `src/ingest/riobranco_obras.py`
+- `src/ingest/riobranco_obras_list.py`
+- `src/ingest/riobranco_diarias.py`
+- `src/ingest/riobranco_servidores_mass.py`
+- `jsf_client.py`
+
+Observações para Etapa 4:
+- No `sources_registry`, existem fontes declaradas para `rb_despesas`, `rb_licitacoes` e `rb_receitas`.
+- No `engine.py`, o coletor `JsfScrapeCollector` ainda é placeholder e só avisa para usar os scrapers específicos.
+- Os scrapers específicos existentes cobrem melhor: servidores, diárias e obras.
+- Precisamos fechar despesas, contratações/licitações e receitas no mesmo padrão canônico.
+
+Etapa 5 — Cruzamentos zerados:
+- `src/ingest/cnpj_enricher.py`
+- `src/ingest/federal_loader.py`
+- `src/ingest/load_federal_local.py`
+- `src/ingest/portal_transparencia_integrator.py`
+- `src/ingest/engine.py`
+- `src/ingest/sources_registry.py`
+- `src/core/cross_reference_engine.py`
+- `src/detection/emenda_familia.py`
+
+Observações para Etapa 5:
+- `pncp_contratos` e `pncp_licitacoes` estão declarados no registry, mas não estão populados no banco atual.
+- `empresas_cnpj` e `empresa_socios` dependem do enriquecimento de CNPJ/QSA.
+- `federal_ceis` e `federal_cnep` também estão zeradas.
+- Há detectores que dependem diretamente dessas tabelas.
+
+Sites / APIs que você provavelmente vai precisar acessar ou revisar:
+
+Governo do Acre:
+- `https://transparencia.ac.gov.br`
+- Base descoberta pelo conector:
+  - `https://transparencia.ac.gov.br/transparencia/api/`
+  - possíveis versões `v1`, `v2`, `v3`
+
+Rio Branco JSF:
+- `https://transparencia.riobranco.ac.gov.br/servidor/`
+- `https://transparencia.riobranco.ac.gov.br/diaria/`
+- `https://transparencia.riobranco.ac.gov.br/obra/`
+- `https://transparencia.riobranco.ac.gov.br/despesa/`
+- `https://transparencia.riobranco.ac.gov.br/contratacao/`
+- `https://transparencia.riobranco.ac.gov.br/receita/`
+
+Compras / Cruzamentos federais:
+- PNCP:
+  - `https://pncp.gov.br/api/pncp/v1/contratos`
+  - `https://pncp.gov.br/api/pncp/v1/contratacoes`
+- CGU / sanções:
+  - `https://dadosabertos.cgu.gov.br/api/publico/ceis`
+  - `https://dadosabertos.cgu.gov.br/api/publico/cnep`
+  - `https://portaldatransparencia.gov.br/download-de-dados/ceis`
+  - `https://portaldatransparencia.gov.br/download-de-dados/cnep`
+- CNPJ / QSA:
+  - `https://brasilapi.com.br/api/cnpj/v1/{cnpj}`
+  - `https://receitaws.com.br/v1/cnpj/{cnpj}`
+
+Outras fontes que já existem no projeto:
+- TSE:
+  - `https://cdn.tse.jus.br/estatistica/sead/odsele/`
+- Querido Diário:
+  - `https://queridodiario.ok.org.br/api/gazettes`
+- SICONFI:
+  - `https://siconfi.tesouro.gov.br/siconfi/api/public/relatorio/rreo`
+  - `https://siconfi.tesouro.gov.br/siconfi/api/public/relatorio/rgf`
+
+Ordem sugerida de ataque:
+1. Etapa 2 — persistir Governo do Acre / SESACRE no DuckDB canônico.
+2. Etapa 3 — enriquecer Rio Branco com `lotacao/unidade` para SUS real.
+3. Etapa 4 — fechar JSF de `despesas`, `contratacao` e `receitas`.
+4. Etapa 5 — popular `PNCP`, `CEIS/CNEP`, `QSA` e só então ligar detectores que hoje dependem dessas tabelas vazias.
+
+Se for começar imediatamente pela Etapa 2, foque nestes arquivos nesta ordem:
+1. `src/ingest/transparencia_ac_connector.py`
+2. `src/cli.py`
+3. `scripts/sync_v2.py`
+4. `src/core/insight_classification.py`
+5. `src/core/graph.py`
+
+Objetivo técnico da Etapa 2:
+- extrair `orgao` do estado corretamente,
+- gravar pagamentos/contratos/licitações em DuckDB,
+- classificar `esfera=estadual`,
+- `ente='Governo do Estado do Acre'`,
+- `orgao='SESACRE'` quando aplicável,
+- e permitir que `/insights?esfera=estadual` e `/insights?orgao=SESACRE` passem a retornar dados reais.

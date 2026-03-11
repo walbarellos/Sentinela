@@ -12,6 +12,13 @@ export type Insight = {
   pattern?: string;
   sources: string[];
   tags: string[];
+  esfera?: string;
+  ente?: string;
+  orgao?: string;
+  municipio?: string;
+  uf?: string;
+  area_tematica?: string;
+  sus?: boolean;
   created_at: string;
 };
 
@@ -21,4 +28,18 @@ export type Summary = {
   sources: number;
   alerts: number;
   last_updated?: string | null;
+};
+
+export type FacetBucket = {
+  value: string;
+  count: number;
+};
+
+export type InsightFacets = {
+  esferas: FacetBucket[];
+  entes: FacetBucket[];
+  orgaos: FacetBucket[];
+  municipios: FacetBucket[];
+  areas_tematicas: FacetBucket[];
+  sus: Record<string, number>;
 };

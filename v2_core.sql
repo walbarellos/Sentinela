@@ -52,6 +52,13 @@ CREATE TABLE IF NOT EXISTS insight (
   tags JSON,
   sample_n INTEGER DEFAULT 0,
   unit_total DOUBLE DEFAULT 0.0,
+  esfera TEXT,
+  ente TEXT,
+  orgao TEXT,
+  municipio TEXT,
+  uf TEXT,
+  area_tematica TEXT,
+  sus BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

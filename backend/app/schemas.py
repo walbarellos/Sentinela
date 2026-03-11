@@ -16,6 +16,13 @@ class InsightOut(BaseModel):
     tags: List[Any] = []
     sample_n: int = 0
     unit_total: float = 0.0
+    esfera: Optional[str] = None
+    ente: Optional[str] = None
+    orgao: Optional[str] = None
+    municipio: Optional[str] = None
+    uf: Optional[str] = None
+    area_tematica: Optional[str] = None
+    sus: bool = False
     created_at: datetime
 
 class EvidenceOut(BaseModel):
@@ -48,3 +55,17 @@ class SummaryOut(BaseModel):
     sources: int
     alerts: int
     last_updated: Optional[datetime] = None
+
+
+class FacetBucketOut(BaseModel):
+    value: str
+    count: int
+
+
+class InsightFacetsOut(BaseModel):
+    esferas: List[FacetBucketOut] = []
+    entes: List[FacetBucketOut] = []
+    orgaos: List[FacetBucketOut] = []
+    municipios: List[FacetBucketOut] = []
+    areas_tematicas: List[FacetBucketOut] = []
+    sus: Dict[str, int] = {}

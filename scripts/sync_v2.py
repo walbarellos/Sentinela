@@ -3,6 +3,10 @@ import json, hashlib, uuid, re, unicodedata
 import duckdb
 import pandas as pd
 from datetime import datetime
+from src.core.insight_classification import (
+    classify_insight_record,
+    ensure_insight_classification_columns,
+)
 
 DB = "./data/sentinela_analytics.duckdb"
 
@@ -48,6 +52,7 @@ def safe_json(obj):
 
 def ensure_v2_tables(con):
     con.execute(open("v2_core.sql","r",encoding="utf-8").read())
+    ensure_insight_classification_columns(con)
 
 def upsert_entity(con, entity_id, type_, display_name, attributes=None):
     con.execute(
@@ -66,8 +71,40 @@ def insert_event(con, event):
     )
 
 def insert_insight(con, ins):
+    classification = classify_insight_record(
+        {
+            "title": ins["titulo"],
+            "description_md": ins["descricao"],
+            "pattern": ins.get("pattern"),
+            "sources": ins.get("fontes", []),
+            "tags": ins.get("tags", []),
+        }
+    )
     con.execute(
-        "INSERT OR REPLACE INTO insight VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())",
+        """
+        INSERT OR REPLACE INTO insight (
+            id,
+            kind,
+            severity,
+            confidence,
+            exposure_brl,
+            title,
+            description_md,
+            pattern,
+            sources,
+            tags,
+            sample_n,
+            unit_total,
+            esfera,
+            ente,
+            orgao,
+            municipio,
+            uf,
+            area_tematica,
+            sus,
+            created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())
+        """,
         [
             ins["id"],
             ins.get("kind","salario"),
@@ -81,6 +118,13 @@ def insert_insight(con, ins):
             safe_json(ins.get("tags", [])),
             int(ins.get("n_amostra") or 0),
             float(ins.get("total_unidade") or 0.0),
+            classification["esfera"],
+            classification["ente"],
+            classification["orgao"],
+            classification["municipio"],
+            classification["uf"],
+            classification["area_tematica"],
+            classification["sus"],
         ]
     )
 
