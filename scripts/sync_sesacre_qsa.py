@@ -14,6 +14,7 @@ sys.path.insert(0, str(ROOT))
 import duckdb
 import httpx
 
+from src.core.insight_classification import ensure_insight_classification_columns
 from src.ingest.cnpj_enricher import build_socios_df, fetch_cnpj
 
 log = logging.getLogger("sync_sesacre_qsa")
@@ -27,6 +28,7 @@ DB_PATH = ROOT / "data" / "sentinela_analytics.duckdb"
 ORGAO_ALVO = "SESACRE"
 TOP_N = 25
 MIN_PAGO = 10_000_000
+QSA_KIND_PREFIX = "SESACRE_QSA_"
 
 DDL_EMPRESAS = """
 CREATE TABLE IF NOT EXISTS empresas_cnpj (
@@ -92,6 +94,20 @@ def ensure_tables(con: duckdb.DuckDBPyConnection) -> None:
     con.execute(DDL_EMPRESAS)
     con.execute(DDL_SOCIOS)
     con.execute(DDL_FORNECEDOR_QSA)
+    ensure_insight_columns(con)
+
+
+def ensure_insight_columns(con: duckdb.DuckDBPyConnection) -> None:
+    ensure_insight_classification_columns(con)
+    existing = {row[1] for row in con.execute("PRAGMA table_info('insight')").fetchall()}
+    extra_cols = {
+        "valor_referencia": "DOUBLE",
+        "ano_referencia": "INTEGER",
+        "fonte": "VARCHAR",
+    }
+    for col, dtype in extra_cols.items():
+        if col not in existing:
+            con.execute(f"ALTER TABLE insight ADD COLUMN {col} {dtype}")
 
 
 def select_prioritized_suppliers(
@@ -168,13 +184,31 @@ def normalize_company_data(cnpj: str, data: dict) -> dict:
     }
 
 
+def is_non_capital_entity(name: str) -> bool:
+    normalized = (name or "").upper()
+    markers = (
+        "ASSOCIACAO",
+        "FUNDACAO",
+        "OBRAS SOCIAIS",
+        "DIOCESE",
+        "SERVICO SOCIAL",
+        "INSTITUTO",
+        "IRMANDADE",
+    )
+    return any(marker in normalized for marker in markers)
+
+
 def qsa_flags(empresa: dict, total_pago: float) -> list[str]:
     flags: list[str] = []
     situacao = (empresa.get("situacao_cadastral") or "").upper().strip()
     if situacao and situacao != "ATIVA":
         flags.append(f"SITUACAO_{situacao}")
     capital_social = float(empresa.get("capital_social") or 0)
-    if capital_social < 100_000 and total_pago >= 1_000_000:
+    if (
+        capital_social < 100_000
+        and total_pago >= 1_000_000
+        and not is_non_capital_entity(empresa.get("razao_social") or empresa.get("nome_fantasia") or "")
+    ):
         flags.append(f"CAPITAL_BAIXO_VS_PAGO:{capital_social:.2f}")
     data_abertura = str(empresa.get("data_abertura") or "")
     if data_abertura and data_abertura[:4].isdigit():
@@ -306,6 +340,173 @@ def upsert_supplier_qsa_rows(
     return len(payload)
 
 
+def recompute_qsa_flags(con: duckdb.DuckDBPyConnection, anos: list[int]) -> list[dict]:
+    placeholders = ",".join("?" for _ in anos)
+    rows = con.execute(
+        f"""
+        SELECT
+            row_id,
+            ano,
+            orgao,
+            cnpj,
+            fornecedor_nome,
+            total_pago,
+            total_liquidado,
+            total_empenhado,
+            razao_social_receita,
+            nome_fantasia,
+            situacao_cadastral,
+            capital_social,
+            data_abertura,
+            municipio,
+            uf,
+            cnae_principal,
+            cnae_descricao,
+            qtd_socios,
+            socios_json
+        FROM estado_ac_fornecedor_qsa
+        WHERE orgao = ? AND ano IN ({placeholders})
+        """,
+        [ORGAO_ALVO, *anos],
+    ).fetchdf().to_dict("records")
+
+    for row in rows:
+        flags = qsa_flags(
+            {
+                "razao_social": row.get("razao_social_receita") or row.get("fornecedor_nome") or "",
+                "nome_fantasia": row.get("nome_fantasia") or "",
+                "situacao_cadastral": row.get("situacao_cadastral") or "",
+                "capital_social": row.get("capital_social") or 0,
+                "data_abertura": row.get("data_abertura") or "",
+            },
+            float(row.get("total_pago") or 0.0),
+        )
+        row["flags"] = flags
+        con.execute(
+            "UPDATE estado_ac_fornecedor_qsa SET flags_json = ? WHERE row_id = ?",
+            [json.dumps(flags, ensure_ascii=False), row["row_id"]],
+        )
+
+    return rows
+
+
+def build_qsa_insights(rows: list[dict]) -> list[dict]:
+    insights: list[dict] = []
+    for row in rows:
+        flags = row.get("flags") or []
+        if not flags:
+            continue
+
+        total_pago = float(row.get("total_pago") or 0.0)
+        capital_social = float(row.get("capital_social") or 0.0)
+        if any(flag.startswith("SITUACAO_") for flag in flags):
+            severity = "CRITICO"
+        elif any(flag.startswith("EMPRESA_RECENTE") for flag in flags):
+            severity = "ALTO"
+        else:
+            severity = "MEDIO"
+
+        insights.append(
+            {
+                "id": f"SESACRE_QSA:{row['ano']}:{row['cnpj']}",
+                "kind": f"{QSA_KIND_PREFIX}FLAG_FORNECEDOR_ANO",
+                "severity": severity,
+                "confidence": 82,
+                "exposure_brl": total_pago,
+                "title": f"SESACRE — alerta societário em {row['fornecedor_nome']} ({row['cnpj']})",
+                "description_md": (
+                    f"O fornecedor **{row['fornecedor_nome']}** (`{row['cnpj']}`) recebeu **R$ {total_pago:,.2f}** "
+                    f"do **SESACRE** em **{row['ano']}** e apresentou alertas societários na base de CNPJ: "
+                    f"**{', '.join(flags)}**. "
+                    f"Situação cadastral: **{row.get('situacao_cadastral') or 'N/I'}**. "
+                    f"Capital social: **R$ {capital_social:,.2f}**. "
+                    f"Qtd. de sócios: **{int(row.get('qtd_socios') or 0)}**."
+                ),
+                "pattern": "SESACRE -> FORNECEDOR_CNPJ -> QSA_FLAG",
+                "sources": ["Portal da Transparência do Acre", "BrasilAPI CNPJ"],
+                "tags": [
+                    "estado_ac",
+                    "sesacre",
+                    "qsa",
+                    f"ano:{row['ano']}",
+                    f"cnpj:{row['cnpj']}",
+                    *flags,
+                ],
+                "sample_n": int(row.get("qtd_socios") or 0),
+                "unit_total": total_pago,
+                "esfera": "estadual",
+                "ente": "Governo do Estado do Acre",
+                "orgao": ORGAO_ALVO,
+                "municipio": "",
+                "uf": "AC",
+                "area_tematica": "saude",
+                "sus": True,
+                "valor_referencia": total_pago,
+                "ano_referencia": int(row["ano"]),
+                "fonte": "brasilapi.com.br",
+            }
+        )
+    return insights
+
+
+def upsert_qsa_insights(con: duckdb.DuckDBPyConnection, insights: list[dict], anos: list[int]) -> int:
+    placeholders = ",".join("?" for _ in anos)
+    con.execute(
+        f"DELETE FROM insight WHERE kind LIKE ? AND ano_referencia IN ({placeholders})",
+        [f"{QSA_KIND_PREFIX}%", *anos],
+    )
+    if not insights:
+        return 0
+
+    payload = [
+        (
+            ins["id"],
+            ins["kind"],
+            ins["severity"],
+            ins["confidence"],
+            ins["exposure_brl"],
+            ins["title"],
+            ins["description_md"],
+            ins["pattern"],
+            json.dumps(ins["sources"], ensure_ascii=False),
+            json.dumps(ins["tags"], ensure_ascii=False),
+            ins["sample_n"],
+            ins["unit_total"],
+            ins["esfera"],
+            ins["ente"],
+            ins["orgao"],
+            ins["municipio"],
+            ins["uf"],
+            ins["area_tematica"],
+            ins["sus"],
+            ins["valor_referencia"],
+            ins["ano_referencia"],
+            ins["fonte"],
+        )
+        for ins in insights
+    ]
+    con.executemany(
+        """
+        INSERT INTO insight (
+            id, kind, severity, confidence, exposure_brl,
+            title, description_md, pattern, sources, tags,
+            sample_n, unit_total,
+            esfera, ente, orgao, municipio, uf, area_tematica, sus,
+            valor_referencia, ano_referencia, fonte, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        """,
+        payload,
+    )
+    return len(payload)
+
+
+def refresh_local(con: duckdb.DuckDBPyConnection, anos: list[int]) -> tuple[int, int]:
+    rows = recompute_qsa_flags(con, anos)
+    insights = build_qsa_insights(rows)
+    inserted = upsert_qsa_insights(con, insights, anos)
+    return len(rows), inserted
+
+
 def run_sync(
     *,
     anos: list[int],
@@ -357,11 +558,28 @@ def run_sync(
                 time.sleep(0.5)
 
         inserted = upsert_supplier_qsa_rows(con, supplier_rows, empresas)
+        refreshed_rows, insight_count = refresh_local(con, anos)
         log.info(
-            "Concluído: %d fornecedores priorizados | %d empresas QSA resolvidas | %d linhas materializadas",
+            "Concluído: %d fornecedores priorizados | %d empresas QSA resolvidas | %d linhas materializadas | %d linhas recalculadas | %d insights QSA",
             len(supplier_rows),
             len(empresas),
             inserted,
+            refreshed_rows,
+            insight_count,
+        )
+    finally:
+        con.close()
+
+
+def run_refresh_local(*, anos: list[int]) -> None:
+    con = duckdb.connect(str(DB_PATH))
+    try:
+        ensure_tables(con)
+        refreshed_rows, insight_count = refresh_local(con, anos)
+        log.info(
+            "Refresh local concluído: %d linhas recalculadas | %d insights QSA",
+            refreshed_rows,
+            insight_count,
         )
     finally:
         con.close()
@@ -374,7 +592,11 @@ def main() -> None:
     parser.add_argument("--min-pago", type=float, default=MIN_PAGO)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--force", action="store_true", help="Ignora cache local do cnpj.ws")
+    parser.add_argument("--refresh-local", action="store_true", help="Recalcula flags e insights a partir das tabelas locais, sem rede")
     args = parser.parse_args()
+    if args.refresh_local:
+        run_refresh_local(anos=args.anos)
+        return
     run_sync(
         anos=args.anos,
         top_n=args.top_n,
