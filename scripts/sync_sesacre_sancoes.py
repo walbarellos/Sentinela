@@ -32,6 +32,7 @@ logging.basicConfig(
 DB_PATH = ROOT / "data" / "sentinela_analytics.duckdb"
 DATA_DIR = ROOT / "data" / "federal"
 CGU_BASE = "https://api.portaldatransparencia.gov.br/api-de-dados"
+OPEN_DOWNLOAD_BASE = "https://portaldatransparencia.gov.br/download-de-dados"
 ORGAO_ALVO = "SESACRE"
 SANCAO_KIND_PREFIX = "SESACRE_SANCAO_"
 
@@ -356,6 +357,45 @@ def fetch_api_rows(token: str, dataset: str) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def discover_open_download_dates(client: httpx.Client, dataset: str) -> list[str]:
+    response = client.get(f"{OPEN_DOWNLOAD_BASE}/{dataset}")
+    response.raise_for_status()
+    matches = re.findall(
+        r'arquivos\.push\(\{"ano"\s*:\s*"(\d{4})",\s*"mes"\s*:\s*"(\d{2})",\s*"dia"\s*:\s*"(\d{2})"',
+        response.text,
+    )
+    return sorted({f"{ano}{mes}{dia}" for ano, mes, dia in matches}, reverse=True)
+
+
+def download_open_dataset(dataset: str, dest_dir: Path = DATA_DIR) -> Path | None:
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    with httpx.Client(
+        headers={"User-Agent": "Sentinela/1.0"},
+        timeout=120,
+        follow_redirects=False,
+    ) as client:
+        dates = discover_open_download_dates(client, dataset)
+        if not dates:
+            return None
+        yyyymmdd = dates[0]
+        response = client.get(f"{OPEN_DOWNLOAD_BASE}/{dataset}/{yyyymmdd}")
+        response.raise_for_status()
+        if response.status_code not in (301, 302, 303, 307, 308):
+            content_type = response.headers.get("content-type", "")
+            if "zip" not in content_type.lower():
+                raise RuntimeError(f"Unexpected response for open {dataset} download: {response.status_code} {content_type}")
+        download_url = response.headers.get("location") or str(response.url)
+
+    filename = Path(download_url.split("?", 1)[0]).name or f"{dataset}_{yyyymmdd}.zip"
+    target = dest_dir / filename
+    with httpx.stream("GET", download_url, follow_redirects=True, timeout=240) as stream:
+        stream.raise_for_status()
+        with open(target, "wb") as handle:
+            for chunk in stream.iter_bytes():
+                handle.write(chunk)
+    return target
+
+
 def read_local_dataset(prefix: str, *, include_multa: bool) -> pd.DataFrame:
     candidates = sorted(DATA_DIR.glob(f"{prefix}_*.zip")) + sorted(DATA_DIR.glob(f"{prefix}_*.csv"))
     for path in candidates:
@@ -451,6 +491,21 @@ def load_sancoes(
         ceis_rows = replace_dataset(con, "federal_ceis", ceis_df)
         cnep_rows = replace_dataset(con, "federal_cnep", cnep_df)
         return ceis_rows, cnep_rows, "cgu_api"
+
+    try:
+        ceis_path = download_open_dataset("ceis")
+        cnep_path = download_open_dataset("cnep")
+    except Exception as exc:
+        log.warning("Open download fallback failed: %s", exc)
+        ceis_path = None
+        cnep_path = None
+
+    if ceis_path or cnep_path:
+        ceis_df = read_local_dataset("ceis", include_multa=False)
+        cnep_df = read_local_dataset("cnep", include_multa=True)
+        ceis_rows = replace_dataset(con, "federal_ceis", ceis_df) if not ceis_df.empty else existing_ceis
+        cnep_rows = replace_dataset(con, "federal_cnep", cnep_df) if not cnep_df.empty else existing_cnep
+        return ceis_rows, cnep_rows, "open_download"
 
     ceis_df = read_local_dataset("ceis", include_multa=False)
     cnep_df = read_local_dataset("cnep", include_multa=True)

@@ -10,6 +10,7 @@ Spec verificado ao vivo em 27/02/2026.
 
 from __future__ import annotations
 import os
+import re
 import time
 import logging
 import argparse
@@ -22,6 +23,7 @@ import pandas as pd
 
 # CONFIGURAÇÃO
 BASE_URL = "https://api.portaldatransparencia.gov.br"
+OPEN_DOWNLOAD_BASE = "https://portaldatransparencia.gov.br/download-de-dados"
 DB_PATH = Path("data/sentinela_analytics.duckdb")
 DATA_DIR = Path("data/federal")
 
@@ -41,19 +43,35 @@ class PortalClient:
 
 def download_bulk(dataset_key: str, ano: int | None = None, mes: int | None = None, dest_dir: Path = DATA_DIR) -> Path | None:
     BULK_DATASETS = {
-        "ceis_csv": ("https://portaldatransparencia.gov.br/download-de-dados/ceis", "CEIS"),
-        "cnep_csv": ("https://portaldatransparencia.gov.br/download-de-dados/cnep", "CNEP"),
-        "ceaf_csv": ("https://portaldatransparencia.gov.br/download-de-dados/ceaf", "CEAF"),
-        "cepim_csv": ("https://portaldatransparencia.gov.br/download-de-dados/cepim", "CEPIM"),
+        "ceis_csv": ("ceis", "CEIS"),
+        "cnep_csv": ("cnep", "CNEP"),
+        "ceaf_csv": ("ceaf", "CEAF"),
+        "cepim_csv": ("cepim", "CEPIM"),
     }
-    url, desc = BULK_DATASETS[dataset_key]
+    dataset_slug, desc = BULK_DATASETS[dataset_key]
     dest_dir.mkdir(parents=True, exist_ok=True)
-    fname = dest_dir / f"{dataset_key}.zip"
-    log.info(f"Baixando {desc} → {fname}")
-    with httpx.stream("GET", url, follow_redirects=True, timeout=120) as resp:
+    with httpx.Client(headers={"User-Agent": "Sentinela/1.0"}, timeout=120, follow_redirects=False) as client:
+        page = client.get(f"{OPEN_DOWNLOAD_BASE}/{dataset_slug}")
+        page.raise_for_status()
+        matches = re.findall(
+            r'arquivos\.push\(\{"ano"\s*:\s*"(\d{4})",\s*"mes"\s*:\s*"(\d{2})",\s*"dia"\s*:\s*"(\d{2})"',
+            page.text,
+        )
+        if not matches:
+            raise RuntimeError(f"Nenhuma data publicada encontrada para {desc}")
+        published = sorted({f"{a}{m}{d}" for a, m, d in matches}, reverse=True)
+        yyyymmdd = published[0]
+        redirect = client.get(f"{OPEN_DOWNLOAD_BASE}/{dataset_slug}/{yyyymmdd}")
+        redirect.raise_for_status()
+        final_url = redirect.headers.get("location") or str(redirect.url)
+
+    fname = dest_dir / Path(final_url.split("?", 1)[0]).name
+    log.info(f"Baixando {desc} ({yyyymmdd}) → {fname}")
+    with httpx.stream("GET", final_url, follow_redirects=True, timeout=240) as resp:
         resp.raise_for_status()
         with open(fname, "wb") as f:
-            for chunk in resp.iter_bytes(): f.write(chunk)
+            for chunk in resp.iter_bytes():
+                f.write(chunk)
     return fname
 
 class CrossReferencePipeline:
