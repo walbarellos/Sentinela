@@ -61,6 +61,8 @@ AREA_MAP = {
 }
 SUS_ORGAOS = {"SESACRE"}
 FORNECEDOR_ORGAOS_ALVO = {"SESACRE"}
+FORNECEDOR_DETALHE_TOP_N = 25
+FORNECEDOR_DETALHE_MIN_PAGO = 10_000_000
 ESTADO_KIND_PREFIX = "ESTADO_AC_"
 
 DDL_PAGAMENTOS = """
@@ -553,6 +555,69 @@ def aggregate_fornecedor_resumos(rows: list[FornecedorResumoRow]) -> list[dict]:
     return aggregated
 
 
+def _supplier_name_key(name: str) -> str:
+    return " ".join((name or "").upper().split())
+
+
+def select_fornecedor_detail_targets(
+    rows: list[FornecedorResumoRow],
+    *,
+    limit: int | None = None,
+) -> list[FornecedorResumoRow]:
+    deduped: dict[tuple[int, str, str, str], FornecedorResumoRow] = {}
+    for row in rows:
+        key = (row.ano, row.orgao or "GOVERNO_ACRE", row.entidade or "", _supplier_name_key(row.razao_social))
+        current = deduped.get(key)
+        if current is None or float(row.pago or 0.0) > float(current.pago or 0.0):
+            deduped[key] = row
+
+    candidates = [row for row in deduped.values() if row.razao_social and not row.cnpjcpf]
+    candidates.sort(key=lambda row: float(row.pago or 0.0), reverse=True)
+    if limit is not None:
+        return candidates[:limit]
+    return [
+        row
+        for idx, row in enumerate(candidates)
+        if idx < FORNECEDOR_DETALHE_TOP_N or float(row.pago or 0.0) >= FORNECEDOR_DETALHE_MIN_PAGO
+    ]
+
+
+def _merge_entidades_json(current_json: str, incoming_json: str) -> str:
+    current = set(json.loads(current_json or "[]"))
+    incoming = set(json.loads(incoming_json or "[]"))
+    return to_json(sorted(current | incoming))
+
+
+def merge_fornecedor_aggregates(summary_rows: list[dict], detail_rows: list[dict]) -> list[dict]:
+    merged_by_key: dict[tuple[int, str, str], dict] = {}
+
+    for row in summary_rows:
+        key = (row["ano"], row["orgao"], _supplier_name_key(row["razao_social"]))
+        merged_by_key[key] = dict(row)
+
+    for row in detail_rows:
+        key = (row["ano"], row["orgao"], _supplier_name_key(row["razao_social"]))
+        current = merged_by_key.get(key)
+        if current is None:
+            merged_by_key[key] = dict(row)
+            continue
+
+        if row.get("cnpjcpf") and not current.get("cnpjcpf"):
+            current["cnpjcpf"] = row["cnpjcpf"]
+        if current.get("n_empenhos") in (None, 0) and row.get("n_empenhos") not in (None, 0):
+            current["n_empenhos"] = row["n_empenhos"]
+        if current.get("n_liquidacoes") in (None, 0) and row.get("n_liquidacoes") not in (None, 0):
+            current["n_liquidacoes"] = row["n_liquidacoes"]
+        if current.get("n_pagamentos") in (None, 0) and row.get("n_pagamentos") not in (None, 0):
+            current["n_pagamentos"] = row["n_pagamentos"]
+        current["entidades_json"] = _merge_entidades_json(
+            current.get("entidades_json", "[]"),
+            row.get("entidades_json", "[]"),
+        )
+
+    return list(merged_by_key.values())
+
+
 def upsert_fornecedores(
     con: duckdb.DuckDBPyConnection,
     rows: list[dict],
@@ -1028,24 +1093,40 @@ def run_sync(
             fornecedores_resumo: list[FornecedorResumoRow] = []
             fornecedor_detalhes: list[FornecedorDetalheRow] = []
             fornecedores_ok = False
+            fornecedores_agg: list[dict] = []
 
             try:
                 for orgao_alvo in sorted(FORNECEDOR_ORGAOS_ALVO):
                     fornecedores_resumo.extend(connector.get_fornecedores_por_orgao(ano, orgao_alvo))
                 fornecedores_resumo.sort(key=lambda row: row.pago, reverse=True)
+                fornecedores_agg = aggregate_fornecedor_resumos(fornecedores_resumo)
                 log.info(
                     "Fornecedores %d agregados por órgão-alvo (%s): %d",
                     ano,
                     ", ".join(sorted(FORNECEDOR_ORGAOS_ALVO)),
-                    len(fornecedores_resumo),
+                    len(fornecedores_agg),
                 )
                 fornecedores_ok = bool(fornecedores_resumo)
-                if fornecedores_ok and max_fornecedores_detalhe is not None:
-                    fornecedor_detalhes = connector.get_fornecedor_detalhes(
-                        ano,
-                        fornecedores=fornecedores_resumo,
-                        max_fornecedores=max_fornecedores_detalhe,
+                if fornecedores_ok:
+                    detalhe_targets = select_fornecedor_detail_targets(
+                        fornecedores_resumo,
+                        limit=max_fornecedores_detalhe,
                     )
+                    log.info(
+                        "Fornecedores %d selecionados para detalhamento probatório: %d",
+                        ano,
+                        len(detalhe_targets),
+                    )
+                    if detalhe_targets:
+                        fornecedor_detalhes = connector.get_fornecedor_detalhes(
+                            ano,
+                            fornecedores=detalhe_targets,
+                            max_fornecedores=len(detalhe_targets),
+                        )
+                        fornecedores_agg = merge_fornecedor_aggregates(
+                            fornecedores_agg,
+                            aggregate_fornecedores(fornecedor_detalhes),
+                        )
                 if not fornecedores_ok:
                     log.warning(
                         "Fornecedores %d sem linhas úteis no recorte por órgão; preservando dados já gravados para esse eixo",
@@ -1064,7 +1145,7 @@ def run_sync(
                 len(pagamentos),
                 len(contratos),
                 len(licitacoes),
-                len(fornecedores_resumo),
+                len(fornecedores_agg),
                 len(fornecedor_detalhes),
             )
             log_orgao_preview(pagamentos, f"Pagamentos {ano}")
@@ -1076,7 +1157,7 @@ def run_sync(
             total_cont += upsert_contratos(con, contratos, ano)
             total_lic += upsert_licitacoes(con, licitacoes, ano)
             if fornecedores_ok:
-                total_forn += upsert_fornecedores(con, aggregate_fornecedor_resumos(fornecedores_resumo), ano)
+                total_forn += upsert_fornecedores(con, fornecedores_agg, ano)
                 if fornecedor_detalhes:
                     total_forn_det += upsert_fornecedor_detalhes(con, fornecedor_detalhes, ano)
 

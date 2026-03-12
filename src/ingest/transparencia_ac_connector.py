@@ -841,6 +841,50 @@ class TransparenciaAcConnector:
             for item in (items or [])
         ]
 
+    def _portal_despesa_fornecedor_dados_exportacao(
+        self,
+        *,
+        ano: int,
+        entidade: str,
+        fornecedor: str,
+    ) -> list[FornecedorDetalheRow]:
+        items = self._portal_post_json(
+            page="despesas",
+            endpoint="dados-exportacao",
+            payload={
+                "ano": str(ano),
+                "orgao": entidade,
+                "unidade": "",
+                "descricao": "",
+                "fornecedor": fornecedor,
+                "busca": "",
+                "busca_card": "",
+                "filtro": "fornecedor",
+                "fonte": "",
+                "despesa": "",
+                "periodo": "",
+                "inicio": "",
+                "fim": "",
+                "mes": "",
+                "bimestre": "",
+                "trimestre": "",
+                "quadrimestre": "",
+                "semestre": "",
+                "nr_empenho": "",
+                "motivo": "",
+                "programa": "",
+            },
+        )
+        return [
+            self._to_fornecedor_detalhe_row(
+                item,
+                ano=ano,
+                entidade_fallback=entidade,
+                fornecedor_fallback=fornecedor,
+            )
+            for item in (items or [])
+        ]
+
     def get_exercicios(self):
         cfg = self.get_config()
         response = self._safe_get(cfg.url(f"exercicios/{cfg.codigo}"))
@@ -1127,12 +1171,21 @@ class TransparenciaAcConnector:
                     fornecedor.razao_social[:120],
                 )
             try:
-                rows.extend(
-                    self._portal_fornecedor_dados_exportacao(
-                        ano=ano,
-                        fornecedor=fornecedor.razao_social,
+                if fornecedor.entidade:
+                    rows.extend(
+                        self._portal_despesa_fornecedor_dados_exportacao(
+                            ano=ano,
+                            entidade=fornecedor.entidade,
+                            fornecedor=fornecedor.razao_social,
+                        )
                     )
-                )
+                else:
+                    rows.extend(
+                        self._portal_fornecedor_dados_exportacao(
+                            ano=ano,
+                            fornecedor=fornecedor.razao_social,
+                        )
+                    )
             except Exception as exc:
                 log.warning(
                     "Falha ao detalhar fornecedor %s (%d/%d): %s",
