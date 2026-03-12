@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT))
 
 from src.core.insight_classification import ensure_insight_classification_columns
 from src.ingest.riobranco_servidor_detail import RioBrancoServidorDetail
+from src.ingest.riobranco_servidor_list import RioBrancoServidorList
 
 log = logging.getLogger("sync_rb_lotacao")
 logging.basicConfig(
@@ -57,6 +58,7 @@ SUS_KEYWORDS = (
 DDL_LOTACAO = """
 CREATE TABLE IF NOT EXISTS rb_servidores_lotacao (
     servidor_id VARCHAR PRIMARY KEY,
+    matricula_contrato VARCHAR,
     nome VARCHAR,
     cargo VARCHAR,
     lotacao VARCHAR,
@@ -78,6 +80,7 @@ def ensure_rb_schema(con: duckdb.DuckDBPyConnection) -> None:
     con.execute(DDL_LOTACAO)
     existing = {row[1] for row in con.execute("PRAGMA table_info('rb_servidores_lotacao')").fetchall()}
     extra_columns = {
+        "matricula_contrato": "VARCHAR",
         "status": "VARCHAR DEFAULT 'ok'",
         "error_msg": "VARCHAR",
         "http_status": "INTEGER",
@@ -119,15 +122,21 @@ def build_session() -> requests.Session:
     )
     adapter = HTTPAdapter(max_retries=retry)
     session = requests.Session()
-    session.headers.update({"User-Agent": "Sentinela/3.0"})
+    session.headers.update(
+        {
+            "User-Agent": "Sentinela/3.0",
+            "Accept-Encoding": "identity",
+        }
+    )
     session.mount("http://", adapter)
     session.mount("https://", adapter)
     return session
 
 
-def extract_servidor_id(servidor_field: str) -> str | None:
-    match = re.match(r"^(\d+)", (servidor_field or "").strip())
-    return match.group(1) if match else None
+def extract_matricula_contrato(servidor_field: str) -> str:
+    if "-" not in (servidor_field or ""):
+        return (servidor_field or "").strip()
+    return servidor_field.split("-", 1)[0].strip()
 
 
 def extract_nome_from_servidor(servidor_field: str) -> str:
@@ -145,7 +154,8 @@ def normalize_text(value: str) -> str:
 def classify_sus(lotacao: str, secretaria: str, unidade: str) -> tuple[bool, str]:
     combined = normalize_text(" ".join(filter(None, [lotacao, secretaria, unidade])))
     for keyword in SUS_KEYWORDS:
-        if keyword in combined:
+        normalized_keyword = normalize_text(keyword)
+        if re.search(rf"(?<![A-Z0-9]){re.escape(normalized_keyword)}(?![A-Z0-9])", combined):
             return True, keyword
     return False, ""
 
@@ -160,11 +170,11 @@ def load_mass_profiles(con: duckdb.DuckDBPyConnection) -> dict[str, dict[str, st
         """
     ).fetchall()
     for servidor, cargo, vinculo in rows:
-        servidor_id = extract_servidor_id(servidor or "")
-        if not servidor_id:
+        matricula_contrato = extract_matricula_contrato(servidor or "")
+        if not matricula_contrato:
             continue
         profile = profiles.setdefault(
-            servidor_id,
+            matricula_contrato,
             {"nome": "", "cargo": "", "vinculo": ""},
         )
         nome = extract_nome_from_servidor(servidor or "")
@@ -191,10 +201,11 @@ def upsert_lotacao_row(
     con.execute(
         """
         INSERT INTO rb_servidores_lotacao (
-            servidor_id, nome, cargo, lotacao, secretaria, unidade, vinculo,
+            servidor_id, matricula_contrato, nome, cargo, lotacao, secretaria, unidade, vinculo,
             sus, sus_unidade, status, error_msg, http_status, url, scraped_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT (servidor_id) DO UPDATE SET
+            matricula_contrato = excluded.matricula_contrato,
             nome = excluded.nome,
             cargo = excluded.cargo,
             lotacao = excluded.lotacao,
@@ -211,6 +222,7 @@ def upsert_lotacao_row(
         """,
         [
             str(payload["servidor_id"]),
+            str(payload.get("matricula_contrato") or ""),
             str(payload.get("nome") or profile.get("nome") or ""),
             str(payload.get("cargo") or profile.get("cargo") or ""),
             lotacao,
@@ -264,7 +276,9 @@ def collect_lotacao(
     delay: float,
 ) -> None:
     profiles = load_mass_profiles(con)
-    all_ids = sorted(profiles.keys(), key=int)
+    session = build_session()
+    list_scraper = RioBrancoServidorList(session=session)
+    all_ids = sorted(list_scraper.fetch_all_ids(), key=int)
     done_rows = con.execute(
         """
         SELECT servidor_id
@@ -275,18 +289,18 @@ def collect_lotacao(
     done_ids = {row[0] for row in done_rows}
     pending_ids = [servidor_id for servidor_id in all_ids if servidor_id not in done_ids]
 
-    log.info("IDs únicos em rb_servidores_mass: %d", len(all_ids))
+    log.info("IDs válidos na listagem do portal: %d", len(all_ids))
     log.info("Pendentes para scrape: %d", len(pending_ids))
     if limit is not None:
         pending_ids = pending_ids[:limit]
         log.info("Aplicando --limit=%d", limit)
 
-    session = build_session()
     scraper = RioBrancoServidorDetail(session=session)
 
     for index, servidor_id in enumerate(pending_ids, start=1):
         payload = fetch_servidor_payload(scraper, servidor_id)
-        upsert_lotacao_row(con, payload, profiles.get(servidor_id))
+        matricula_contrato = str(payload.get("matricula_contrato") or "")
+        upsert_lotacao_row(con, payload, profiles.get(matricula_contrato))
 
         if index % CHECKPOINT_EVERY == 0:
             log.info("Processados %d/%d servidores", index, len(pending_ids))
@@ -329,7 +343,7 @@ def build_sus_view(con: duckdb.DuckDBPyConnection) -> int:
         CREATE OR REPLACE VIEW v_rb_sus AS
         WITH mass_dedup AS (
             SELECT
-                REGEXP_REPLACE(servidor, '/.*', '') AS servidor_id,
+                REGEXP_REPLACE(servidor, '-.*', '') AS matricula_contrato,
                 MAX(vencimento_base) AS vencimento_base_referencia,
                 MAX(salario_bruto) AS salario_bruto_referencia,
                 MAX(salario_liquido) AS salario_liquido_referencia,
@@ -340,6 +354,7 @@ def build_sus_view(con: duckdb.DuckDBPyConnection) -> int:
         )
         SELECT
             l.servidor_id,
+            l.matricula_contrato,
             l.nome,
             l.cargo,
             l.lotacao,
@@ -352,7 +367,7 @@ def build_sus_view(con: duckdb.DuckDBPyConnection) -> int:
             m.folhas_registradas
         FROM rb_servidores_lotacao l
         LEFT JOIN mass_dedup m
-          ON m.servidor_id = l.servidor_id
+          ON m.matricula_contrato = l.matricula_contrato
         WHERE l.sus = TRUE AND COALESCE(l.status, 'ok') = 'ok'
         """
     )
@@ -413,7 +428,6 @@ def build_insights(con: duckdb.DuckDBPyConnection) -> int:
                 ),
                 int(n_servidores),
                 exposure,
-                None,
                 "municipal",
                 "Prefeitura de Rio Branco",
                 "SEMSA",
