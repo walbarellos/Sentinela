@@ -133,6 +133,14 @@ _ORGAO_KEYWORDS_NORM: list[tuple[str, list[str]]] = [
 ]
 
 
+def _keyword_matches(text: str, keyword: str) -> bool:
+    if not text or not keyword:
+        return False
+    if re.fullmatch(r"[A-Z0-9/-]+", keyword):
+        return re.search(rf"(?<![A-Z0-9]){re.escape(keyword)}(?![A-Z0-9])", text) is not None
+    return keyword in text
+
+
 def resolve_orgao(
     *,
     unidade_gestora: str = "",
@@ -154,7 +162,7 @@ def resolve_orgao(
             if not text:
                 continue
             for keyword in keywords:
-                if keyword in text:
+                if _keyword_matches(text, keyword):
                     return orgao
 
     return "GOVERNO_ACRE"
@@ -212,6 +220,42 @@ class LicitacaoRow:
     fornecedores: list[dict] = field(default_factory=list)
     orgao: str = ""
     unidade_gestora: str = ""
+
+
+@dataclass
+class FornecedorResumoRow:
+    razao_social: str
+    cnpjcpf: str
+    empenhado: float
+    liquidado: float
+    pago: float
+    ano: int
+    orgao: str = ""
+    entidade: str = ""
+
+
+@dataclass
+class FornecedorDetalheRow:
+    ano: int
+    entidade: str
+    orgao: str
+    razao_social: str
+    cnpjcpf: str
+    numero_empenho: str
+    ano_empenho: str
+    data_empenho: str
+    total_empenho: float
+    historico: str
+    despesa_orcamentaria: str
+    funcao: str
+    subfuncao: str
+    fonte_recurso: str
+    numero_liquidacao: str
+    data_liquidacao: str
+    valor_liquidacao: float
+    numero_pagamento: str
+    data_pagamento: str
+    valor_pagamento: float
 
 
 class TransparenciaAcConnector:
@@ -436,6 +480,26 @@ class TransparenciaAcConnector:
 
         return rows
 
+    def _portal_post_json(
+        self,
+        *,
+        page: str,
+        endpoint: str,
+        payload: dict[str, str],
+    ):
+        token = self._portal_csrf(page)
+        headers = self._portal_headers(page)
+        data = {"_token": token}
+        data.update(payload)
+        response = self.session.post(
+            f"{BASE_URL}/{page}/{endpoint}",
+            data=data,
+            headers=headers,
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()
+
     def _portal_pagamentos(self, ano: int) -> list[PagamentoRow]:
         items = self._portal_list(
             page="despesas",
@@ -553,6 +617,229 @@ class TransparenciaAcConnector:
                 )
             )
         return rows
+
+    def _portal_fornecedores(self, ano: int) -> list[FornecedorResumoRow]:
+        return self._portal_fornecedores_filtrados(ano=ano)
+
+    def _portal_fornecedores_filtrados(
+        self,
+        *,
+        ano: int,
+        busca: str = "",
+        filtro: str = "",
+        entidade: str = "",
+        orgao: str = "",
+    ) -> list[FornecedorResumoRow]:
+        items = self._portal_list(
+            page="fornecedores",
+            extra_payload={
+                "ano": str(ano),
+                "busca": busca,
+                "filtro": filtro,
+                "periodo": "",
+                "inicio": "",
+                "fim": "",
+                "mes": "",
+                "bimestre": "",
+                "quadrimestre": "",
+                "semestre": "",
+                "trimestre": "",
+            },
+        )
+        rows: list[FornecedorResumoRow] = []
+        for item in items:
+            rows.append(
+                FornecedorResumoRow(
+                    razao_social=str(item.get("razaosocial") or item.get("descricao") or "").strip(),
+                    cnpjcpf=self._clean_doc(item.get("cpfcnpjcredor", "")),
+                    empenhado=self._parse_valor(item.get("empenhado", "0")),
+                    liquidado=self._parse_valor(item.get("liquidado", "0")),
+                    pago=self._parse_valor(item.get("pago", "0")),
+                    ano=ano,
+                    orgao=orgao or resolve_orgao(unidade_gestora=entidade or busca),
+                    entidade=entidade or (busca if filtro == "orgao" else ""),
+                )
+            )
+        return rows
+
+    def _portal_orgaos(self, *, ano: int, page: str = "despesas") -> list[str]:
+        rows: list[str] = []
+        current_page = 1
+
+        while True:
+            response = self.session.get(
+                f"{BASE_URL}/{page}/orgaos",
+                params={
+                    "busca": "",
+                    "ano": str(ano),
+                    "page": str(current_page),
+                },
+                headers={"Accept": "application/json"},
+                timeout=30,
+            )
+            response.raise_for_status()
+            data = response.json()
+            items = data.get("data", [])
+            if not items:
+                break
+
+            rows.extend(str(item.get("entidade") or "").strip() for item in items if item.get("entidade"))
+            last_page = int(data.get("last_page") or current_page)
+            if current_page >= last_page:
+                break
+            current_page += 1
+            time.sleep(self.delay)
+
+        return rows
+
+    def _portal_despesas_fornecedores_por_orgao(
+        self,
+        *,
+        ano: int,
+        entidade: str,
+        orgao_canonico: str,
+    ) -> list[FornecedorResumoRow]:
+        items = self._portal_list(
+            page="despesas",
+            extra_payload={
+                "ano": str(ano),
+                "orgao": entidade,
+                "busca": "",
+                "filtro": "fornecedor",
+                "fonte": "",
+                "despesa": "",
+                "periodo": "",
+                "inicio": "",
+                "fim": "",
+                "mes": "",
+                "bimestre": "",
+                "quadrimestre": "",
+                "semestre": "",
+                "trimestre": "",
+                "nr_empenho": "",
+                "motivo": "",
+                "programa": "",
+            },
+        )
+        rows: list[FornecedorResumoRow] = []
+        for item in items:
+            rows.append(
+                FornecedorResumoRow(
+                    razao_social=str(item.get("razaosocial") or item.get("descricao") or "").strip(),
+                    cnpjcpf=self._clean_doc(item.get("cpfcnpjcredor", "")),
+                    empenhado=self._parse_valor(item.get("empenhado", "0")),
+                    liquidado=self._parse_valor(item.get("liquidado", "0")),
+                    pago=self._parse_valor(item.get("pago", "0")),
+                    ano=ano,
+                    orgao=orgao_canonico,
+                    entidade=entidade,
+                )
+            )
+        return rows
+
+    def _portal_fornecedor_dados_exportacao(
+        self,
+        *,
+        ano: int,
+        fornecedor: str,
+    ) -> list[FornecedorDetalheRow]:
+        if not fornecedor.strip():
+            return []
+
+        items = self._portal_post_json(
+            page="fornecedores",
+            endpoint="dados-exportacao",
+            payload={
+                "ano": str(ano),
+                "fornecedor": fornecedor,
+                "busca": "",
+                "busca_card": "",
+                "filtro": "",
+                "periodo": "",
+                "inicio": "",
+                "fim": "",
+                "mes": "",
+                "bimestre": "",
+                "trimestre": "",
+                "quadrimestre": "",
+                "semestre": "",
+            },
+        )
+        return [
+            self._to_fornecedor_detalhe_row(item, ano=ano, fornecedor_fallback=fornecedor)
+            for item in (items or [])
+        ]
+
+    def _to_fornecedor_detalhe_row(
+        self,
+        item: dict,
+        *,
+        ano: int,
+        entidade_fallback: str = "",
+        fornecedor_fallback: str = "",
+    ) -> FornecedorDetalheRow:
+        entidade = str(item.get("entidade") or entidade_fallback or "").strip()
+        razao_social = str(item.get("razaosocial") or fornecedor_fallback or "").strip()
+        return FornecedorDetalheRow(
+            ano=ano,
+            entidade=entidade,
+            orgao=resolve_orgao(unidade_gestora=entidade, credor=razao_social),
+            razao_social=razao_social,
+            cnpjcpf=self._clean_doc(item.get("cpfcnpjcredor", "")),
+            numero_empenho=str(item.get("numeroempenho") or ""),
+            ano_empenho=str(item.get("anoempenho") or ""),
+            data_empenho=str(item.get("dataempenho") or ""),
+            total_empenho=self._parse_valor(item.get("totalempenho", "0")),
+            historico=str(item.get("historico") or ""),
+            despesa_orcamentaria=str(item.get("despesaorcamentaria") or ""),
+            funcao=str(item.get("funcao") or ""),
+            subfuncao=str(item.get("subfuncao") or ""),
+            fonte_recurso=str(item.get("fonterecurso") or ""),
+            numero_liquidacao=str(item.get("numeroliquidacao") or ""),
+            data_liquidacao=str(item.get("dataemissao") or ""),
+            valor_liquidacao=self._parse_valor(item.get("valordaliquidacao", "0")),
+            numero_pagamento=str(item.get("numeropagamento") or ""),
+            data_pagamento=str(item.get("datapagamento") or ""),
+            valor_pagamento=self._parse_valor(item.get("valorpagamento", "0")),
+        )
+
+    def _portal_despesas_dados_exportacao(
+        self,
+        *,
+        ano: int,
+        entidade: str,
+    ) -> list[FornecedorDetalheRow]:
+        items = self._portal_post_json(
+            page="despesas",
+            endpoint="dados-exportacao",
+            payload={
+                "ano": str(ano),
+                "orgao": entidade,
+                "unidade": "",
+                "descricao": "",
+                "fornecedor": "",
+                "busca": "",
+                "busca_card": "",
+                "filtro": "orgao",
+                "fonte": "",
+                "despesa": "",
+                "periodo": "",
+                "inicio": "",
+                "fim": "",
+                "mes": "",
+                "bimestre": "",
+                "trimestre": "",
+                "quadrimestre": "",
+                "semestre": "",
+                "nr_empenho": "",
+                "motivo": "",
+                "programa": "",
+            },
+        )
+        return [
+            self._to_fornecedor_detalhe_row(item, ano=ano, entidade_fallback=entidade)
+            for item in (items or [])
+        ]
 
     def get_exercicios(self):
         cfg = self.get_config()
@@ -751,6 +1038,111 @@ class TransparenciaAcConnector:
             time.sleep(self.delay)
 
         return rows or self._portal_licitacoes(ano)
+
+    def get_fornecedores(self, ano: int) -> list[FornecedorResumoRow]:
+        return self._portal_fornecedores(ano)
+
+    def get_fornecedores_por_orgao(
+        self,
+        ano: int,
+        orgao_canonico: str,
+    ) -> list[FornecedorResumoRow]:
+        entidades = [
+            entidade
+            for entidade in self._portal_orgaos(ano=ano, page="despesas")
+            if resolve_orgao(unidade_gestora=entidade) == orgao_canonico
+        ]
+        rows: list[FornecedorResumoRow] = []
+        total = len(entidades)
+        for idx, entidade in enumerate(entidades, start=1):
+            log.info(
+                "Coletando fornecedores de %s %d/%d (%s)",
+                orgao_canonico,
+                idx,
+                total,
+                entidade[:120],
+            )
+            rows.extend(
+                self._portal_despesas_fornecedores_por_orgao(
+                    ano=ano,
+                    entidade=entidade,
+                    orgao_canonico=orgao_canonico,
+                )
+            )
+            time.sleep(self.delay)
+        return rows
+
+    def get_despesa_detalhes_por_orgao(
+        self,
+        ano: int,
+        orgao_canonico: str,
+        max_entidades: Optional[int] = None,
+    ) -> list[FornecedorDetalheRow]:
+        entidades = [
+            entidade
+            for entidade in self._portal_orgaos(ano=ano, page="despesas")
+            if resolve_orgao(unidade_gestora=entidade) == orgao_canonico
+        ]
+        if max_entidades is not None:
+            entidades = entidades[:max_entidades]
+        rows: list[FornecedorDetalheRow] = []
+        total = len(entidades)
+        for idx, entidade in enumerate(entidades, start=1):
+            log.info(
+                "Coletando despesas detalhadas de %s %d/%d (%s)",
+                orgao_canonico,
+                idx,
+                total,
+                entidade[:120],
+            )
+            rows.extend(
+                self._portal_despesas_dados_exportacao(
+                    ano=ano,
+                    entidade=entidade,
+                )
+            )
+            time.sleep(self.delay)
+        return rows
+
+    def get_fornecedor_detalhes(
+        self,
+        ano: int,
+        fornecedores: Optional[list[FornecedorResumoRow]] = None,
+        max_fornecedores: Optional[int] = None,
+    ) -> list[FornecedorDetalheRow]:
+        fornecedores = fornecedores or self.get_fornecedores(ano)
+        if max_fornecedores is not None:
+            fornecedores = fornecedores[:max_fornecedores]
+
+        rows: list[FornecedorDetalheRow] = []
+        total = len(fornecedores)
+        for idx, fornecedor in enumerate(fornecedores, start=1):
+            if not fornecedor.razao_social:
+                continue
+            if idx == 1 or idx % 25 == 0 or idx == total:
+                log.info(
+                    "Detalhando fornecedores %d/%d (%s)",
+                    idx,
+                    total,
+                    fornecedor.razao_social[:120],
+                )
+            try:
+                rows.extend(
+                    self._portal_fornecedor_dados_exportacao(
+                        ano=ano,
+                        fornecedor=fornecedor.razao_social,
+                    )
+                )
+            except Exception as exc:
+                log.warning(
+                    "Falha ao detalhar fornecedor %s (%d/%d): %s",
+                    fornecedor.razao_social,
+                    idx,
+                    total,
+                    exc,
+                )
+            time.sleep(self.delay)
+        return rows
 
     def run(self, anos=None):
         anos = anos or [2024, 2023]
