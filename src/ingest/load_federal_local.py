@@ -58,8 +58,7 @@ def main():
                 found = True
     
     if not found:
-        print("
-[!] Nenhum dado federal foi carregado.")
+        print("\n[!] Nenhum dado federal foi carregado.")
         print("Causa provável: Os arquivos em data/federal/ são inválidos (HTML em vez de ZIP).")
         print("Ação sugerida: Você precisará de um token da CGU para baixar via API ou baixar manualmente os CSVs do Portal da Transparência.")
     
