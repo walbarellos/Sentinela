@@ -9,6 +9,7 @@ from src.ingest.riobranco_jsf import (
 
 log = logging.getLogger("Sentinela.ServidorList")
 
+
 class RioBrancoServidorList:
     BASE_URL = "https://transparencia.riobranco.ac.gov.br/servidor/"
 
@@ -54,8 +55,7 @@ class RioBrancoServidorList:
         rx.raise_for_status()
 
         updates = parse_partial_xml_updates(rx.text)
-        html_tab = updates.get("Formulario") or "
-".join(updates.values())
+        html_tab = updates.get("Formulario") or "\n".join(updates.values())
 
         ids = find_all_ver_ids_in_html(html_tab, "servidor")
         if not ids:

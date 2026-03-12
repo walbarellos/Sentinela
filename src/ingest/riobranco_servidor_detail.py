@@ -1,11 +1,22 @@
 import logging
 import re
+from datetime import datetime
+from typing import Any
+
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
 
 log = logging.getLogger("Sentinela.ServidorDetail")
+
+
+def _extract_field(text: str, *labels: str) -> str:
+    for label in labels:
+        match = re.search(rf"(?im){label}\s*[:\-–]\s*(.+)", text)
+        if match:
+            return match.group(1).strip()
+    return ""
+
 
 class RioBrancoServidorDetail:
     BASE = "https://transparencia.riobranco.ac.gov.br"
@@ -21,19 +32,27 @@ class RioBrancoServidorDetail:
 
         soup = BeautifulSoup(r.text, "html.parser")
         data: dict[str, str] = {}
-        text = soup.get_text("
-", strip=True)
+        text = soup.get_text("\n", strip=True)
 
-        # Mapeamento de metadados
-        for key in ["Nome", "Cargo", "Lotação", "Vínculo", "Secretaria"]:
-            m = re.search(rf"{key}\s*[:\-]\s*(.+)", text)
-            if m: data[key.lower()] = m.group(1).strip()
+        # Mantém um conjunto pequeno de campos canônicos para o sync de lotação.
+        field_map = {
+            "nome": ("Nome",),
+            "cargo": ("Cargo",),
+            "lotacao": ("Lotação", "Lotacao"),
+            "vinculo": ("Vínculo", "Vinculo"),
+            "secretaria": ("Secretaria",),
+            "unidade": ("Unidade",),
+        }
+        for key, labels in field_map.items():
+            value = _extract_field(text, *labels)
+            if value:
+                data[key] = value
 
-        # Extração de tabelas salariais
+        # Extração da maior tabela HTML como apoio para debugging/análises futuras.
         try:
             tables = pd.read_html(r.text)
-            main_table = max(tables, key=lambda df: df.shape[0] * df.shape[1]) if tables else None
-        except:
+            main_table: Any = max(tables, key=lambda df: df.shape[0] * df.shape[1]) if tables else None
+        except Exception:
             main_table = None
 
         data["servidor_id"] = str(servidor_id)

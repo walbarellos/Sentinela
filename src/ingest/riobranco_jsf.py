@@ -45,3 +45,19 @@ def find_button_id_by_label(html: str, label: str) -> str or None:
         if onclick and node.get("id"): return node.get("id")
 
     return None
+
+
+def find_mojarra_button_id_by_label(html: str, label: str) -> str or None:
+    return find_button_id_by_label(html, label)
+
+
+def find_all_ver_ids_in_html(html: str, route: str) -> list[str]:
+    soup = BeautifulSoup(html, "html.parser")
+    ids: set[str] = set()
+    pattern = re.compile(rf"/{re.escape(route)}/ver/(\d+)/")
+    for link in soup.find_all("a", href=pattern):
+        href = link.get("href", "")
+        match = pattern.search(href)
+        if match:
+            ids.add(match.group(1))
+    return sorted(ids, key=int)
