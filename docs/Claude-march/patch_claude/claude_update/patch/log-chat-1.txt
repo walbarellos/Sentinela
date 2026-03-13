@@ -36,3 +36,35 @@
 - Evidencia importante descoberta no portal:
   a pagina da licitacao 2274334 lista explicitamente os contratos 3896 e 3898 dentro do processo 3006, confirmando o vinculo institucional com a licitacao mae
 - Proximo alvo: fechar o 3898 via fonte externa/PNCP/portal de compras, ou via vencedor por lote do PE 82/2023 se essa camada for recuperada
+
+[2026-03-13 09:00:26 -05] auditoria documental do ultimo contrato SUS municipal pendente
+- Novo script: scripts/sync_rb_contratos_inconsistencias.py
+- Objetivo da mudanca: parar de forcar fornecedor fraco no contrato 3898 e materializar so o que ficou probatorio no proprio portal + edital oficial da CPL
+- Fontes oficiais usadas na auditoria do processo 3006:
+  licitacao mae 2274334 no portal de transparencia de Rio Branco
+  publicacoes CPL 1554 (aviso + edital do PE SRP 141/2023)
+  publicacoes CPL 1640 (retificacao/reabertura do mesmo pregao)
+- Validacao de engenharia feita antes de subir insight:
+  a leitura do lote 8 das propostas confirmou que o parser de itens/propostas estava correto
+  o comparativo por preco contra proposta inicial foi removido do auditor por ser mais fraco juridicamente do que eu aceito sem camada de lances finais
+  depois do endurecimento da regra, o falso positivo no contrato 3896 caiu
+- Resultado final materializado no banco:
+  rb_contratos_item_audit = 57 linhas auditadas
+  v_rb_contratos_inconsistencias = 1 caso
+  insights RB_CONTRATO_LICITACAO_INCONSISTENTE = 1
+- Caso que permaneceu de pe:
+  contrato 3898 / processo 3006 / licitacao 2274334 / R$ 31.200,00
+  item divergente = "Coletor de Material Perfurocortante"
+  status = ITEM_FORA_EDITAL_E_PROPOSTAS
+  achado = o item aparece no contrato, mas nao apareceu nas propostas do portal nem no edital/retificacao oficiais da CPL para o PE SRP 141/2023
+- Leitura operacional apos a auditoria:
+  o ultimo contrato municipal sem CNPJ nao foi resolvido por fornecedor
+  em vez disso, virou um caso documental mais forte: contrato ligado a licitacao mae confirmada, mas com item fora do edital e fora das propostas publicas
+- Integracao na fila final municipal:
+  nova view = v_rb_contratos_triagem_final
+  nova view prioritaria = v_rb_contratos_prioritarios
+  fila final agora consolidada:
+    3895 / processo 3044 / NORTE DISTRIBUIDORA / prioridade 100 / denuncia_imediata
+    3898 / processo 3006 / sem fornecedor confirmado / prioridade 95 / auditoria_documental_licitacao
+- Novo proximo alvo:
+  tentar so a prova complementar externa (TCE/licitacoes-e/PNCP) para o item 3898, se quisermos sair de anomalia documental para identificacao do fornecedor/lote
