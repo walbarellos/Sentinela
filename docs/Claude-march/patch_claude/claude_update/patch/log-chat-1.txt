@@ -90,3 +90,34 @@
   sim, foi possivel testar as fontes externas publicas
   nao, elas nao entregam hoje uma prova complementar automatica suficiente para fechar o 3898
   o caso 3898 permanece mais forte como anomalia documental municipal (item fora do edital e fora das propostas) do que como match de fornecedor/lote por fonte externa aberta
+
+[2026-03-13 10:11:28 -05] dossie e evidencias congeladas dos dois casos prioritarios municipais
+- Objetivo: sair de views/tabelas e deixar o material pronto para consulta, representacao e preservacao local
+- Entregas geradas em docs/Claude-march/patch_claude/claude_update/patch/:
+  dossie_rb_sus_prioritarios.md
+  denuncia_preliminar_3895.txt
+  denuncia_preliminar_3898.txt
+  evidencias_rb_sus_prioritarios/README.md
+  evidencias_rb_sus_prioritarios/manifest_rb_sus_prioritarios.json
+- Evidencias congeladas do caso 3895:
+  HTML do contrato 1916838
+  PDF anexo do contrato (arquivo 2247658)
+  PDF-relatorio do detalhe do contrato
+- Evidencias congeladas do caso 3898:
+  HTML do contrato 2274688
+  PDF-relatorio do detalhe do contrato
+  HTML da licitacao mae 2274334
+  HTML + PDF das publicacoes CPL 1554 e 1640
+- Integridade:
+  cada arquivo ficou com hash SHA-256 materializado no manifesto
+  isso reduz o risco de o portal mudar, cair ou remover anexos antes da formalizacao externa
+
+[2026-03-13 10:12:07 -05] bundle unico gerado para transporte do material prioritario
+- Arquivo:
+  docs/Claude-march/patch_claude/claude_update/patch/rb_sus_prioritarios_bundle_20260313.tar.gz
+- Conteudo:
+  dossie markdown
+  2 textos preliminares de representacao
+  diretorio evidencias_rb_sus_prioritarios com HTML/PDF/manifesto
+- Hash do bundle:
+  1616006a684bbccce6bb62ba1821ce268ba592bf3c7800dd60e2d8cb607e9c39
