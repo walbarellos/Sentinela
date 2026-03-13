@@ -609,6 +609,87 @@ def build_views(con: duckdb.DuckDBPyConnection) -> int:
         """
     )
     build_sancoes_view(con)
+    views = {row[0] for row in con.execute("SELECT table_name FROM information_schema.views").fetchall()}
+    sancao_cte = ""
+    sancao_join = ""
+    sancao_count_expr = "0"
+    sancao_source_expr = "''"
+    sancao_cols = """
+            FALSE AS sancao_ativa,
+            0 AS n_sancoes_ativas,
+            '' AS sancao_fontes
+    """
+    if "v_rb_contrato_ceis" in views:
+        sancao_cte = """
+        , sancoes AS (
+            SELECT
+                row_id,
+                COUNT(*) FILTER (WHERE ativa = TRUE) AS n_sancoes_ativas,
+                STRING_AGG(DISTINCT COALESCE(sancao_fonte, ''), ', ' ORDER BY COALESCE(sancao_fonte, '')) AS sancao_fontes
+            FROM v_rb_contrato_ceis
+            GROUP BY 1
+        )
+        """
+        sancao_join = "LEFT JOIN sancoes s ON s.row_id = c.row_id"
+        sancao_count_expr = "COALESCE(s.n_sancoes_ativas, 0)"
+        sancao_source_expr = "COALESCE(s.sancao_fontes, '')"
+        sancao_cols = """
+            CAST(COALESCE(s.n_sancoes_ativas, 0) > 0 AS BOOLEAN) AS sancao_ativa,
+            COALESCE(s.n_sancoes_ativas, 0) AS n_sancoes_ativas,
+            COALESCE(s.sancao_fontes, '') AS sancao_fontes
+        """
+
+    con.execute(
+        f"""
+        CREATE OR REPLACE VIEW v_rb_contratos_triagem AS
+        WITH latest_ocr AS (
+            SELECT o.*
+            FROM rb_contratos_pdf_ocr o
+            JOIN (
+                SELECT contrato_row_id, MAX(updated_at) AS updated_at
+                FROM rb_contratos_pdf_ocr
+                GROUP BY 1
+            ) x
+              ON x.contrato_row_id = o.contrato_row_id
+             AND x.updated_at = o.updated_at
+        )
+        {sancao_cte}
+        SELECT
+            c.row_id,
+            c.ano,
+            c.numero_contrato,
+            c.numero_processo,
+            c.secretaria,
+            c.objeto,
+            c.valor_referencia_brl,
+            c.situacao_contrato,
+            c.fornecedor,
+            c.cnpj,
+            CAST(COALESCE(c.fornecedor, '') <> '' AS BOOLEAN) AS tem_fornecedor,
+            CAST(COALESCE(c.cnpj, '') <> '' AS BOOLEAN) AS tem_cnpj,
+            COALESCE(o.status, '') AS ocr_status,
+            COALESCE(o.source_kind, '') AS ocr_source_kind,
+            {sancao_cols},
+            CASE
+                WHEN {sancao_count_expr} > 0 THEN 'denuncia_imediata'
+                WHEN COALESCE(c.cnpj, '') = '' AND COALESCE(c.valor_referencia_brl, 0) >= 50000 THEN 'extrair_cnpj_prioritario'
+                WHEN COALESCE(c.cnpj, '') = '' THEN 'buscar_fonte_externa'
+                WHEN COALESCE(c.fornecedor, '') = '' THEN 'normalizar_fornecedor'
+                ELSE 'revisar'
+            END AS fila_investigacao,
+            CASE
+                WHEN {sancao_count_expr} > 0 THEN 100
+                WHEN COALESCE(c.cnpj, '') = '' AND COALESCE(c.valor_referencia_brl, 0) >= 50000 THEN 80
+                WHEN COALESCE(c.cnpj, '') = '' THEN 60
+                WHEN COALESCE(c.fornecedor, '') = '' THEN 40
+                ELSE 20
+            END AS prioridade
+        FROM rb_contratos c
+        LEFT JOIN latest_ocr o ON o.contrato_row_id = c.row_id
+        {sancao_join}
+        WHERE c.sus = TRUE
+        """
+    )
     return con.execute("SELECT COUNT(*) FROM v_rb_contratos_sus").fetchone()[0]
 
 
