@@ -253,3 +253,230 @@
 - Leitura operacional:
   NORTE ja e alvo legitimo de trilha propria no software
   nepotismo, fraude licitatoria estrutural e substituicao de efetivos continuam como hipoteses fortes, mas ainda nao fechadas como prova pelo banco atual
+
+[2026-03-13 14:41:12 -05] trilha focal TRACE_NORTE materializada e exportada
+- Scripts novos:
+  scripts/sync_trace_norte.py
+  scripts/export_trace_norte.py
+- Tabelas / view novas:
+  trace_norte_contratos
+  trace_norte_sancoes
+  trace_norte_socios
+  trace_norte_leads
+  v_trace_norte_resumo
+- Resultado do CNPJ focal 37.306.014/0001-48:
+  10 contratos no Acre
+  R$ 905.873,95 mapeados
+  1 contrato municipal / R$ 82.950,00
+  9 contratos estaduais / R$ 822.923,95
+  3 sancoes CEIS ativas
+  1 socia materializada
+  0 coincidencias nominais exatas da socia nas bases locais carregadas
+  0 contratos com sinal textual direto de terceirizacao de pessoal para este CNPJ
+- Leitura tecnica principal:
+  para este CNPJ especifico, o banco prova colisao contrato + sancao e concentracao em fornecimento de bens
+  a alegacao de substituicao de servidores nao fechou neste CNPJ
+- Camada separada de triagem:
+  11 leads por nome semelhante NORT(E) em contratos estaduais com terceirizacao textual
+  valor agregado dos leads = R$ 5.156.810,37
+  exemplos fortes:
+  CENTRAL NORTE COMERCIO E SERVICOS DE APOIO ADMINISTRATIVO / CNPJ 36.990.588/0001-15 / SEPLANH / R$ 1.404.178,40
+  NORTE - CENTRO DE DISTRIBUICAO DE MERCADORIAS EM GERAL LTDA / CNPJ 21.813.150/0001-94 / SEJUSP / R$ 1.215.990,24
+- Artefatos de entrega atualizados:
+  entrega_denuncia_atual/TRACE_NORTE_DOSSIE.md
+  entrega_denuncia_atual/TRACE_NORTE_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_contratos.csv
+  entrega_denuncia_atual/README.md
+  entrega_denuncia_atual/PROXIMO_PASSO.md
+
+[2026-03-13 15:15:18 -05] expansao inicial da rede TRACE_NORTE concluida
+- Scripts novos:
+  scripts/sync_trace_norte_rede.py
+  scripts/export_trace_norte_rede.py
+- Tabelas / view novas:
+  trace_norte_rede_empresas
+  trace_norte_rede_socios
+  v_trace_norte_rede_resumo
+- Cobertura:
+  3 empresas-lead enriquecidas
+  9 socios materializados
+  0 shared_socio_with_focal
+  0 socio_match_local
+- Principais leads de terceirizacao:
+  NORTE - CENTRO DE DISTRIBUICAO DE MERCADORIAS EM GERAL LTDA / CNPJ 21.813.150/0001-94 / 4 contratos / R$ 3.129.579,48 / Plácido de Castro-AC
+  CENTRAL NORTE SERVICOS TERCEIRIZADOS LTDA / CNPJ 36.990.588/0001-15 / 5 contratos / R$ 2.020.878,88 / Palmas-TO
+  AGRO NORTE IMPORTACAO E EXPORTACAO LTDA / CNPJ 04.582.979/0001-04 / 2 contratos com terceirizacao residual / R$ 6.352,01 / Rio Branco-AC
+- Leitura operacional:
+  a hipotese de substituicao de servidores por este CNPJ focal da NORTE enfraqueceu
+  a fila correta passou a ser auditar os contratos concretos dos leads de terceirizacao mais fortes
+- Artefatos de entrega atualizados:
+  entrega_denuncia_atual/TRACE_NORTE_REDE_DOSSIE.md
+  entrega_denuncia_atual/TRACE_NORTE_REDE_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_rede_empresas.csv
+
+[2026-03-13 15:17:55 -05] export de auditoria contratual dos leads TRACE_NORTE concluido
+- Ajuste no pacote de rede:
+  trace_norte_rede_contratos materializado com 47 contratos
+  export CSV pronto para leitura de processo/unidade gestora
+- Artefatos:
+  entrega_denuncia_atual/TRACE_NORTE_REDE_DOSSIE.md
+  entrega_denuncia_atual/TRACE_NORTE_REDE_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_rede_empresas.csv
+  entrega_denuncia_atual/trace_norte_rede_contratos.csv
+- Leitura operacional:
+  a proxima etapa deixa de ser descobrir empresa e passa a ser auditar os contratos 2024 dos dois leads mais fortes de terceirizacao
+
+[2026-03-13 15:46:52 -05] ponte contrato -> licitacao candidata dos leads TRACE_NORTE materializada
+- Scripts novos:
+  scripts/sync_trace_norte_rede_match.py
+  scripts/export_trace_norte_rede_match.py
+- Tabelas / view novas:
+  trace_norte_rede_match
+  v_trace_norte_rede_match_best
+- Resultado final:
+  7 matches candidatos no recorte dos dois leads prioritarios
+  bloco mais coeso = CENTRAL NORTE x processo 282 / SEPLAN, cobrindo 5 contratos de 2024
+  candidatos secundarios = processo 582 / IAPEN para contrato 076/2024 e processo 122 / SEAD para contrato 021/2024
+- Leitura operacional:
+  o foco tecnico agora deve sair do nome da empresa e entrar na leitura de edital, termo de referencia e anexos do processo 282/SEPLAN
+  os matches 582 e 122 ficam como trilha secundaria, nao como vinculo fechado
+- Artefatos de entrega atualizados:
+  entrega_denuncia_atual/TRACE_NORTE_REDE_MATCH_DOSSIE.md
+  entrega_denuncia_atual/TRACE_NORTE_REDE_MATCH_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_rede_match_best.csv
+
+[2026-03-13 16:11:46 -05] vinculo exato contrato -> licitacao resolvido para a rede TRACE_NORTE
+- Scripts novos:
+  scripts/sync_trace_norte_rede_vinculo_exato.py
+  scripts/export_trace_norte_rede_vinculo_exato.py
+- Tabelas / views novas:
+  trace_norte_rede_vinculo_exato
+  trace_norte_rede_vinculo_audit
+  v_trace_norte_rede_vinculo_exato
+  v_trace_norte_rede_vinculo_divergencias
+- Resultado:
+  47 vinculos exatos materializados a partir do proprio portal estadual
+  7 linhas auditadas contra a heuristica anterior
+  5 divergencias reais no bloco CENTRAL NORTE / SEPLAN
+  insight novo: TRACE_NORTE_REDE_VINCULO_EXATO
+- Virada principal:
+  os 5 contratos da CENTRAL NORTE em SEPLAN nao apontam para o processo 282/2024
+  o portal de contratos resolve todos para id_licitacao 27462
+  o portal de licitacoes resolve esse id como Pregao Presencial 053/2023, processo 0088.016739.00008/2023-72, homologado
+- Artefatos de entrega atualizados:
+  entrega_denuncia_atual/TRACE_NORTE_REDE_VINCULO_EXATO_DOSSIE.md
+  entrega_denuncia_atual/TRACE_NORTE_REDE_VINCULO_EXATO_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_rede_vinculo_exato.csv
+  entrega_denuncia_atual/trace_norte_rede_vinculo_divergencias.csv
+  entrega_denuncia_atual/trace_norte_rede_vinculo_exato_raw/
+
+[2026-03-13 16:47:41 -05] auditoria documental do PP 053/2023 e fila de pendencias exportadas
+- Scripts novos:
+  scripts/sync_trace_norte_rede_pp053_audit.py
+  scripts/export_trace_norte_rede_pp053_audit.py
+  scripts/export_trace_norte_rede_pendencias.py
+- Tabelas / views novas:
+  trace_norte_rede_pp053_audit
+  v_trace_norte_rede_pp053_audit
+- Resultado:
+  DOE oficial do processo 0088.016739.00008/2023-72 homologa o PP 053/2023 para NORTE COMERCIO E SERVICOS, CNPJ 21.813.150/0001-94
+  o portal de contratos liga os 5 contratos de 2024 ao mesmo id_licitacao, mas em nome de CENTRAL NORTE, CNPJ 36.990.588/0001-15
+  delta entre homologacao e contratos atuais = R$ 16.600,00
+  1 aditivo capturado para o contrato 001/2024 sob o mesmo processo
+  insight novo: TRACE_NORTE_REDE_VENCEDOR_DIVERGENTE
+  fila de pendencias exportada com 22 blocos; maiores alvos = AGRO NORTE / SEJUSP, AGRO NORTE / DETRAN, NORTE - CENTRO / SEJUSP
+- Artefatos de entrega atualizados:
+  entrega_denuncia_atual/TRACE_NORTE_PP053_DOSSIE.md
+  entrega_denuncia_atual/TRACE_NORTE_PP053_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_pp053_audit.csv
+  entrega_denuncia_atual/trace_norte_pp053/
+  entrega_denuncia_atual/TRACE_NORTE_REDE_PENDENCIAS.md
+  entrega_denuncia_atual/TRACE_NORTE_REDE_PENDENCIAS_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_rede_pendencias.csv
+
+[2026-03-13 16:50:52 -05] camada de contratos sem id_licitacao exposto no portal materializada
+- Scripts novos:
+  scripts/sync_trace_norte_rede_sem_licitacao.py
+  scripts/export_trace_norte_rede_sem_licitacao.py
+- Tabelas / views novas:
+  trace_norte_rede_sem_licitacao
+  v_trace_norte_rede_sem_licitacao
+- Resultado:
+  20 blocos contratuais com origem = C e id_licitacao ausente no portal
+  13 insights TRACE_NORTE_REDE_CONTRATO_SEM_ID_LICITACAO para blocos >= R$ 500 mil
+  maiores blocos:
+    AGRO NORTE / SEJUSP = R$ 2.987.976,00
+    AGRO NORTE / ISE = R$ 2.484.000,00
+    AGRO NORTE / DETRAN = R$ 2.296.950,00
+    NORTE - CENTRO / SEJUSP = R$ 1.215.990,24
+- Leitura operacional:
+  o proximo ciclo sai do caso PP 053/2023 e passa a atacar contratos altos cuja origem licitatoria nao esta exposta no proprio portal estadual
+- Artefatos de entrega atualizados:
+  entrega_denuncia_atual/TRACE_NORTE_REDE_SEM_LICITACAO.md
+  entrega_denuncia_atual/TRACE_NORTE_REDE_SEM_LICITACAO_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_rede_sem_licitacao.csv
+
+[2026-03-13 17:38:36 -05] recorte SEJUSP da trilha NORTE isolado e empacotado
+- Scripts novos:
+  scripts/sync_trace_norte_sejusp_prioritarios.py
+  scripts/export_trace_norte_sejusp_prioritarios.py
+- Tabelas / views novas:
+  trace_norte_sejusp_blocos
+  v_trace_norte_sejusp_blocos
+  trace_norte_sejusp_docs
+  v_trace_norte_sejusp_docs
+- Resultado materializado:
+  2 blocos atuais no recorte proprio da unidade SEJUSP
+  1 insight TRACE_NORTE_SEJUSP_TERCEIRIZACAO_SEM_ID_LICITACAO
+  AGRO NORTE / SEJUSP = R$ 2.987.976,00 em 6 contratos de viaturas/caminhonetes sem id_licitacao exposto
+  NORTE-CENTRO / SEJUSP = R$ 1.215.990,24 no contrato 076/2024 de apoio operacional-administrativo com mao de obra, sem id_licitacao exposto
+  3 documentos publicos congelados para a linha do tempo SEJUSP:
+    2020 / NORTE-CENTRO / PE SRP 023/2019 / apoio administrativo-logistica-operacional / R$ 2.069.261,04
+    2023 / JWC / PE SRP 241/2021 / apoio operacional-administrativo com dedicacao exclusiva / R$ 339.313,85 mensal repactuado
+    2025 / NORTE-CENTRO / contrato 26/2021 / limpeza com mao de obra
+- Leitura operacional:
+  o recorte SEJUSP fechou a separacao objetiva entre terceirizacao/apoio e aquisicao de viaturas
+  o proximo alvo correto ficou mais estreito:
+    localizar a base formal do contrato 076/2024
+    resolver a origem dos 6 contratos AGRO NORTE / SEJUSP
+- Artefatos de entrega atualizados:
+  entrega_denuncia_atual/TRACE_NORTE_SEJUSP_PRIORITARIOS.md
+  entrega_denuncia_atual/TRACE_NORTE_SEJUSP_PRIORITARIOS_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_sejusp_blocos.csv
+  entrega_denuncia_atual/trace_norte_sejusp_docs.csv
+  entrega_denuncia_atual/trace_norte_sejusp/
+  entrega_denuncia_atual/trace_norte_sejusp_bundle_20260313.tar.gz
+
+[2026-03-13 18:12:23 -05] recorte SEJUSP reforcado com DOE 2024 e bundle reemitido com hash estavel
+- Scripts atualizados:
+  scripts/sync_trace_norte_sejusp_prioritarios.py
+  scripts/export_trace_norte_sejusp_prioritarios.py
+- Ajuste estrutural:
+  o sync do SEJUSP passou a absorver atos formais de 2024 do Diario Oficial em data/tmp/sejusp_formal/
+  o export do bundle deixou de incluir o proprio manifest para evitar divergencia de SHA-256
+- Resultado materializado:
+  trace_norte_sejusp_blocos = 2
+  trace_norte_sejusp_docs = 10
+  insights TRACE_NORTE_SEJUSP_TERCEIRIZACAO_SEM_ID_LICITACAO = 1
+  insights TRACE_NORTE_SEJUSP_VIATURAS_RASTRO_DOE = 1
+- Base formal fechada para NORTE-CENTRO / SEJUSP:
+  DOE de 26/12/2024 liga o contrato 076/2024 a ARP 04/2024, PP 053/2023 e processo 0819.014451.00277/2024-18
+  valor total aditivado materializado = R$ 1.388.780,92
+- Base formal parcial fechada para AGRO NORTE / SEJUSP:
+  contrato 082/2024 + adesao 33/2024 -> processo 0819.016417.00053/2024-94 / ARP 49/2023 / PE 206/2023 / R$ 733.491,00
+  contrato 147/2024 -> processo 0064.014914.00006/2024-48 / ARP 49/2023 / PE 206/2023 / R$ 977.988,00
+  adesao 69/2024 -> mesmo processo / ARP 49/2023 / PE 206/2023 / R$ 2.200.473,00
+  portaria do contrato 149/2024 -> processo 0819.012834.00145/2024-93 / FNSP
+- Artefatos reemitidos:
+  entrega_denuncia_atual/TRACE_NORTE_SEJUSP_PRIORITARIOS.md
+  entrega_denuncia_atual/TRACE_NORTE_SEJUSP_PRIORITARIOS_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_sejusp_blocos.csv
+  entrega_denuncia_atual/trace_norte_sejusp_docs.csv
+  entrega_denuncia_atual/trace_norte_sejusp/
+  entrega_denuncia_atual/trace_norte_sejusp_bundle_20260313.tar.gz
+- Hash atual do bundle SEJUSP:
+  71a0897aaa4a2fb7f2c82487cf05a6d34d45c5736f94ae6acfc822a1dce81390
+- Follow-up controlado nos contratos AGRO de 2023:
+  buscas no Diario por 004/2023 e 151/2023 ainda nao fecharam atos formais do bloco AGRO / SEJUSP
+  a busca exata por 004/2023 trouxe falso positivo de outro orgao/unidade (PCAC / F.R. SOARES DAMASCENO LTDA), entao o vinculo nao foi forçado
+  151/2023 segue sem rastro formal local confirmado por busca textual simples
