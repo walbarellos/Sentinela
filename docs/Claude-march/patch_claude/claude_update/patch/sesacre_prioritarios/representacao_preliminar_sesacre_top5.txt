@@ -1,0 +1,19 @@
+ASSUNTO: representacao preliminar sobre fornecedores com sancao ativa contratados pela SESACRE
+
+FATOS OBJETIVOS
+1. CIENTIFICA MEDICA HOSPITAL LTDA EM RECUPERACAO JUDICIAL (CNPJ 07847837000110) aparece com 3 sancao(oes) ativa(s) e R$ 29.410.248,30 em contratos com a SESACRE, distribuidos em 64 contrato(s).
+2. R. BISPO AGUIAR (CNPJ 32595581000148) aparece com 1 sancao(oes) ativa(s) e R$ 12.329.014,18 em contratos com a SESACRE, distribuidos em 11 contrato(s).
+3. HOSPSHOP PRODUTOS HOSPITALARES LTDA (CNPJ 07094705000164) aparece com 1 sancao(oes) ativa(s) e R$ 7.577.625,00 em contratos com a SESACRE, distribuidos em 11 contrato(s).
+4. GOLDENPLUS - COMERCIO DE MEDICAMENTOS E PRODUTOS HOSPITALARES LTDA (CNPJ 17472278000164) aparece com 1 sancao(oes) ativa(s) e R$ 6.590.265,00 em contratos com a SESACRE, distribuidos em 16 contrato(s).
+5. INDUSTRIA BRASILEIRA DE EQUIPAMENTOS MEDICOS HOSPITALARES LTDA - (LUANNA FREIRE FELIX LTDA) (CNPJ 13200879000167) aparece com 1 sancao(oes) ativa(s) e R$ 6.230.171,66 em contratos com a SESACRE, distribuidos em 8 contrato(s).
+
+REQUERIMENTO INICIAL
+Solicita-se a apuracao da regularidade da manutencao desses contratos pela SESACRE, com verificacao da compatibilidade entre as sancoes vigentes, a abrangencia das restricoes e a permanencia das contratacoes no periodo auditado.
+
+FONTES MINIMAS
+- Base aberta CEIS preservada localmente: docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/evidencias/fontes_federais/ceis_20260312.zip
+- Extratos CSV por fornecedor em sesacre_prioritarios/evidencias/
+- Insight local: kind SESACRE_SANCAO_ATIVA
+
+OBSERVACAO
+O texto acima descreve fatos objetivos do banco local e nao afirma, por si so, fraude consumada ou dolo, cuja caracterizacao depende de apuracao pelos orgaos competentes.
