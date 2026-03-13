@@ -690,6 +690,25 @@ def build_views(con: duckdb.DuckDBPyConnection) -> int:
         WHERE c.sus = TRUE
         """
     )
+    con.execute(
+        """
+        CREATE OR REPLACE VIEW v_rb_contratos_pendencias AS
+        SELECT
+            ano,
+            numero_processo,
+            objeto,
+            COUNT(*) AS n_contratos,
+            SUM(valor_referencia_brl) AS total_brl,
+            MIN(prioridade) AS prioridade_min,
+            MAX(prioridade) AS prioridade_max,
+            STRING_AGG(numero_contrato, ', ' ORDER BY numero_contrato) AS contratos,
+            STRING_AGG(DISTINCT fila_investigacao, ', ' ORDER BY fila_investigacao) AS filas
+        FROM v_rb_contratos_triagem
+        WHERE tem_cnpj = FALSE OR tem_fornecedor = FALSE OR sancao_ativa = TRUE
+        GROUP BY 1, 2, 3
+        ORDER BY prioridade_max DESC, total_brl DESC NULLS LAST
+        """
+    )
     return con.execute("SELECT COUNT(*) FROM v_rb_contratos_sus").fetchone()[0]
 
 
