@@ -1,6 +1,6 @@
 # Relatorio Final - Acre / Rio Branco / SUS
 
-Gerado em `2026-03-13 12:06:03`.
+Gerado em `2026-03-13 12:16:28`.
 
 Este relatorio consolida o estado atual do sistema para o recorte `Acre / Rio Branco / SUS`, reunindo o eixo municipal prioritario e o eixo estadual da SESACRE.
 
@@ -11,6 +11,7 @@ Este relatorio consolida o estado atual do sistema para o recorte `Acre / Rio Br
 - Rio Branco: `2` casos prioritarios finais materializados.
 - SESACRE: `67` fornecedores com sancao ativa, somando `R$ 101.329.947,27`.
 - SESACRE: `147` linhas de cruzamento bruto e `67` insights `SESACRE_SANCAO_ATIVA`.
+- SESACRE top 10: `10/10` com QSA, `9/10` com socios e `1/10` com detalhe financeiro (`23` linha(s)).
 
 ## Despesas SUS municipais
 
@@ -53,7 +54,7 @@ Este relatorio consolida o estado atual do sistema para o recorte `Acre / Rio Br
 ## Artefatos prontos
 
 - Bundle municipal: `docs/Claude-march/patch_claude/claude_update/patch/rb_sus_prioritarios_bundle_20260313.tar.gz` | sha256 `865441cc6eeba2f4c331099efe257231c14c2b4e7dcdf4d8131fef17aa609887`
-- Bundle SESACRE: `docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios_bundle_20260313.tar.gz` | sha256 `d5684af8b6fb0131e852bd6edfab39559d882cff4210dae5604a2c0707c3da0f`
+- Bundle SESACRE: `docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios_bundle_20260313.tar.gz` | sha256 `e12595b5b0052ddb2bd556e927b4d17a178e28e06241d210832109fd19618989`
 - Dossie municipal: `docs/Claude-march/patch_claude/claude_update/patch/dossie_rb_sus_prioritarios.md`
 - Dossie SESACRE: `docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/dossie_sesacre_sancoes_prioritarias.md`
 - Indice geral: `docs/Claude-march/patch_claude/claude_update/patch/INDEX_PRIORITARIOS.md`
@@ -62,5 +63,6 @@ Este relatorio consolida o estado atual do sistema para o recorte `Acre / Rio Br
 
 - Municipal: o contrato `3898` segue sem fornecedor/CNPJ por fonte aberta, mas com anomalia documental forte ja materializada.
 - Municipal: a lotacao SUS ainda esta colapsada em 1 unidade materializada; falta granularidade mais fina por UBS/CAPS/UPA quando o portal expuser essa lotacao.
-- Estadual: o pacote probatorio forte ja cobre o top 10 da SESACRE; o proximo ganho e aprofundar QSA/socios e detalhamento fornecedor a fornecedor onde ainda vier vazio.
+- Estadual: o top 10 da SESACRE ficou com `10/10` QSA resolvido e `9/10` com socios; o gargalo remanescente e detalhe financeiro, hoje em `1/10` fornecedores.
+- Estadual: existem `7` insights societarios `SESACRE_QSA_%`, mas a cobertura ainda nao e uniforme em todos os sancionados priorizados.
 - Federal: `PNCP` continua sem papel relevante no caso municipal ja resolvido; segue como fonte complementar eventual, nao como eixo principal.

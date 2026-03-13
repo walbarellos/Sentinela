@@ -201,4 +201,31 @@
 - Ajuste:
   o hash do bundle mestre foi removido do INDEX_PRIORITARIOS.md para evitar recursao de conteudo
 - Hash final estavel:
-  b50786673e17c9cb02bdffd71c284f4e3a97f561a4b0b908cc267379e2348089
+  a0bfb2bef6473e0c71642f8ab67c9891df1c2e76192457d3b0dcc92dca29725f
+
+[2026-03-13 12:15:26 -05] preenchimento dirigido do top 10 sancionado da SESACRE
+- Script novo:
+  scripts/fill_sesacre_prioritarios.py
+- Objetivo:
+  preencher lacunas do pacote estadual sem rerodar o sync completo do Acre
+  foco em QSA/socios e detalhe financeiro dos top 10 fornecedores sancionados ativos da SESACRE
+- Resultado da execucao real:
+  10 empresas QSA resolvidas
+  10 linhas targeted em estado_ac_fornecedor_qsa
+  58 linhas QSA recalculadas
+  7 insights societarios SESACRE_QSA_%
+  23 linhas de detalhe financeiro inseridas
+- Cobertura apos o preenchimento:
+  top 10 SESACRE = 10/10 com QSA
+  top 10 SESACRE = 9/10 com socios
+  top 10 SESACRE = 1/10 com detalhe financeiro
+- Artefatos reemitidos:
+  relatorio_final_acre_rio_branco_sus.md
+  sesacre_prioritarios/dossie_sesacre_sancoes_prioritarias.md
+  sesacre_prioritarios/representacao_preliminar_sesacre_top10.txt
+  sesacre_prioritarios_bundle_20260313.tar.gz
+  acre_rio_branco_sus_master_bundle_20260313.tar.gz
+- Integridade atual:
+  relatorio final = edd8f5473b47c54d134f1536e106fdebe7eca222cb653f6d339b6e929893d545
+  bundle SESACRE = e12595b5b0052ddb2bd556e927b4d17a178e28e06241d210832109fd19618989
+  bundle mestre = a0bfb2bef6473e0c71642f8ab67c9891df1c2e76192457d3b0dcc92dca29725f

@@ -141,6 +141,81 @@ def fetch_snapshot(con: duckdb.DuckDBPyConnection) -> dict[str, object]:
             [TOP_SESACRE],
         ).fetchall()
     ]
+    snapshot["sesacre_top10_qsa_covered"] = con.execute(
+        """
+        WITH top AS (
+            SELECT cnpj_cpf
+            FROM v_sancoes_ativas
+            WHERE orgao_ac = 'SESACRE'
+            ORDER BY valor_contratado_ac DESC
+            LIMIT ?
+        )
+        SELECT COUNT(*)
+        FROM top
+        WHERE EXISTS (
+            SELECT 1
+            FROM estado_ac_fornecedor_qsa q
+            WHERE q.orgao = 'SESACRE' AND q.cnpj = top.cnpj_cpf
+        )
+        """,
+        [TOP_SESACRE],
+    ).fetchone()[0]
+    snapshot["sesacre_top10_socios_covered"] = con.execute(
+        """
+        WITH top AS (
+            SELECT cnpj_cpf
+            FROM v_sancoes_ativas
+            WHERE orgao_ac = 'SESACRE'
+            ORDER BY valor_contratado_ac DESC
+            LIMIT ?
+        )
+        SELECT COUNT(*)
+        FROM top
+        WHERE EXISTS (
+            SELECT 1
+            FROM empresa_socios s
+            WHERE s.cnpj = top.cnpj_cpf
+        )
+        """,
+        [TOP_SESACRE],
+    ).fetchone()[0]
+    snapshot["sesacre_top10_detalhes_covered"] = con.execute(
+        """
+        WITH top AS (
+            SELECT cnpj_cpf
+            FROM v_sancoes_ativas
+            WHERE orgao_ac = 'SESACRE'
+            ORDER BY valor_contratado_ac DESC
+            LIMIT ?
+        )
+        SELECT COUNT(*)
+        FROM top
+        WHERE EXISTS (
+            SELECT 1
+            FROM estado_ac_fornecedor_detalhes d
+            WHERE d.orgao = 'SESACRE' AND d.cnpjcpf = top.cnpj_cpf
+        )
+        """,
+        [TOP_SESACRE],
+    ).fetchone()[0]
+    snapshot["sesacre_top10_detail_rows"] = con.execute(
+        """
+        SELECT COUNT(*)
+        FROM estado_ac_fornecedor_detalhes
+        WHERE orgao = 'SESACRE'
+          AND cnpjcpf IN (
+            SELECT cnpj_cpf
+            FROM v_sancoes_ativas
+            WHERE orgao_ac = 'SESACRE'
+            ORDER BY valor_contratado_ac DESC
+            LIMIT ?
+          )
+        """,
+        [TOP_SESACRE],
+    ).fetchone()[0]
+    snapshot["sesacre_qsa_insights"] = con.execute(
+        "SELECT COUNT(*) FROM insight WHERE kind LIKE 'SESACRE_QSA_%' AND orgao = 'SESACRE'"
+    ).fetchone()[0]
     return snapshot
 
 
@@ -218,6 +293,7 @@ def build_markdown(snapshot: dict[str, object], panel: list[dict[str, object]], 
         f"- Rio Branco: `{snapshot['rb_prioritarios']}` casos prioritarios finais materializados.",
         f"- SESACRE: `{snapshot['sesacre_ativas']}` fornecedores com sancao ativa, somando `{brl(snapshot['sesacre_valor'])}`.",
         f"- SESACRE: `{snapshot['sesacre_cross_rows']}` linhas de cruzamento bruto e `{snapshot['sesacre_insights']}` insights `SESACRE_SANCAO_ATIVA`.",
+        f"- SESACRE top 10: `{snapshot['sesacre_top10_qsa_covered']}/10` com QSA, `{snapshot['sesacre_top10_socios_covered']}/10` com socios e `{snapshot['sesacre_top10_detalhes_covered']}/10` com detalhe financeiro (`{snapshot['sesacre_top10_detail_rows']}` linha(s)).",
         "",
         "## Despesas SUS municipais",
         "",
@@ -261,7 +337,8 @@ def build_markdown(snapshot: dict[str, object], panel: list[dict[str, object]], 
             "",
             "- Municipal: o contrato `3898` segue sem fornecedor/CNPJ por fonte aberta, mas com anomalia documental forte ja materializada.",
             "- Municipal: a lotacao SUS ainda esta colapsada em 1 unidade materializada; falta granularidade mais fina por UBS/CAPS/UPA quando o portal expuser essa lotacao.",
-            "- Estadual: o pacote probatorio forte ja cobre o top 10 da SESACRE; o proximo ganho e aprofundar QSA/socios e detalhamento fornecedor a fornecedor onde ainda vier vazio.",
+            f"- Estadual: o top 10 da SESACRE ficou com `{snapshot['sesacre_top10_qsa_covered']}/10` QSA resolvido e `{snapshot['sesacre_top10_socios_covered']}/10` com socios; o gargalo remanescente e detalhe financeiro, hoje em `{snapshot['sesacre_top10_detalhes_covered']}/10` fornecedores.",
+            f"- Estadual: existem `{snapshot['sesacre_qsa_insights']}` insights societarios `SESACRE_QSA_%`, mas a cobertura ainda nao e uniforme em todos os sancionados priorizados.",
             "- Federal: `PNCP` continua sem papel relevante no caso municipal ja resolvido; segue como fonte complementar eventual, nao como eixo principal.",
         ]
     )

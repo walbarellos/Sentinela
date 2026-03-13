@@ -31,7 +31,7 @@ Casos priorizados:
 - Manifesto: `docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/manifest_sesacre_prioritarios.json`
 - Evidencias por fornecedor: `docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/evidencias/`
 - Bundle unico: `docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios_bundle_20260313.tar.gz`
-- Hash do bundle: `d5684af8b6fb0131e852bd6edfab39559d882cff4210dae5604a2c0707c3da0f`
+- Hash do bundle: `e12595b5b0052ddb2bd556e927b4d17a178e28e06241d210832109fd19618989`
 
 Top 10 materializado:
 - `CIENTIFICA MEDICA HOSPITAL LTDA EM RECUPERACAO JUDICIAL` / `R$ 29.410.248,30`
