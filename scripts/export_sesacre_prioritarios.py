@@ -14,7 +14,7 @@ DB_PATH = ROOT / "data" / "sentinela_analytics.duckdb"
 CEIS_ZIP = ROOT / "data" / "federal" / "ceis_20260312.zip"
 OUT_DIR = ROOT / "docs" / "Claude-march" / "patch_claude" / "claude_update" / "patch" / "sesacre_prioritarios"
 EVIDENCE_DIR = OUT_DIR / "evidencias"
-TOP_N = 5
+TOP_N = 10
 
 
 def brl(value: object) -> str:
@@ -425,7 +425,7 @@ def main() -> None:
 
     dossier_path = OUT_DIR / "dossie_sesacre_sancoes_prioritarias.md"
     dossier_meta = write_text(dossier_path, build_markdown(cases, evidence))
-    texto_path = OUT_DIR / "representacao_preliminar_sesacre_top5.txt"
+    texto_path = OUT_DIR / "representacao_preliminar_sesacre_top10.txt"
     texto_meta = write_text(texto_path, build_plaintext(cases))
     manifest_path = OUT_DIR / "manifest_sesacre_prioritarios.json"
     manifest_meta = write_text(manifest_path, build_manifest(cases, evidence, copied_files))

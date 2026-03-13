@@ -120,7 +120,7 @@
   2 textos preliminares de representacao
   diretorio evidencias_rb_sus_prioritarios com HTML/PDF/manifesto
 - Hash do bundle:
-  1616006a684bbccce6bb62ba1821ce268ba592bf3c7800dd60e2d8cb607e9c39
+  865441cc6eeba2f4c331099efe257231c14c2b4e7dcdf4d8131fef17aa609887
 
 [2026-03-13 11:16:00 -05] pacote estadual priorizado da SESACRE gerado e congelado
 - Objetivo: replicar no eixo estadual o mesmo nivel de prontidao probatoria criado para os casos municipais prioritarios
@@ -128,7 +128,7 @@
   scripts/export_sesacre_prioritarios.py
 - Entregas geradas em docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/:
   dossie_sesacre_sancoes_prioritarias.md
-  representacao_preliminar_sesacre_top5.txt
+  representacao_preliminar_sesacre_top10.txt
   manifest_sesacre_prioritarios.json
   evidencias/ com extratos CSV por fornecedor
 - Escopo priorizado:
@@ -147,10 +147,58 @@
   CSV por caso com sancoes colapsadas, sancoes cruas, contratos, CEIS bruto, QSA e socios
 - Bundle unico:
   docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios_bundle_20260313.tar.gz
-  hash = 4b9390106cb2e04053135bdf71800df03da98ce311062e029712007f7086a834
+  hash = d5684af8b6fb0131e852bd6edfab39559d882cff4210dae5604a2c0707c3da0f
 
 [2026-03-13 11:17:00 -05] indice unico dos artefatos prioritarios criado
 - Arquivo:
   docs/Claude-march/patch_claude/claude_update/patch/INDEX_PRIORITARIOS.md
 - Funcao:
   apontar rapidamente para os bundles, dossies, rascunhos de representacao e log do eixo municipal e estadual
+
+[2026-03-13 12:02:47 -05] relatorio final unico do recorte Acre / Rio Branco / SUS gerado
+- Script novo:
+  scripts/export_relatorio_final_acre_sus.py
+- Entregas:
+  docs/Claude-march/patch_claude/claude_update/patch/relatorio_final_acre_rio_branco_sus.md
+  docs/Claude-march/patch_claude/claude_update/patch/painel_prioridades_acre_rio_branco_sus.csv
+  docs/Claude-march/patch_claude/claude_update/patch/manifest_relatorio_final_acre_rio_branco_sus.json
+- Resumo consolidado do snapshot:
+  Rio Branco = 20.403 servidores com lotacao materializada, 4.427 SUS, 13 contratos SUS, 12 com CNPJ, 2 casos finais
+  SESACRE = 67 fornecedores com sancao ativa, R$ 101.329.947,27 agregados, 147 linhas de cruzamento bruto, 67 insights
+- Painel priorizado:
+  12 linhas = 2 municipais + top 10 estadual da SESACRE
+- Ajuste de integridade:
+  hash vigente do bundle municipal confirmado em 865441cc6eeba2f4c331099efe257231c14c2b4e7dcdf4d8131fef17aa609887
+
+[2026-03-13 12:03:00 -05] bundle mestre do recorte gerado
+- Arquivo:
+  docs/Claude-march/patch_claude/claude_update/patch/acre_rio_branco_sus_master_bundle_20260313.tar.gz
+- Conteudo:
+  relatorio final markdown
+  painel csv
+  manifesto final
+  bundle municipal
+  bundle estadual SESACRE
+  indice prioritario
+- Hash:
+  b50786673e17c9cb02bdffd71c284f4e3a97f561a4b0b908cc267379e2348089
+
+[2026-03-13 12:06:03 -05] pacote estadual ampliado de top 5 para top 10 e consolidado final reemitido
+- Ajuste executado:
+  scripts/export_sesacre_prioritarios.py passou a emitir top 10
+  representacao_preliminar_sesacre_top10.txt substituiu a versao top 5
+- Novo resumo estadual do bundle:
+  10 casos priorizados
+  R$ 80.183.078,73 agregados
+  172 contratos agregados
+  27 sancoes ativas agregadas
+- Integridade atualizada:
+  bundle SESACRE = d5684af8b6fb0131e852bd6edfab39559d882cff4210dae5604a2c0707c3da0f
+  relatorio final = e38c43e7aaa37192bd28f633b85f89d61fac32c74907d9916e04c1ec70ef4c0d
+  bundle mestre = b50786673e17c9cb02bdffd71c284f4e3a97f561a4b0b908cc267379e2348089
+
+[2026-03-13 12:08:00 -05] hash do bundle mestre estabilizado sem autorreferencia
+- Ajuste:
+  o hash do bundle mestre foi removido do INDEX_PRIORITARIOS.md para evitar recursao de conteudo
+- Hash final estavel:
+  b50786673e17c9cb02bdffd71c284f4e3a97f561a4b0b908cc267379e2348089
