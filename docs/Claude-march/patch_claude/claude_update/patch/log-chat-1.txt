@@ -1,0 +1,38 @@
+[2026-03-13 02:16:22 -05] enrich_rb_contratos_licitacao.py aplicado no bloco 3799
+- Processo mapeado: 3799 -> licitacao 2364182 (SEMSA, 2024)
+- Script novo: scripts/enrich_rb_contratos_licitacao.py
+- Regra de auto-update: confidence >= 75
+- Matches gravados em rb_contratos_licitacao_match: 6
+- Contratos atualizados em rb_contratos: 6
+- Cobertura municipal SUS apos a carga: 11/13 com CNPJ e 11/13 com fornecedor
+- Pendencias restantes: processo 3006 (contratos 3896 e 3898, total R$ 49.198,30)
+- Caso critico permanece: contrato 3895 / NORTE DISTRIBUIDORA / 37.306.014/0001-48 / R$ 82.950,00 / RB_CONTRATO_SANCIONADO
+- Match table:
+  57 -> COMERCIAL DE CARNES KANA LTDA / 17.332.592/0001-41 / confidence 82
+  58 -> D L RAMOS / 05.146.814/0001-52 / confidence 97
+  59 -> E C O MOURA / 28.572.074/0001-11 / confidence 75
+  60 -> JC ALIMENTOS E SERVICOS LTDA / 46.376.616/0001-62 / confidence 97
+  61 -> J S COMERCIO IMPORTACAO E EXPORTACAO LTDA / 11.338.721/0001-22 / confidence 97
+  63 -> KELLE DE MELO OLIVEIRA / 29.422.974/0001-45 / confidence 92
+- Proximo alvo: resolver processo 3006 via licitacao/proposta ou outra origem municipal
+
+[2026-03-13 02:58:20 -05] processo 3006 resolvido parcialmente via licitacao 2274334
+- Script ajustado: scripts/enrich_rb_contratos_licitacao.py
+- Novo hint: processo 3006 -> licitacao 2274334 (SEMSA, 2023, processo de compra 3006/2023)
+- Bridge agora tem fallback para PDF do detalhe do contrato quando o JSON nao devolve itens utilizaveis
+- Bridge agora escolhe a melhor ocorrencia por descricao/lote e aceita match por descricao contida, sem regredir o fluxo exato do 3799
+- Contrato 3896 resolvido automaticamente:
+  fornecedor = JAQUELINE C DE OLIVEIRA LTDA
+  cnpj = 06.916.063/0001-79
+  evidencia = 16/16 itens batendo por descricao no processo 3006, 11 itens com preco proximo, median_rel_diff=0.03, confidence=84
+- Contrato 3898 permaneceu em review:
+  json do detalhe confirmou itens [Coletor de Material Perfurocortante, Broche / Boton / Pin]
+  match forte nao apareceu
+  ranking bruto gravado em rb_contratos_licitacao_match.raw_json
+  candidato lider atual = JAQUELINE C DE OLIVEIRA LTDA / 06.916.063/0001-79 / confidence 42
+- Cobertura municipal SUS apos o rerun: 12/13 contratos com CNPJ e fornecedor
+- Pendencia municipal restante condensada em 1 contrato:
+  processo 3006 -> contrato 3898 -> R$ 31.200,00 -> buscar_fonte_externa
+- Evidencia importante descoberta no portal:
+  a pagina da licitacao 2274334 lista explicitamente os contratos 3896 e 3898 dentro do processo 3006, confirmando o vinculo institucional com a licitacao mae
+- Proximo alvo: fechar o 3898 via fonte externa/PNCP/portal de compras, ou via vencedor por lote do PE 82/2023 se essa camada for recuperada

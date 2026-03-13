@@ -1,0 +1,344 @@
+• O ganho desta passada foi bom: 5/13 contratos SUS ficaram com CNPJ válido e 5/13 com razão social. Os 8 restantes caíram todos no mesmo funil: relatório do detalhe
+  sem fornecedor. Antes de encerrar, vou medir se o patch de licitacao já traz fornecedor vencedor; se trouxer, ele vira a ponte natural para esses casos.
+
+• Explored
+  └ Read sync_rb_licitacao_contrato.py
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+• A camada municipal já tem um caso crítico pronto. Vou só puxar o detalhe do contrato sancionado para fechar a fotografia atual e separar isso do que ainda depende
+  de licitação/PNCP.
+
+• Ran .venv/bin/python - <<'PY'
+  │ import duckdb
+  │ con=duckdb.connect('data/sentinela_analytics.duckdb', read_only=True)
+  │ … +4 lines
+  └ numero_contrato numero_processo                           fornecedor           cnpj  valor_referencia_brl                                    orgaos
+    tipos
+               3895            3044 NORTE DISTRIBUIDORA DE PRODUTOS LTDA 37306014000148               82950.0 GOVERNO_ACRE, SEDET, SEE, SEJUSP, SESACRE Impedimento/
+    proibição de contratar com prazo determinado
+
+• Ran .venv/bin/python - <<'PY'
+  │ import duckdb
+  │ con=duckdb.connect('data/sentinela_analytics.duckdb', read_only=True)
+  │ … +3 lines
+  └ numero_contrato numero_processo
+    objeto  valor_referencia_brl       ocr_source_kind
+    … +14 lines
+                 58            3799 Aquisição de Gêneros Alimentícios que serão destinados a atender as necessidades das seguintes unidades: Unidade de Acolhimento
+    Adulto – UAA, Centro de Atenção psicossocial – CAPS II, Centro de Atenção psicossocial – CAPS III e a Divisão de Saúde                 828.0 detail_report_pdf_ocr
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+• Os contratos pendentes se condensaram em só dois blocos de processo (3006 e 3799). Vou materializar isso numa view agregada, porque essa é exatamente a fila certa
+  para atacar com licitação/PNCP: dois processos, não oito contratos soltos.
+
+• Edited scripts/sync_rb_contratos.py (+19 -0)
+    692      )
+    693 +    con.execute(
+    694 +        """
+    695 +        CREATE OR REPLACE VIEW v_rb_contratos_pendencias AS
+    696 +        SELECT
+    697 +            ano,
+    698 +            numero_processo,
+    699 +            objeto,
+    700 +            COUNT(*) AS n_contratos,
+    701 +            SUM(valor_referencia_brl) AS total_brl,
+    702 +            MIN(prioridade) AS prioridade_min,
+    703 +            MAX(prioridade) AS prioridade_max,
+    704 +            STRING_AGG(numero_contrato, ', ' ORDER BY numero_contrato) AS contratos,
+    705 +            STRING_AGG(DISTINCT fila_investigacao, ', ' ORDER BY fila_investigacao) AS filas
+    706 +        FROM v_rb_contratos_triagem
+    707 +        WHERE tem_cnpj = FALSE OR tem_fornecedor = FALSE OR sancao_ativa = TRUE
+    708 +        GROUP BY 1, 2, 3
+    709 +        ORDER BY prioridade_max DESC, total_brl DESC NULLS LAST
+    710 +        """
+    711 +    )
+    712      return con.execute("SELECT COUNT(*) FROM v_rb_contratos_sus").fetchone()[0]
+
+• Ran python -m py_compile scripts/sync_rb_contratos.py
+  └ (no output)
+
+• Ran .venv/bin/python - <<'PY'
+  │ import duckdb
+  │ con=duckdb.connect('data/sentinela_analytics.duckdb', read_only=True)
+  │ … +2 lines
+  └ Traceback (most recent call last):
+      File "<stdin>", line 3, in <module>
+    … +3 lines
+    LINE 1: select * from v_rb_contratos_pendencias
+                          ^
+
+• Ran .venv/bin/python - <<'PY'
+  │ import duckdb
+  │ import scripts.sync_rb_contratos as s
+  │ … +6 lines
+  └ 01:58:10 [INFO] sync_rb_contratos: v_rb_contrato_ceis: 5 contratos com sanção ativa
+    ok
+
+• Ran .venv/bin/python - <<'PY'
+  │ import duckdb
+  │ con=duckdb.connect('data/sentinela_analytics.duckdb', read_only=True)
+  │ … +2 lines
+  └                table_name
+           v_rb_contrato_ceis
+    … +3 lines
+            v_rb_despesas_sus
+                     v_rb_sus
+
+• Ran .venv/bin/python - <<'PY'
+  │ import duckdb
+  │ con=duckdb.connect('data/sentinela_analytics.duckdb', read_only=True)
+  │ … +2 lines
+  └  ano numero_processo
+    objeto  n_contratos  total_brl  prioridade_min  prioridade_max              contratos                filas
+    … +7 lines
+    serviços gráficos, para atender a demanda da Secretaria Municipal de Saúde, no Município de Rio Branco - AC            2    49198.3              60
+    60             3896, 3898 buscar_fonte_externa
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+• Avancei na filtragem inteligente dos contratos SUS de Rio Branco.
+
+  O OCR em enrich_rb_contratos_ocr.py agora:
+
+  - aceita ruído real de OCR em CNPJ,
+  - reprocessa mais páginas quando precisa,
+  - usa o PDF-relatório do próprio detalhe quando não há anexo,
+  - limpa CNPJs inválidos antes de reprocessar.
+
+  Também materializei a triagem em sync_rb_contratos.py:
+
+  - v_rb_contratos_triagem
+  - v_rb_contratos_pendencias
+
+  Estado atual do banco:
+
+  - 13 contratos SUS da SEMSA
+  - 5/13 com CNPJ válido
+  - 5/13 com razão social preenchida
+  - 1 caso municipal crítico já materializado em insight RB_CONTRATO_SANCIONADO
+
+  Caso pronto para denúncia:
+
+  - contrato 3895, processo 3044
+  - NORTE DISTRIBUIDORA DE PRODUTOS LTDA
+  - 37.306.014/0001-48
+  - R$ 82.950,00
+  - sanções ativas ligadas a GOVERNO_ACRE, SEDET, SEE, SEJUSP, SESACRE
+
+  O principal ganho estratégico é este: os 8 contratos ainda sem fornecedor/CNPJ não estão dispersos. Eles colapsaram em só 2 blocos:
+
+  - processo 3799 de 2025: 6 contratos, R$ 51.010,30
+  - processo 3006 de 2024: 2 contratos, R$ 49.198,30
+
+  Isso muda a engenharia. O próximo passo inteligente não é insistir em OCR contrato a contrato. É atacar licitacao/PNCP por esses dois processos, porque basta
+  resolver 2 origens para destravar os 8 contratos pendentes.
+
+  Validação feita:
+
+  - python -m py_compile dos scripts alterados
+  - reruns reais de enrich_rb_contratos_ocr.py
+  - views consultadas no DuckDB principal
+
+  Se eu seguir agora, vou focar em uma ponte dirigida para processo 3006 e processo 3799 em /licitacao/ e depois PNCP.
+
+■ Failed to paste image: no image on clipboard: The clipboard contents were not available in the requested format or the clipboard is empty.
+
+
+› O que temos hoje pronto? Qual a utilidade do que temos? O que falta? Com base nesse resumo que vc criou: "• Avancei na filtragem inteligente dos contratos SUS de
+  Rio Branco.
+
+    O OCR em enrich_rb_contratos_ocr.py agora:
+
+    - aceita ruído real de OCR em CNPJ,
+    - reprocessa mais páginas quando precisa,
+    - usa o PDF-relatório do próprio detalhe quando não há anexo,
+    - limpa CNPJs inválidos antes de reprocessar.
+
+    Também materializei a triagem em sync_rb_contratos.py:
+
+    - v_rb_contratos_triagem
+    - v_rb_contratos_pendencias
+
+    Estado atual do banco:
+
+    - 13 contratos SUS da SEMSA
+    - 5/13 com CNPJ válido
+    - 5/13 com razão social preenchida
+    - 1 caso municipal crítico já materializado em insight RB_CONTRATO_SANCIONADO
+
+    Caso pronto para denúncia:
+
+    - contrato 3895, processo 3044
+    - NORTE DISTRIBUIDORA DE PRODUTOS LTDA
+    - 37.306.014/0001-48
+    - R$ 82.950,00
+    - sanções ativas ligadas a GOVERNO_ACRE, SEDET, SEE, SEJUSP, SESACRE
+
+    O principal ganho estratégico é este: os 8 contratos ainda sem fornecedor/CNPJ não estão dispersos. Eles colapsaram em só 2 blocos:
+
+    - processo 3799 de 2025: 6 contratos, R$ 51.010,30
+    - processo 3006 de 2024: 2 contratos, R$ 49.198,30
+
+    Isso muda a engenharia. O próximo passo inteligente não é insistir em OCR contrato a contrato. É atacar licitacao/PNCP por esses dois processos, porque basta
+    resolver 2 origens para destravar os 8 contratos pendentes.
+
+    Validação feita:
+
+    - python -m py_compile dos scripts alterados
+    - reruns reais de enrich_rb_contratos_ocr.py
+    - views consultadas no DuckDB principal
+
+    Se eu seguir agora, vou focar em uma ponte dirigida para processo 3006 e processo 3799 em /licitacao/ e depois PNCP.
+
+  "
+
+
+• Vou consolidar os números atuais no banco antes de responder, para separar o que já é probatório do que ainda é engenharia pendente.
+
+• Ran .venv/bin/python - <<'PY'
+  │ import duckdb
+  │ con=duckdb.connect('data/sentinela_analytics.duckdb', read_only=True)
+  │ … +31 lines
+  └ Traceback (most recent call last):
+      File "<stdin>", line 30, in <module>
+    … +27 lines
+
+    rb_despesas
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+• Falta só alinhar os campos de rb_despesas_unidade para eu não te devolver um nome de coluna errado no resumo.
+
+• Ran .venv/bin/python - <<'PY'
+  │ import duckdb
+  │ con=duckdb.connect('data/sentinela_analytics.duckdb', read_only=True)
+  │ … +4 lines
+  └  cid                name      type  notnull           dflt_value    pk
+       0              row_id   VARCHAR     True                 None  True
+    … +28 lines
+    "atualizado_r": "347.631.641,20", "empenhado_r": "55.214.630,28", "liquidado_r": "51.222.347,60", "pago_r": "51.222.282,59"}
+    transparencia.riobranco.ac.gov.br/despesa 2026-03-12 23:32:49.962210
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+• Pronto
+
+  Hoje o projeto já tem três camadas úteis e reais.
+
+  No recorte institucional:
+
+  - filtro canônico por esfera, ente, orgao e sus
+  - isso já separa prefeitura, governo estadual e SUS
+
+  No Acre estadual, o eixo mais forte já está pronto para denúncia:
+
+  - 614 cruzamentos CEIS/CNEP x contratos do estado
+  - 268 casos colapsados por fornecedor x órgão x fonte
+  - 263 com sanção ativa hoje
+  - SESACRE: 67 fornecedores ativos, R$ 101,3 mi
+  - 263 insights SESACRE_SANCAO_ATIVA
+
+  Em Rio Branco municipal, o SUS já está separado em pessoas, despesa e parte dos contratos:
+
+  - 20.403 servidores com lotação materializada
+  - 4.427 classificados como SUS
+  - despesas SUS do Fundo Municipal de Saúde:
+      - 2024: R$ 320,1 mi pagos
+      - 2025: R$ 51,2 mi pagos
+  - contratos SUS da SEMSA: 13
+  - contratos com CNPJ válido: 5/13
+  - contratos com fornecedor preenchido: 5/13
+  - 1 caso municipal crítico já pronto: RB_CONTRATO_SANCIONADO
+
+  Utilidade
+
+  Isso já serve para três coisas concretas.
+
+  1. Separar o que é SUS de verdade.
+     Antes havia mistura de prefeitura geral com saúde. Hoje já dá para perguntar:
+
+  - quem está lotado no SUS,
+  - quanto o SUS municipal pagou,
+  - quais contratos SUS existem,
+  - quais fornecedores do SUS estadual estavam sancionados.
+
+  2. Priorizar investigação sem dispersão.
+     Em vez de dezenas de páginas soltas, a fila municipal pendente caiu para só 2 processos:
+
+  - processo 3799/2025: 6 contratos, R$ 51.010,30
+  - processo 3006/2024: 2 contratos, R$ 49.198,30
+
+  3. Produzir peça probatória.
+     Hoje já existe um caso municipal que dá para tratar como alerta forte:
+
+  - contrato 3895
+  - processo 3044
+  - NORTE DISTRIBUIDORA DE PRODUTOS LTDA
+  - 37.306.014/0001-48
+  - R$ 82.950,00
+  - com sanções ativas associadas a GOVERNO_ACRE, SEDET, SEE, SEJUSP e SESACRE
+
+  Isso não prova sozinho “fraude”, mas já prova um fato objetivo relevante para controle externo:
+
+  - fornecedor com histórico sancionatório ativo aparecendo em contratação SUS municipal.
+
+  O que falta
+
+  Falta principalmente fechar o municipal probatório.
+
+  O mais importante:
+
+  - resolver os 8 contratos SUS sem fornecedor/CNPJ
+  - isso deve ser feito por licitacao/ e depois PNCP, mirando os processos 3006 e 3799
+
+  Depois:
+
+  - automatizar rb_licitacoes
+  - ligar contrato -> licitação -> fornecedor vencedor -> CNPJ
+  - cruzar esses CNPJs municipais com QSA, CEIS/CNEP e PNCP
+  - gerar uma camada de priorização por risco:
+      - sancionado
+      - sócio problemático
+      - contrato fracionado
+      - repetição por processo/unidade
+      - fornecedor recorrente em saúde
+
+  O que ainda não está “fechado”:
+
+  - não temos CNPJ em 100% dos contratos SUS de Rio Branco
+  - PNCP ainda está zerado
+  - a trilha municipal ainda está forte em SEMSA/FMS, mas não totalmente fechada em fornecedor societário
+
+  Resumo executivo
+
+  Hoje já temos:
+
+  - visão institucional completa básica,
+  - eixo estadual forte para denúncia em SESACRE,
+  - eixo municipal SUS funcional em lotação + despesa + contratos,
+  - um caso municipal crítico já materializado,
+  - e uma fila curta e objetiva para fechar o resto.
+
+  O próximo passo certo é atacar só:
+
+  1. processo 3006
+  2. processo 3799
+
+  Se eu continuar agora, vou direto na ponte licitacao/PNCP desses dois processos para destravar os 8 contratos restantes.
+› Sim. Prossiga.
+
+
+• Vou atacar a ponte municipal pelos dois processos pendentes (3006 e 3799) em licitacao/, porque isso é o caminho mais curto para fechar os 8 contratos sem CNPJ.
+  Primeiro vou ler o patch existente e confirmar o fluxo real do portal antes de escrever o scraper ativo.
+
+• Explored
+  └ List scripts
+    Search sync_rb_licit|sync_rb_contra
+    Read sync_rb_licitacao_contrato.py
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+• Agora vou confirmar o fluxo vencedor em /licitacao/ e localizar os processos 3006 e 3799 com requests reais. Se isso responder como espero, eu escrevo o scraper
+  direcionado em vez de um coletor genérico pesado.
