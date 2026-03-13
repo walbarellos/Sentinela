@@ -800,15 +800,25 @@ def build_insights(con: duckdb.DuckDBPyConnection) -> int:
     if "v_rb_contrato_ceis" in views:
         sancao_rows = con.execute(
             """
+            WITH contratos_sancionados AS (
+                SELECT DISTINCT
+                    cnpj,
+                    COALESCE(fornecedor, cnpj) AS fornecedor,
+                    secretaria,
+                    numero_contrato,
+                    valor_referencia_brl,
+                    sancao_tipo
+                FROM v_rb_contrato_ceis
+                WHERE ativa = TRUE AND sus = TRUE
+            )
             SELECT
                 cnpj,
-                COALESCE(fornecedor, cnpj) AS fornecedor,
+                fornecedor,
                 secretaria,
                 COUNT(DISTINCT numero_contrato) AS n_contratos,
                 SUM(valor_referencia_brl) AS total_brl,
                 COUNT(DISTINCT sancao_tipo) AS n_tipos
-            FROM v_rb_contrato_ceis
-            WHERE ativa = TRUE AND sus = TRUE
+            FROM contratos_sancionados
             GROUP BY 1, 2, 3
             ORDER BY total_brl DESC NULLS LAST
             LIMIT 200
