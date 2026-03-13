@@ -68,3 +68,25 @@
     3898 / processo 3006 / sem fornecedor confirmado / prioridade 95 / auditoria_documental_licitacao
 - Novo proximo alvo:
   tentar so a prova complementar externa (TCE/licitacoes-e/PNCP) para o item 3898, se quisermos sair de anomalia documental para identificacao do fornecedor/lote
+
+[2026-03-13 09:40:25 -05] viabilidade real das fontes externas para o contrato 3898
+- Objetivo: verificar se ainda era possivel fechar fornecedor/lote do processo 3006 fora do portal municipal
+- Resultado da checagem em 2026-03-13:
+  TCE-AC:
+    https://sistemas.tce.ac.gov.br/portaldaslicitacoes/ recusou HTTPS e o endpoint HTTP respondeu 404
+    portanto, hoje nao ha trilha automatizavel util por essa origem
+  licitacoes-e:
+    a URL publica do certame 1013158 continua atras de bloqueio 403/Cloudflare
+    sem sessao de navegador valida, a fonte nao fecha automaticamente
+  PNCP:
+    a API de consulta publica esta viva em /api/consulta/v1
+    modalidade 6 = Pregao Eletronico
+    modalidade 7 = Pregao Presencial
+    modalidade 8 = Dispensa
+    o endpoint de contratos para o CNPJ-base da prefeitura (04.034.583/0001-22) retornou 204 em 2024
+    a busca de contratacoes do PNCP para Rio Branco em setembro/2023 (janela do PE 141/2023) retornou 13 registros e zero matches para prefeitura/SEMSA/graficos/processo 3006
+    em janela mais ampla 2023-09 a 2024-08, o PNCP mostrou alguns pregoes eletronicos da prefeitura de Rio Branco, mas apenas 4 do CNPJ-base visiveis no recorte testado e nenhum corresponde ao processo 3006 nem ao objeto de material/servicos graficos da SEMSA
+- Conclusao operacional:
+  sim, foi possivel testar as fontes externas publicas
+  nao, elas nao entregam hoje uma prova complementar automatica suficiente para fechar o 3898
+  o caso 3898 permanece mais forte como anomalia documental municipal (item fora do edital e fora das propostas) do que como match de fornecedor/lote por fonte externa aberta
