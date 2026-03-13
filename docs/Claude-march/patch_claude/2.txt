@@ -1,0 +1,11 @@
+O contexto do Codex terminou no meio. Com base no que foi explorado, preciso de duas coisas antes de escrever:```bash
+.venv/bin/python scripts/diag_rb_contrato.py
+```
+
+Cole a saída completa. O que preciso confirmar antes de escrever o `sync_rb_contratos.py`:
+
+1. **`exerc_id` e `hidden_id`** — os nomes exatos dos campos JSF de exercício e secretaria (variam entre portais Mojarra)
+2. **A resposta do POST** — se já vem CSV direto ou se precisa de um segundo clique no botão export
+3. **Detalhe `/contrato/ver/`** — se `Contratado` / `CNPJ` aparecem no HTML do detalhe ou só nos anexos (define se vale scrape individual ou só a listagem)
+
+Com isso escrevo o sync correto sem adivinhação de campo JSF.

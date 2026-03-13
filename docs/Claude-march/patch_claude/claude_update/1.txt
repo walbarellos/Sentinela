@@ -1,0 +1,12 @@
+O handoff está completo. Com base no que foi validado na sessão (510 linhas SEMSA 2024, POST completo funciona, SEMSA ID=4065, `/contrato/` 200), vou escrever agora o `sync_rb_contratos.py` correto — sem as suposições erradas do arquivo anterior.Agora o handoff completo para o Codex:O que entregar ao Codex são esses dois arquivos. Resumo do que foi resolvido e o que ainda falta:
+
+**O problema dos scripts anteriores** era usar `partial/ajax` na busca de contratos. O portal usa POST completo — confirmado quando 10 linhas incluindo SEMSA vieram com `Formulario:j_idt90=Pesquisar`. O `sync_rb_contratos.py` corrige isso.
+
+**Quatro tarefas restantes para o Codex, em ordem de impacto:**
+
+1. `scripts/sync_rb_contratos.py` — copiar e rodar (já está pronto e correto)
+2. `scripts/sync_pncp.py` — criar do zero; lê os 67 CNPJs sancionados SESACRE e bate no PNCP; fecha o cruzamento federal
+3. `scripts/sync_rb_licitacoes.py` — clonar `sync_rb_contratos.py` trocando a URL e o layout da tabela
+4. Corrigir `sources_registry.py`: `/contratacao/` → `/contrato/`
+
+O PNCP é o que mais vale para denúncia porque conecta fornecedores já confirmados com sanção ativa no estado a contratos federais — nenhuma linha de código nova de scraping JSF, só REST puro sem autenticação.

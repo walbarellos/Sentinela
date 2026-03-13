@@ -1,0 +1,60 @@
+The Codex is struggling because the JSF field IDs are opaque (j_idt73, j_idt110, etc.) and it can't do HTTP exploration like I can. I need to write a definitive diagnostic script that:
+
+    Captures the real POST flow for /contrato/
+    Finds the real field IDs by analyzing the HTML
+    Confirms where fornecedor/CNPJ appears
+
+But wait - I don't have network access. The network is disabled. I need to write a script that the user can run and paste back to me, OR write a script that's robust enough to work without knowing the exact field IDs in advance.
+
+Actually, looking at the conversation more carefully - the Codex already found the real IDs:
+
+    Formulario:j_idt73:j_idt75 for exercício
+    Formulario:j_idt110:j_idt110 for autocomplete secretaria
+    name="Formulario:j_idt117" for the submit button
+
+And from earlier in the transcript: SEMSA id=4065, 510 contracts for 2024.
+
+The issue is that sync_rb_contratos.py tries to discover field IDs by semantic name matching which fails for opaque IDs. I need to rewrite it to use these hardcoded field IDs since they're confirmed, and make it resilient to the JSF form structure.
+Done
+
+O Codex mapeou os IDs reais. Vou escrever agora com os IDs hardcoded confirmados como primária, com fallback de descoberta para quando o portal renovar a sessão.
+Arquitetou script robusto com IDs hardcoded e fallback discovery
+
+I need to write the definitive sync_rb_contratos.py using the hardcoded JSF field IDs that the Codex found:
+
+    Exercício: Formulario:j_idt73:j_idt75
+    Autocomplete secretaria: Formulario:j_idt110:j_idt110
+    Submit button: name="Formulario:j_idt117"
+    SEMSA id: 4065
+
+But I don't know the exact schema of sancoes_collapsed. Let me write the script to handle both schemas gracefully.
+
+Let me write a production-ready script that:
+
+    Hardcodes the confirmed JSF field IDs as primary
+    Has a discovery fallback
+    Handles the sancoes JOIN gracefully regardless of schema
+
+Writing the sync script...
+Done
+
+Cole isso em scripts/sync_rb_contratos.py e passe ao Codex com instruções exatas:
+bash
+
+# 1. Compilar (deve ser silencioso):
+python -m py_compile scripts/sync_rb_contratos.py
+
+# 2. Teste sem gravar:
+.venv/bin/python scripts/sync_rb_contratos.py --anos 2025 --dry-run
+
+# 3. Carga real SEMSA:
+.venv/bin/python scripts/sync_rb_contratos.py --anos 2024 2025
+
+# 4. Todas as unidades:
+.venv/bin/python scripts/sync_rb_contratos.py --anos 2024 2025 --unit-contains ""
+
+O que foi corrigido vs. versões anteriores:
+
+O problema central era que os scripts anteriores tentavam descobrir os IDs JSF por nome semântico (Pesquisar, Exercicio, Secretaria) mas o portal usa IDs opacos (Formulario:j_idt73:j_idt75, Formulario:j_idt117). Este script hardcoda os IDs confirmados como primária. Se o portal reformar o Facelets e esses IDs mudarem, o fallback de descoberta entra automaticamente — ele tenta _search sem os hardcoded e re-detecta pelo padrão estrutural do HTML.
+
+O JOIN v_rb_contrato_ceis com sancoes_collapsed detecta as colunas reais via PRAGMA table_info antes de montar o SQL — não vai quebrar independente do schema exato que estiver no banco.

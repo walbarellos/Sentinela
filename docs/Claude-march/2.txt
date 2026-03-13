@@ -1,37 +1,12 @@
-Resumo direto do estado atual:
+Agora tenho tudo. Escrevendo com o schema exato.Vai em `scripts/sync_ceis_cnep.py`. Como você já tem os ZIPs em `data/federal/`:
 
----
+```bash
+python scripts/sync_ceis_cnep.py --data 20260312
+```
 
-**✅ Etapa 1 — Concluída**
-Taxonomia canônica (`esfera`, `ente`, `orgao`, `municipio`, `uf`, `area_tematica`, `sus`) no schema, API, frontend. 70 insights municipais funcionando, filtro Rio Branco×SUS operacional.
-
----
-
-**🔧 Etapa 2 — Conector Acre (em aberto)**
-
-O arquivo `/home/claude/transparencia_ac_connector.py` foi escrito aqui mas **nunca foi aplicado ao projeto real** em `src/ingest/transparencia_ac_connector.py`. Além disso, falta ainda:
-
-- `scripts/sync_estado_ac.py` — script que grava pagamentos/contratos/licitações estaduais no DuckDB com `esfera=estadual`, `ente='Governo do Estado do Acre'`, `orgao=SESACRE` etc.
-- Atualização de `scripts/sync_v2.py` para chamar o sync estadual
-- Atualização de `src/core/insight_classification.py` para classificar insights estaduais
-
-**Resultado esperado:** `/insights?esfera=estadual` deixa de retornar 0.
-
----
-
-**⏳ Etapa 3 — Lotação real Rio Branco / SUS**
-Substituir heurística cargo→SUS por join `lotacao.unidade ∈ {UBS-*, CAPS, SEMSA, Hospital*}`. Arquivos: `ingest_servidores_to_duckdb.py`, `riobranco_servidor_detail.py`.
-
----
-
-**⏳ Etapa 4 — JSF Rio Branco (despesas, contratos, receitas)**
-`JsfScrapeCollector` em `engine.py` ainda é placeholder. Scrapers existem para servidores/diárias/obras mas faltam despesas, contratações e receitas.
-
----
-
-**⏳ Etapa 5 — Cruzamentos federais zerados**
-Tabelas `pncp_contratos`, `pncp_licitacoes`, `empresas_cnpj`, `empresa_socios`, `federal_ceis`, `federal_cnep` todas vazias. Detectores dependentes inativos.
-
----
-
-**Quer que eu continue pela Etapa 2 agora?** Posso gerar os arquivos prontos para você aplicar: o conector atualizado + `sync_estado_ac.py`.
+O que foi corrigido em relação à versão anterior:
+- URL `YYYYMMDD` (não `YYYYMM`)
+- Schema canônico real: `id`, `kind`, `severity`, `confidence`, `exposure_brl`, `title`, `description_md`, `pattern`, `sources` (JSON), `tags` (JSON), `sample_n`, `unit_total` + campos institucionais
+- `kind = SESACRE_SANCAO_CEIS` / `SESACRE_SANCAO_CNEP` — compatível com o `SANCAO_KIND_PREFIX` que já existe no `sync_sesacre_sancoes.py`
+- JOIN usa `orgao_canonico` (não `orgao`) que é o campo real na `estado_ac_pagamentos`
+- ZIPs resolvidos por prioridade: `--local-*` → cache em `data/federal/YYYYMMDD_*.zip` → `--download`
