@@ -84,7 +84,7 @@ def normalize_cnpj_candidate(raw: str) -> str:
                 candidates.add(candidate)
     if len(candidates) == 1:
         return next(iter(candidates))
-    return digits if len(digits) == 14 else ""
+    return ""
 
 
 def is_public_cnpj(digits: str) -> bool:
@@ -94,6 +94,42 @@ def is_public_cnpj(digits: str) -> bool:
 def ensure_tables(con: duckdb.DuckDBPyConnection) -> None:
     con.execute(DDL_OCR)
     PDF_CACHE.mkdir(parents=True, exist_ok=True)
+
+
+def cleanup_invalid_cnpjs(con: duckdb.DuckDBPyConnection) -> int:
+    cleaned = 0
+    rows = con.execute(
+        """
+        SELECT row_id, cnpj
+        FROM rb_contratos
+        WHERE cnpj IS NOT NULL AND cnpj <> ''
+        """
+    ).fetchall()
+    for row_id, cnpj in rows:
+        digits = re.sub(r"\D", "", str(cnpj or ""))
+        if digits and not valid_cnpj(digits):
+            con.execute("UPDATE rb_contratos SET cnpj = '' WHERE row_id = ?", [row_id])
+            cleaned += 1
+
+    ocr_rows = con.execute(
+        """
+        SELECT row_id, cnpj_ocr
+        FROM rb_contratos_pdf_ocr
+        WHERE cnpj_ocr IS NOT NULL AND cnpj_ocr <> ''
+        """
+    ).fetchall()
+    for row_id, cnpj in ocr_rows:
+        digits = re.sub(r"\D", "", str(cnpj or ""))
+        if digits and not valid_cnpj(digits):
+            con.execute(
+                """
+                UPDATE rb_contratos_pdf_ocr
+                SET cnpj_ocr = '', status = 'no_match'
+                WHERE row_id = ?
+                """,
+                [row_id],
+            )
+    return cleaned
 
 
 def build_session() -> requests.Session:
@@ -232,6 +268,12 @@ def ocr_pdf_text(pdf_path: Path, pages: int) -> str:
 def extract_supplier_and_cnpj(ocr_text: str) -> tuple[str, str]:
     text = rb_contratos_sync.fix_text(ocr_text)
     normalized = re.sub(r"\s+", " ", text)
+    normalized_ascii = rb_contratos_sync.normalize_text(text)
+
+    def has_identifier_context(haystack: str, start: int, end: int) -> bool:
+        window = haystack[max(0, start - 96) : min(len(haystack), end + 96)]
+        markers = ("CNPJ", "INSCRIT", "CONTRATADA", "EMPRESA", "PESSOA JUR")
+        return any(marker in window for marker in markers)
 
     supplier_patterns = [
         r"CONTRATADA.{0,40}?(?:EMPRESA|FIRMA)\s*[:\-]?\s*([A-Z0-9 .&/\-]{5,140}?)(?:\s+NA FORMA ABAIXO|\s*,?\s*PESSOA JUR|\s*,?\s*INSCRIT)",
@@ -240,23 +282,27 @@ def extract_supplier_and_cnpj(ocr_text: str) -> tuple[str, str]:
         r"CONTRATADA,\s*([A-Z0-9 .&/\-]{5,140}?)(?:\s*,?\s*PESSOA JUR|\s*,?\s*INSCRIT)",
     ]
     fornecedor = ""
-    upper_text = normalized.upper()
+    upper_text = normalized_ascii
     for pattern in supplier_patterns:
         match = re.search(pattern, upper_text)
         if match:
             fornecedor = re.sub(r"\s+", " ", match.group(1)).strip(" ,.-")
             break
 
-    raw_candidates = CNPJ_RE.findall(normalized)
     cnpj_candidates: list[str] = []
-    for candidate in raw_candidates:
+    for match in CNPJ_RE.finditer(normalized_ascii):
+        candidate = match.group(0)
+        if not has_identifier_context(normalized_ascii, *match.span()) and not fornecedor:
+            continue
         normalized_candidate = normalize_cnpj_candidate(candidate)
         if normalized_candidate and not is_public_cnpj(normalized_candidate):
             cnpj_candidates.append(normalized_candidate)
 
     if not cnpj_candidates:
-        digits = re.findall(r"\d[\d\.\,\-\/ ]{12,24}\d", normalized)
-        for candidate in digits:
+        for match in re.finditer(r"\d[\d\.\,\-\/ ]{12,24}\d", normalized_ascii):
+            candidate = match.group(0)
+            if not has_identifier_context(normalized_ascii, *match.span()) and not fornecedor:
+                continue
             normalized_candidate = normalize_cnpj_candidate(candidate)
             if normalized_candidate and not is_public_cnpj(normalized_candidate):
                 cnpj_candidates.append(normalized_candidate)
@@ -389,7 +435,10 @@ def iter_contracts(con: duckdb.DuckDBPyConnection, limit: int | None) -> list[tu
         SELECT row_id, numero_contrato, detail_url
         FROM rb_contratos
         WHERE detail_url IS NOT NULL AND detail_url <> ''
-          AND (cnpj IS NULL OR cnpj = '')
+          AND (
+                cnpj IS NULL OR cnpj = ''
+                OR fornecedor IS NULL OR fornecedor = ''
+              )
         ORDER BY valor_referencia_brl DESC, numero_contrato
     """
     if limit is not None:
@@ -413,10 +462,13 @@ def main() -> None:
     con = duckdb.connect(str(args.db_path))
     ensure_tables(con)
     rb_contratos_sync.ensure_tables(con)
+    cleaned = cleanup_invalid_cnpjs(con)
 
     session = build_session()
     rows = iter_contracts(con, args.limit)
-    print(f"contratos_sem_cnpj={len(rows)}")
+    print(f"contratos_para_enriquecer={len(rows)}")
+    if cleaned:
+        print(f"invalid_cnpjs_reset={cleaned}")
 
     updated = 0
     for contrato_row_id, numero_contrato, detail_url in rows:
