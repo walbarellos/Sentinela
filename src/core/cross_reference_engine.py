@@ -133,8 +133,11 @@ LEGAL = {
 INTERNAL_ONLY_DEFAULT = {
     "fracionamento",
     "outlier_salarial",
+    "viagem_bloco",
+    "concentracao_mercado",
     "empresa_suspensa",
     "doacao_contrato",
+    "fim_de_semana",
     "nepotismo_sobrenome",
 }
 
@@ -680,8 +683,14 @@ def run_all_detectors(
     allow_internal: bool = False,
 ) -> list[Alert]:
     selected = {k: v for k, v in DETECTORS.items() if detector_ids is None or k in detector_ids}
+    blocked = [k for k in selected if k in INTERNAL_ONLY_DEFAULT]
     if not allow_internal:
         selected = {k: v for k, v in selected.items() if k not in INTERNAL_ONLY_DEFAULT}
+        if blocked:
+            console.print(
+                "[yellow]Engine legado: detectores bloqueados por padrão. "
+                "Use `--allow-internal` apenas para triagem técnica interna.[/yellow]"
+            )
 
     all_alerts: list[Alert] = []
     for name, fn in selected.items():
@@ -830,7 +839,13 @@ def main() -> int:
         detector_ids = [args.detector] if args.detector else None
         alerts = run_all_detectors(conn, detector_ids, allow_internal=args.allow_internal)
         if not alerts:
-            console.print("[yellow]Nenhum alerta legado gerado.[/yellow]")
+            if not args.allow_internal:
+                console.print(
+                    "[yellow]Nenhum alerta legado gerado. No modo padrão, todos os detectores do engine legado ficam bloqueados "
+                    "até `--allow-internal`.[/yellow]"
+                )
+            else:
+                console.print("[yellow]Nenhum alerta legado gerado.[/yellow]")
             return 0
 
         print_summary(alerts)

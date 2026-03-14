@@ -14,23 +14,16 @@ from src.core.cross_reference_engine import (  # noqa: E402
 )
 
 
-REQUIRED_INTERNAL_ONLY = {
-    "fracionamento",
-    "outlier_salarial",
-    "empresa_suspensa",
-    "doacao_contrato",
-    "nepotismo_sobrenome",
-}
-
-
 def main() -> int:
-    missing = sorted(REQUIRED_INTERNAL_ONLY - set(INTERNAL_ONLY_DEFAULT))
+    detector_set = set(DETECTORS)
+    internal_set = set(INTERNAL_ONLY_DEFAULT)
+    missing = sorted(detector_set - internal_set)
     extra_unknown = sorted(set(INTERNAL_ONLY_DEFAULT) - set(DETECTORS))
     print(f"legacy_detectors={len(DETECTORS)}")
     print(f"internal_only_default={len(INTERNAL_ONLY_DEFAULT)}")
     print(f"legacy_usage={LEGACY_INTERNAL_USAGE}")
     if missing:
-        print(f"missing_internal_only={missing}")
+        print(f"detectors_not_internal_only={missing}")
         return 2
     if extra_unknown:
         print(f"unknown_internal_only={extra_unknown}")

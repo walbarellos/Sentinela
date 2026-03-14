@@ -2017,3 +2017,28 @@ validacao:
 - `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
 - `.venv/bin/python scripts/validate_cross_reference_engine.py`
 - smoke: `Alert(...).uso_externo = REVISAO_INTERNA`
+
+legado em modo opt-in total:
+- todos os `8` detectores do `cross_reference_engine.py` agora ficam em `INTERNAL_ONLY_DEFAULT`
+- execucao sem `--allow-internal` nao roda detector e avisa explicitamente o motivo
+- relatorio em `AUDITORIA_ENGINE_LEGADO_20260314.md`
+
+validacao:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector fracionamento`
+
+quarentena do insights_engine legado:
+- `insights_engine.py` agora fica desligado por padrao e so roda com `allow_internal=True`
+- `outlier_salarial` endurecido para `n >= 30` e `z > 3.0`
+- `viagem_bloco` endurecido para `n >= 4`
+- `concentracao_mercado` e `fracionamento` em obras viraram triagem interna explicita
+- `README.md` deixou de apresentar esses detectores como sinais confiaveis do fluxo ativo
+- `scripts/sync_v2.py` passou a explicitar `allow_internal=False`
+- auditoria em `AUDITORIA_INSIGHTS_ENGINE_20260314.md`
+- validador novo em `scripts/validate_insights_engine.py`
+
+validacao:
+- `python -m py_compile insights_engine.py scripts/validate_insights_engine.py`
+- `python -m py_compile scripts/sync_v2.py`
+- `.venv/bin/python scripts/validate_insights_engine.py`

@@ -68,21 +68,21 @@ Observação:
 O dashboard só exibirá sinais se os dados forem capturados. Rode os scripts abaixo conforme a necessidade de atualização de cada aba:
 
 ### 1. Janela: Inteligência de Pessoal & Salários
-Captura a folha de pagamento completa (CSV massivo) e detecta outliers salariais.
+Captura a folha de pagamento completa (CSV massivo) e alimenta triagem interna estatística de remuneração.
 ```bash
 export PYTHONPATH=$PYTHONPATH:.
 python3 src/ingest/riobranco_servidores_mass.py
 ```
 
 ### 2. Janela: Radar de Obras Públicas
-Captura a lista de obras e detalhes de contratos para detectar concentração de mercado.
+Captura a lista de obras e detalhes de contratos para triagem exploratória interna de mercado e contratos.
 ```bash
 export PYTHONPATH=$PYTHONPATH:.
 python3 src/ingest/riobranco_obras_list.py
 ```
 
 ### 3. Janela: Rastreio de Diárias
-Captura o histórico de diárias e detecta "Viagens em Bloco" (servidores viajando juntos).
+Captura o histórico de diárias e alimenta triagem exploratória de agrupamentos que exigem confirmação documental posterior.
 ```bash
 export PYTHONPATH=$PYTHONPATH:.
 python3 src/ingest/riobranco_diarias.py
@@ -138,7 +138,7 @@ Para congelar uma saída segura como artefato versionado do caso:
 
 - **`data/sentinela_analytics.duckdb`**: Banco principal onde os dados normalizados são armazenados.
 - **`src/core/analytics_db.py`**: Gerenciador de conexão e esquemas SQL.
-- **`insights_engine.py`**: O "cérebro" do sistema, contendo as heurísticas de detecção de fraude e anomalias.
+- **`insights_engine.py`**: Motor legado e exploratório. Fica desligado por padrão e serve apenas para triagem interna explícita.
 - **`jsf_client.py`**: Driver customizado para interagir com portais de transparência baseados em Java (JSF/PrimeFaces).
 
 ---

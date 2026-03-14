@@ -178,14 +178,15 @@ def sync_all():
     con = duckdb.connect(DB)
     ensure_v2_tables(con)
     
-    # 1. Obter insights da engine (precisa importar aqui ou passar como param)
+    # 1. O motor legado permanece desligado por padrão. O sync v2 não deve
+    # reativar triagem exploratória sem opt-in explícito.
     from insights_engine import generate_insights_for_servidores, generate_insights_for_diarias
     
     df_serv = con.execute("SELECT * FROM rb_servidores_mass").df()
     df_dia = con.execute("SELECT * FROM diarias").df()
     
-    insights_s = generate_insights_for_servidores(df_serv)
-    insights_d = generate_insights_for_diarias(df_dia)
+    insights_s = generate_insights_for_servidores(df_serv, allow_internal=False)
+    insights_d = generate_insights_for_diarias(df_dia, allow_internal=False)
     
     all_insights = [i.to_dict() for i in (insights_s + insights_d)]
     

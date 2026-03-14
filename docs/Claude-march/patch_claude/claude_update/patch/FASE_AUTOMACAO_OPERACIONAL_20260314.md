@@ -424,3 +424,47 @@ validacao executada:
 - `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
 - `.venv/bin/python scripts/validate_cross_reference_engine.py`
 - smoke direto de `Alert(...).uso_externo -> REVISAO_INTERNA`
+
+## Legado em modo opt-in total (2026-03-14)
+
+escopo:
+- bloquear por padrao os detectores fracos do `cross_reference_engine.py`;
+- impedir execucao “normal” do legado como se fosse motor ativo do produto;
+- alinhar o uso do legado ao padrao `triagem interna apenas`.
+
+resultado:
+- todos os `8` detectores do engine legado ficaram em `INTERNAL_ONLY_DEFAULT`
+- o CLI sem `--allow-internal` agora informa bloqueio por padrao
+- relatorio em `AUDITORIA_ENGINE_LEGADO_20260314.md`
+
+validacao executada:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector fracionamento`
+
+## Quarentena do insights_engine legado (2026-03-14)
+
+escopo:
+- alinhar `insights_engine.py` ao mesmo padrao de quarentena do legado;
+- impedir que `outlier_salarial`, `viagem_bloco` e `concentracao_mercado` sigam ativos por padrao;
+- corrigir a comunicacao do `README.md`.
+
+resultado:
+- `insights_engine.py`
+  - todos os detectores ficam desligados por padrao;
+  - uso exige `allow_internal=True`;
+  - `outlier_salarial` endurecido para `n >= 30` e `z > 3.0`;
+  - `viagem_bloco` endurecido para `n >= 4`;
+  - `fracionamento` legado corrigido para threshold exploratorio de `R$ 50.000,00`;
+- `README.md`
+  - ingestoes legadas reescritas como triagem interna/exploratoria;
+  - `insights_engine.py` reclassificado como motor legado;
+- `scripts/sync_v2.py`
+  - passou a chamar o legado com `allow_internal=False` de forma explicita;
+- relatorio novo em `AUDITORIA_INSIGHTS_ENGINE_20260314.md`
+- validador novo em `scripts/validate_insights_engine.py`
+
+validacao executada:
+- `python -m py_compile insights_engine.py scripts/validate_insights_engine.py`
+- `python -m py_compile scripts/sync_v2.py`
+- `.venv/bin/python scripts/validate_insights_engine.py`
