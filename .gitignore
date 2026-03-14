@@ -28,6 +28,15 @@ servidores_*.json
 servidor_teste.json
 despesa.csv
 
+# Evidências e bundles gerados localmente
+docs/Claude-march/patch_claude/claude_update/patch/*bundle_*.tar.gz
+docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/*bundle_*.tar.gz
+docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_norte_pp053/
+docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_norte_sejusp/
+docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_agro_unidades/
+docs/Claude-march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/
+docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/evidencias/
+
 # IDEs
 .vscode/
 .idea/

@@ -646,3 +646,17 @@
   entrega_denuncia_atual/TRACE_NORTE_SEJUSP_PRIORITARIOS_MANIFEST.json
   entrega_denuncia_atual/trace_norte_sejusp_bundle_20260313.tar.gz
   novo hash = abf3715be9ab926aea21ca6bf5712f6fed93336762f624012e352910824a26c4
+
+[2026-03-13 20:47:27 -0500] manutencao_git
+- Motivo:
+  push anterior subiu bundles e evidencias binarias geradas para o historico do master
+- Acao executada:
+  reescrita do historico removendo bundles .tar.gz e pastas de evidencias geradas do indice git
+  preservacao local dos artefatos em backup temporario e restauracao como arquivos ignorados
+  protecao adicionada em .gitignore para evitar reincidencia
+- Validacao:
+  git count-objects -vH -> size-pack 3.28 MiB
+  maiores blobs restantes ficaram abaixo de 1.3 MiB
+  arvore local com evidencias continuou acessivel fora do indice
+- Observacao:
+  sera necessario force-push do branch master limpo para alinhar o remoto
