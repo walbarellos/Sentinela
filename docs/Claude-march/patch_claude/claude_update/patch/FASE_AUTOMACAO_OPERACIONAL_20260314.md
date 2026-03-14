@@ -270,3 +270,63 @@ validacao executada:
 - `.venv/bin/python scripts/validate_ops_output_guard.py`
 - `streamlit run app.py --server.headless true --server.port 8782`
 - `curl -I http://localhost:8782 -> 200`
+
+## Auditoria de utilidade e poda segura (2026-03-14)
+
+escopo:
+- revisar o stack operacional para separar `essencial / util / excesso`;
+- cortar destaque de camada derivada sem perder funcionalidade;
+- evitar proliferacao de UI e automacao sem ganho probatorio.
+
+resultado:
+- matriz registrada em `AUDITORIA_UTILIDADE_MODULOS_20260314.md`
+- `ops_runbook` rebaixado para `apoio`
+- aba `Runbook` removida do primeiro nivel da bancada
+- `Encaminhamento operacional` agora fica dentro de `Exportacao`
+- metricas de `runbook` removidas do overview principal
+- mensagem de refresh do painel ficou menos ruidosa
+
+decisao de produto:
+- manter `runbook`, mas nao expandir agora
+- priorizar sempre `prova > seguranca juridica > reducao de trabalho manual > conveniencia`
+
+validacao executada:
+- `python -m py_compile src/ui/ops_export.py src/ui/ops_runbook.py src/ui/ops_sections.py src/ui/ops_data.py src/ui/streamlit_ops.py`
+- `.venv/bin/python scripts/sync_ops_case_registry.py`
+- `streamlit run app.py --server.headless true --server.port 8783`
+- `curl -I http://localhost:8783 -> 200`
+
+## Auditoria de confianca do backend por familia (2026-03-14)
+
+escopo:
+- verificar se as regras ativas continuam legitimas para `MP / PF / CGU / controle interno`;
+- travar repeticao de falso positivo conhecido;
+- rebaixar linguagem que sugeria mais certeza do que o dado comporta.
+
+mudancas:
+- `src/core/ops_burden.py`
+  - `sesacre_sancao`: `contratacao concomitante` -> `cruzado com sancao ativa em base publica`
+  - `saude_societario`: remove rotulo operacional de `nepotismo`
+- `src/core/ops_registry.py`
+  - titulos e resumos estaduais rebaixados para linguagem conservadora
+- `src/core/ops_runbook.py`
+  - encaminhamento estadual passa a explicitar dependencia de processo integral e due diligence
+- `src/core/ops_rulebook.py`
+  - nova camada `FAMILY_CONFIDENCE_GUARD`
+  - validacoes novas por familia ativa
+
+resultado:
+- matriz familiar em `AUDITORIA_CONFIANCA_FAMILIAS_20260314.md`
+- `rule_rows = 6`
+- `rule_validation_rows = 11`
+- `rule_validation_fail_rows = 0`
+- `rule_validation_warn_rows = 0`
+- `rb_sancao_ativos = 0`
+- `sesacre_overclaim = 0`
+- `saude_nf_allowed = 0`
+- `labels_saude_nepot = 0`
+
+validacao executada:
+- `python -m py_compile src/core/ops_burden.py src/core/ops_registry.py src/core/ops_runbook.py src/core/ops_rulebook.py`
+- `.venv/bin/python scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/validate_ops_rulebook.py`

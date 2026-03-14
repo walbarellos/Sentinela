@@ -264,7 +264,7 @@ def _contradiction_summary(case: pd.Series, contradiction_df: pd.DataFrame) -> s
     if family == "rb_sus_contrato":
         return "Divergencia objetiva entre item contratual e base licitatoria publica."
     if family == "sesacre_sancao":
-        return "Fornecedor com sancao ativa mantido em contratacao estadual no recorte auditado."
+        return "Fornecedor estadual cruzado com sancao ativa em base publica, com necessidade de confirmar decisao administrativa e due diligence no processo integral."
     return "Coincidencia funcional e societaria em saude exige resposta documental e enquadramento humano."
 
 

@@ -173,6 +173,20 @@ RULES: list[dict[str, Any]] = [
         "benchmarks": ["INTOSAI_ISSAI100", "OVERSIGHT_OPEN_RECOMMENDATIONS"],
         "notes": "Evita que hipotese seja promovida ao mesmo nivel de fato documental.",
     },
+    {
+        "rule_id": "FAMILY_CONFIDENCE_GUARD",
+        "component": "ops_registry",
+        "family": "all",
+        "title": "Contencoes de confianca por familia de caso",
+        "purpose": "Impedir regressao de falso positivo conhecido e manter linguagem conservadora nas familias ativas.",
+        "intended_use": "all",
+        "assurance_level": "PROCESSUAL",
+        "human_review_required": False,
+        "false_positive_risk": "BAIXO",
+        "legal_anchors": ["CF88_ART37_CAPUT", "LAI_12527_2011", "CNMP_RES174_2017"],
+        "benchmarks": ["INTOSAI_ISSAI100", "OVERSIGHT_OPEN_RECOMMENDATIONS"],
+        "notes": "Serve como cerca para casos municipais, sancionatorios e societarios mais sensiveis.",
+    },
 ]
 
 
@@ -373,6 +387,202 @@ def sync_ops_rulebook(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
             finding=f"{external_without_doc} caso(s) aptos a uso externo sem qualquer item comprovado documentalmente." if external_without_doc else "Todos os casos com uso externo possuem base documental minima.",
             remediation="Rebaixar caso para revisao interna ou completar lastro documental minimo.",
             details={"external_without_documental": external_without_doc},
+        )
+    )
+
+    rb_sanction_active = 0
+    if "ops_case_registry" in tables:
+        rb_sanction_active = int(
+            con.execute(
+                """
+                SELECT COUNT(*)
+                FROM ops_case_registry
+                WHERE family = 'rb_sus_contrato'
+                  AND classe_achado = 'CRUZAMENTO_SANCIONATORIO'
+                """
+            ).fetchone()[0]
+            or 0
+        )
+    validations.append(
+        _validation_row(
+            validation_id="FAMILY_CONFIDENCE_GUARD:rb_false_positive_cleanup",
+            rule_id="FAMILY_CONFIDENCE_GUARD",
+            severity="CRITICO" if rb_sanction_active else "INFO",
+            status="FAIL" if rb_sanction_active else "PASS",
+            title="Fila municipal ativa nao mantem falso positivo sancionatorio conhecido",
+            finding=(
+                f"{rb_sanction_active} caso(s) municipais ainda classificados como cruzamento sancionatorio."
+                if rb_sanction_active
+                else "Nenhum caso municipal ativo permanece como cruzamento sancionatorio apos a limpeza temporal."
+            ),
+            remediation="Rebaixar ou remover qualquer caso municipal sancionatorio sem validacao temporal/material.",
+            details={"rb_active_sanction_cases": rb_sanction_active},
+        )
+    )
+
+    sesacre_missing_core = 0
+    if "ops_case_registry" in tables and "ops_case_burden_item" in tables:
+        sesacre_missing_core = int(
+            con.execute(
+                """
+                WITH target_cases AS (
+                    SELECT case_id
+                    FROM ops_case_registry
+                    WHERE family = 'sesacre_sancao'
+                ),
+                required_keys AS (
+                    SELECT * FROM (
+                        VALUES
+                            ('cruzamento_sancao_ativa'),
+                            ('processo_integral_contratacao'),
+                            ('consulta_integridade_previa'),
+                            ('justificativa_manutencao_contratual'),
+                            ('lastro_execucao_pagamento')
+                    ) AS t(item_key)
+                )
+                SELECT COUNT(*)
+                FROM target_cases c
+                CROSS JOIN required_keys k
+                LEFT JOIN ops_case_burden_item b
+                  ON b.case_id = c.case_id
+                 AND b.item_key = k.item_key
+                WHERE b.burden_id IS NULL
+                """
+            ).fetchone()[0]
+            or 0
+        )
+    validations.append(
+        _validation_row(
+            validation_id="SESACRE_SANCTION_CROSS:documentary_limits",
+            rule_id="SESACRE_SANCTION_CROSS",
+            severity="CRITICO" if sesacre_missing_core else "INFO",
+            status="FAIL" if sesacre_missing_core else "PASS",
+            title="Casos sancionatorios da SESACRE mantem trilha minima de processo, justificativa e fiscalizacao",
+            finding=(
+                f"{sesacre_missing_core} lacuna(s) em itens centrais de processo/due diligence/fiscalizacao."
+                if sesacre_missing_core
+                else "Todos os casos sancionatorios da SESACRE mantem a trilha documental minima exigida."
+            ),
+            remediation="Materializar todos os burden items centrais antes de qualquer uso externo.",
+            details={"sesacre_missing_core_items": sesacre_missing_core},
+        )
+    )
+
+    sesacre_overclaim_language = 0
+    if "ops_case_registry" in tables and "ops_case_burden_item" in tables:
+        sesacre_overclaim_language = int(
+            con.execute(
+                """
+                SELECT COALESCE((
+                    SELECT COUNT(*)
+                    FROM ops_case_registry
+                    WHERE family = 'sesacre_sancao'
+                      AND (
+                        LOWER(COALESCE(title, '')) LIKE '%concomitante%'
+                        OR LOWER(COALESCE(resumo_curto, '')) LIKE '%concomitante%'
+                      )
+                ), 0) + COALESCE((
+                    SELECT COUNT(*)
+                    FROM ops_case_burden_item
+                    WHERE family = 'sesacre_sancao'
+                      AND LOWER(COALESCE(item_label, '')) LIKE '%concomitante%'
+                ), 0)
+                """
+            ).fetchone()[0]
+            or 0
+        )
+    validations.append(
+        _validation_row(
+            validation_id="SESACRE_SANCTION_CROSS:claim_language",
+            rule_id="SESACRE_SANCTION_CROSS",
+            severity="ALTO" if sesacre_overclaim_language else "INFO",
+            status="FAIL" if sesacre_overclaim_language else "PASS",
+            title="Casos sancionatorios da SESACRE usam linguagem conservadora sobre cronologia contratual",
+            finding=(
+                f"{sesacre_overclaim_language} texto(s) ativos ainda usam linguagem temporal forte como 'concomitante'."
+                if sesacre_overclaim_language
+                else "Os casos sancionatorios ativos usam linguagem conservadora de cruzamento, sem extrapolar cronologia."
+            ),
+            remediation="Trocar linguagem temporal forte por cruzamento conservador enquanto a cronologia decisoria nao estiver fechada.",
+            details={"sesacre_overclaim_language": sesacre_overclaim_language},
+        )
+    )
+
+    saude_nepotismo_labels = 0
+    if "ops_case_burden_item" in tables or "ops_case_checklist" in tables:
+        burden_hits = 0
+        checklist_hits = 0
+        if "ops_case_burden_item" in tables:
+            burden_hits = int(
+                con.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM ops_case_burden_item
+                    WHERE family = 'saude_societario'
+                      AND LOWER(COALESCE(item_label, '')) LIKE '%nepot%'
+                    """
+                ).fetchone()[0]
+                or 0
+            )
+        if "ops_case_checklist" in tables:
+            checklist_hits = int(
+                con.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM ops_case_checklist
+                    WHERE family = 'saude_societario'
+                      AND LOWER(COALESCE(step_label, '')) LIKE '%nepot%'
+                    """
+                ).fetchone()[0]
+                or 0
+            )
+        saude_nepotismo_labels = burden_hits + checklist_hits
+    validations.append(
+        _validation_row(
+            validation_id="SAUDE_SOCIETARIO_CNES:no_nepotism_operational_label",
+            rule_id="SAUDE_SOCIETARIO_CNES",
+            severity="ALTO" if saude_nepotismo_labels else "INFO",
+            status="FAIL" if saude_nepotismo_labels else "PASS",
+            title="Caso societario em saude nao usa rotulo operacional de nepotismo",
+            finding=(
+                f"{saude_nepotismo_labels} rotulo(s) operacionais ainda usam 'nepotismo'."
+                if saude_nepotismo_labels
+                else "A trilha societaria em saude evita rotulo operacional de nepotismo e mantem tese em aberto."
+            ),
+            remediation="Usar apenas formula neutra de parentesco/designacao ate surgir prova documental especifica.",
+            details={"saude_nepotismo_label_hits": saude_nepotismo_labels},
+        )
+    )
+
+    saude_external_nf = 0
+    if "ops_case_export_gate" in tables and "ops_case_registry" in tables:
+        saude_external_nf = int(
+            con.execute(
+                """
+                SELECT COUNT(*)
+                FROM ops_case_export_gate g
+                JOIN ops_case_registry r USING (case_id, family)
+                WHERE r.family = 'saude_societario'
+                  AND g.export_mode = 'NOTICIA_FATO'
+                  AND g.allowed = TRUE
+                """
+            ).fetchone()[0]
+            or 0
+        )
+    validations.append(
+        _validation_row(
+            validation_id="SAUDE_SOCIETARIO_CNES:external_cap",
+            rule_id="SAUDE_SOCIETARIO_CNES",
+            severity="CRITICO" if saude_external_nf else "INFO",
+            status="FAIL" if saude_external_nf else "PASS",
+            title="Caso societario em saude nao sobe automaticamente para noticia de fato",
+            finding=(
+                f"{saude_external_nf} gate(s) de noticia de fato liberado(s) para saude societaria."
+                if saude_external_nf
+                else "A trilha societaria em saude permanece limitada a pedido documental ou nota interna."
+            ),
+            remediation="Bloquear noticia de fato para familia saude_societario enquanto faltar fechamento juridico-funcional.",
+            details={"saude_nf_allowed": saude_external_nf},
         )
     )
 

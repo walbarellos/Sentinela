@@ -313,7 +313,7 @@ def build_sesacre_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, 
             {
                 "case_id": case_id,
                 "family": "sesacre_sancao",
-                "title": "Fornecedor com sancao ativa contratado pela SESACRE",
+                "title": "Fornecedor da SESACRE cruzado com sancao ativa em base publica",
                 "subtitle": f"{item['n_sancoes_ativas']} sancao(oes) ativa(s) / {item['n_contratos_ac']} contrato(s)",
                 "subject_name": item["nome_sancionado"],
                 "subject_doc": cnpj,
@@ -333,10 +333,10 @@ def build_sesacre_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, 
                 "source_table": "sancoes_collapsed",
                 "source_row_ref": cnpj,
                 "resumo_curto": (
-                    f"{item['nome_sancionado']} com {item['n_sancoes_ativas']} sancao(oes) ativa(s), "
+                    f"{item['nome_sancionado']} cruzado com {item['n_sancoes_ativas']} sancao(oes) ativa(s), "
                     f"{item['n_contratos_ac']} contrato(s) e R$ {float(item['valor_contratado_ac'] or 0):,.2f} no recorte SESACRE."
                 ),
-                "proximo_passo": "Usar o dossie estadual e uma noticia de fato tecnica para apuracao externa focada em sancoes ativas.",
+                "proximo_passo": "Usar o dossie estadual para noticia de fato tecnica, sem presumir nulidade automatica, e cobrar processo integral, justificativa e due diligence.",
                 "bundle_path": None,
                 "bundle_sha256": None,
                 "artifact_count": 2,

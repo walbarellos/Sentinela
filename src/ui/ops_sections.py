@@ -22,7 +22,6 @@ from src.ui.ops_data import (
 from src.ui.ops_diff import render_artifact_diff
 from src.ui.ops_export import render_export_tab
 from src.ui.ops_preview import render_artifact_preview
-from src.ui.ops_runbook import render_runbook_tab
 from src.ui.ops_semantic import render_semantic_diff
 from src.ui.ops_shared import format_brl, format_case_label, present_external_usage, present_stage_label
 from src.ui.ops_timeline import render_timeline_tab
@@ -78,10 +77,10 @@ def render_overview_tab(summary: dict[str, Any], runs_df: pd.DataFrame, sources_
     extra1.metric("Contradições", summary.get("contradictions", 0))
     extra2.metric("Guard linguagem", summary.get("language_guard", 0))
     extra3.metric("Gates export", summary.get("export_gate", 0))
-    extra4.metric("Runbooks", summary.get("runbooks", 0))
-    extra5.metric("Exports congelados", summary.get("generated_export", 0))
-    extra6.metric("Diffs congelados", summary.get("generated_export_diff", 0))
-    extra7.metric("Falhas de regra", summary.get("rule_validation_fail", 0))
+    extra4.metric("Exports congelados", summary.get("generated_export", 0))
+    extra5.metric("Diffs congelados", summary.get("generated_export_diff", 0))
+    extra6.metric("Falhas de regra", summary.get("rule_validation_fail", 0))
+    extra7.metric("Inbox ativa", summary.get("inbox_cases", 0))
 
     block1, block2 = st.columns([1, 1])
     with block1:
@@ -161,7 +160,7 @@ def render_case_workbench(filtered: pd.DataFrame) -> None:
     timeline_df = load_ops_case_timeline(selected_case_id)
 
     with workbench_right:
-        resume_tab, runbook_tab, export_tab, checklist_tab, burden_tab, evidence_tab, timeline_tab, diff_tab = st.tabs(["Resumo", "Runbook", "Exportação", "Checklist", "Ônus", "Evidências", "Timeline", "Diff"])
+        resume_tab, export_tab, checklist_tab, burden_tab, evidence_tab, timeline_tab, diff_tab = st.tabs(["Resumo", "Exportação", "Checklist", "Ônus", "Evidências", "Timeline", "Diff"])
         with resume_tab:
             head_left, head_right = st.columns([1.4, 1])
             with head_left:
@@ -188,12 +187,11 @@ def render_case_workbench(filtered: pd.DataFrame) -> None:
                     st.metric("Contradições", len(contradiction_df))
                 if not guard_df.empty:
                     st.metric("Guard linguagem", len(guard_df))
+                if not runbook_steps_df.empty:
+                    st.metric("Diligências sugeridas", len(runbook_steps_df))
 
         with export_tab:
-            render_export_tab(selected_case_id, export_gate_df)
-
-        with runbook_tab:
-            render_runbook_tab(runbook_df, runbook_steps_df)
+            render_export_tab(selected_case_id, export_gate_df, runbook_df, runbook_steps_df)
 
         with checklist_tab:
             render_checklist_tab(checklist_df, contradiction_df, guard_df)

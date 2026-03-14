@@ -25,7 +25,6 @@ def render_ops_page() -> None:
                     f"Registry atualizado: {stats['cases']} casos / {stats['artifacts']} artefatos / "
                     f"{stats.get('burden_rows', 0)} ônus / {stats.get('semantic_rows', 0)} issues semânticas / "
                     f"{stats.get('contradiction_rows', 0)} contradições / {stats.get('checklist_rows', 0)} checklist / "
-                    f"{stats.get('runbook_rows', 0)} runbooks / {stats.get('runbook_steps', 0)} passos / "
                     f"{stats.get('language_guard_rows', 0)} flags de linguagem / "
                     f"{stats.get('export_gate_rows', 0)} gates de exportação."
                 )

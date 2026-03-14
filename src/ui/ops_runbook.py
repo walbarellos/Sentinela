@@ -29,10 +29,11 @@ def _render_anchors(payload: str | None) -> None:
             st.caption(note)
 
 
-def render_runbook_tab(runbook_df: pd.DataFrame, runbook_steps_df: pd.DataFrame) -> None:
-    st.markdown("#### Runbook operacional")
+def render_runbook_tab(runbook_df: pd.DataFrame, runbook_steps_df: pd.DataFrame, *, compact: bool = False) -> None:
+    if not compact:
+        st.markdown("#### Encaminhamento operacional")
     if runbook_df.empty:
-        st.info("Sem runbook materializado para este caso.")
+        st.info("Sem encaminhamento operacional materializado para este caso.")
         return
 
     row = runbook_df.iloc[0]
@@ -63,10 +64,10 @@ def render_runbook_tab(runbook_df: pd.DataFrame, runbook_steps_df: pd.DataFrame)
         st.markdown("**Base normativa oficial**")
         _render_anchors(row.get("legal_anchors_json"))
     with refs_col:
-        st.markdown("**Fontes locais do runbook**")
-        _render_list(row.get("source_refs_json"), "Sem fontes locais do runbook.")
+        st.markdown("**Fontes locais do encaminhamento**")
+        _render_list(row.get("source_refs_json"), "Sem fontes locais do encaminhamento.")
 
-    st.markdown("#### Sequencia de diligencias")
+    st.markdown("#### Sequência de diligências")
     if runbook_steps_df.empty:
         st.info("Sem passos materializados.")
         return

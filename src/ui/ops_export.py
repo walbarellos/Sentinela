@@ -5,6 +5,7 @@ import pandas as pd
 import streamlit as st
 
 from src.core.ops_export import build_case_external_text
+from src.ui.ops_runbook import render_runbook_tab
 from src.ui.ops_data import (
     freeze_ops_case_export_now,
     load_ops_case_generated_export_diffs,
@@ -24,22 +25,32 @@ def _format_mode(value: str) -> str:
     return MODE_LABELS.get(value, value)
 
 
-def render_export_tab(case_id: str, gate_df: pd.DataFrame) -> None:
-    st.markdown("#### Exportacao segura")
+def render_export_tab(
+    case_id: str,
+    gate_df: pd.DataFrame,
+    runbook_df: pd.DataFrame | None = None,
+    runbook_steps_df: pd.DataFrame | None = None,
+) -> None:
+    st.markdown("#### Exportação segura")
     if gate_df.empty:
-        st.info("Gate de exportacao ainda nao foi materializado para este caso.")
+        st.info("Gate de exportação ainda não foi materializado para este caso.")
         return
 
     st.dataframe(gate_df, use_container_width=True, hide_index=True)
+    if runbook_df is not None and not runbook_df.empty:
+        with st.expander("Encaminhamento operacional", expanded=False):
+            steps_df = runbook_steps_df if runbook_steps_df is not None else pd.DataFrame()
+            render_runbook_tab(runbook_df, steps_df, compact=True)
+
     frozen_df = load_ops_case_generated_exports(case_id)
     diff_df = load_ops_case_generated_export_diffs(case_id)
     if frozen_df.empty:
-        st.caption("Nenhuma exportacao controlada foi congelada para este caso ainda.")
+        st.caption("Nenhuma exportação controlada foi congelada para este caso ainda.")
     else:
-        st.markdown("##### Exportacoes congeladas")
+        st.markdown("##### Exportações congeladas")
         st.dataframe(frozen_df, use_container_width=True, hide_index=True)
     if not diff_df.empty:
-        st.markdown("##### Diferencas entre versoes congeladas")
+        st.markdown("##### Diferenças entre versões congeladas")
         st.dataframe(
             diff_df.drop(columns=["diff_text"]),
             use_container_width=True,
@@ -54,7 +65,7 @@ def render_export_tab(case_id: str, gate_df: pd.DataFrame) -> None:
 
     allowed_df = gate_df[gate_df["allowed"] == True].copy()  # noqa: E712
     if allowed_df.empty:
-        st.warning("Nenhum modo de exportacao esta liberado para este caso.")
+        st.warning("Nenhum modo de exportação está liberado para este caso.")
         return
 
     export_mode = st.selectbox(
@@ -81,14 +92,14 @@ def render_export_tab(case_id: str, gate_df: pd.DataFrame) -> None:
             mime="text/plain",
             use_container_width=True,
         )
-        if st.button("Congelar exportacao controlada", type="primary", use_container_width=True):
+        if st.button("Congelar exportação controlada", type="primary", use_container_width=True):
             try:
                 result = freeze_ops_case_export_now(case_id, export_mode)
                 st.cache_data.clear()
                 action = "reaproveitada" if result.get("reused") else "congelada"
                 st.success(
-                    f"Exportacao {action}: {result.get('path')} / sha256 {result.get('sha256')}"
+                    f"Exportação {action}: {result.get('path')} / sha256 {result.get('sha256')}"
                 )
                 st.rerun()
             except Exception as exc:
-                st.error(f"Falha ao congelar exportacao: {exc}")
+                st.error(f"Falha ao congelar exportação: {exc}")

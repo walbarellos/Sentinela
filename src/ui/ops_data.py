@@ -161,9 +161,6 @@ def load_ops_dashboard_data():
         generated_export_count = 0
         if "ops_case_generated_export" in tables:
             generated_export_count = int(con.execute("SELECT COUNT(*) FROM ops_case_generated_export").fetchone()[0] or 0)
-        runbook_count = 0
-        if "ops_case_runbook" in tables:
-            runbook_count = int(con.execute("SELECT COUNT(*) FROM ops_case_runbook").fetchone()[0] or 0)
         generated_export_diff_count = 0
         if "ops_case_generated_export_diff" in tables:
             generated_export_diff_count = int(con.execute("SELECT COUNT(*) FROM ops_case_generated_export_diff").fetchone()[0] or 0)
@@ -217,7 +214,6 @@ def load_ops_dashboard_data():
         "language_guard": language_guard_count,
         "export_gate": export_gate_count,
         "generated_export": generated_export_count,
-        "runbooks": runbook_count,
         "generated_export_diff": generated_export_diff_count,
         "rule_validation_fail": rule_validation_fail_count,
         "by_stage": by_stage_df.to_dict("records"),
