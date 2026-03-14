@@ -1,4 +1,0 @@
-ARQUIVO LEGADO DESATIVADO
-
-Use:
-- `nota_historica_3895_sancao_invalidada.txt`

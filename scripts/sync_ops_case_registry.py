@@ -43,6 +43,8 @@ def main() -> int:
         print(f"checklist_rows={stats.get('checklist_rows', 0)}")
         print(f"language_guard_rows={stats.get('language_guard_rows', 0)}")
         print(f"export_gate_rows={stats.get('export_gate_rows', 0)}")
+        print(f"runbook_rows={stats.get('runbook_rows', 0)}")
+        print(f"runbook_steps={stats.get('runbook_steps', 0)}")
         print(f"generated_export_rows={stats.get('generated_export_rows', 0)}")
         print(f"generated_export_diff_rows={stats.get('generated_export_diff_rows', 0)}")
         print(f"rule_rows={stats.get('rule_rows', 0)}")

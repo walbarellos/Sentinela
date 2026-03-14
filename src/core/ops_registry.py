@@ -453,6 +453,7 @@ def sync_ops_case_registry(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
         sync_ops_export_gate,
     )
     from src.core.ops_guard import ensure_ops_guard, sync_ops_language_guard
+    from src.core.ops_runbook import ensure_ops_runbook, sync_ops_runbook
     from src.core.ops_rulebook import ensure_ops_rulebook, sync_ops_rulebook
     from src.core.ops_semantic import ensure_ops_semantic, sync_ops_semantic_analysis
 
@@ -461,6 +462,7 @@ def sync_ops_case_registry(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
     ensure_ops_contradiction(con)
     ensure_ops_export_gate(con)
     ensure_ops_guard(con)
+    ensure_ops_runbook(con)
     ensure_ops_rulebook(con)
     ensure_ops_semantic(con)
     burden_stats = sync_ops_burden(con)
@@ -504,6 +506,7 @@ def sync_ops_case_registry(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
     search_stats = sync_ops_search_index(con)
     guard_stats = sync_ops_language_guard(con)
     export_stats = sync_ops_export_gate(con)
+    runbook_stats = sync_ops_runbook(con)
     export_diff_stats = sync_ops_generated_export_diff(con)
     rulebook_stats = sync_ops_rulebook(con)
 
@@ -517,6 +520,8 @@ def sync_ops_case_registry(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
         "checklist_rows": int(checklist_stats.get("rows_written", 0)),
         "language_guard_rows": int(guard_stats.get("rows_written", 0)),
         "export_gate_rows": int(export_stats.get("rows_written", 0)),
+        "runbook_rows": int(runbook_stats.get("rows_written", 0)),
+        "runbook_steps": int(runbook_stats.get("steps_written", 0)),
         "generated_export_rows": len(generated_artifacts),
         "generated_export_diff_rows": int(export_diff_stats.get("rows_written", 0)),
         "rule_rows": int(rulebook_stats.get("rules_written", 0)),

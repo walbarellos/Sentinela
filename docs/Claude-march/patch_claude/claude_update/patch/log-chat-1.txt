@@ -1862,3 +1862,34 @@ validacao final da limpeza:
 - `.venv/bin/python scripts/validate_sancao_timeline.py`
 - `streamlit run app.py --server.headless true --server.port 8781`
 - `curl -I http://localhost:8781 -> 200`
+
+remocao final de residuos legados:
+- removidos do disco:
+  - `denuncia_preliminar_3895.txt`
+  - `denuncia_preliminar_3898.txt`
+  - `entrega_denuncia_atual/denuncia_preliminar_3895.txt`
+  - `entrega_denuncia_atual/denuncia_preliminar_3898.txt`
+  - `entrega_denuncia_atual/representacao_preliminar_sesacre_top10.txt`
+  - `sesacre_prioritarios/representacao_preliminar_sesacre_top10.txt`
+  - `sesacre_prioritarios/representacao_preliminar_sesacre_top5.txt`
+- compatibilidade mantida apenas em:
+  - `src/ui/ops_shared.py`
+  - `src/core/ops_guard.py`
+
+runbook operacional por caso:
+- nova camada em `src/core/ops_runbook.py`
+- nova aba `Runbook` na bancada de caso
+- `12` runbooks materializados
+- `60` passos materializados
+- exemplos:
+  - `3898` -> `NOTICIA_FATO` -> `Controladoria Geral do Municipio de Rio Branco`
+  - `CEDIMP` -> `PEDIDO_DOCUMENTAL` -> `SEMSA/RH`
+  - `SESACRE sancao` -> `NOTICIA_FATO` -> `Controladoria-Geral do Estado do Acre`
+
+validacao do runbook:
+- `python -m py_compile src/core/ops_runbook.py src/ui/ops_runbook.py src/core/ops_registry.py src/ui/ops_data.py src/ui/ops_sections.py src/ui/streamlit_ops.py scripts/sync_ops_runbook.py`
+- `.venv/bin/python scripts/sync_ops_runbook.py`
+- `.venv/bin/python scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/validate_ops_output_guard.py`
+- `streamlit run app.py --server.headless true --server.port 8782`
+- `curl -I http://localhost:8782 -> 200`

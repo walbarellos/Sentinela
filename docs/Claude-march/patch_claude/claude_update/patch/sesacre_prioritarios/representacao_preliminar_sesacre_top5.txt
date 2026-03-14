@@ -1,6 +1,0 @@
-ARQUIVO LEGADO DESATIVADO
-
-Este arquivo foi superado pela versao top 10 e mantido apenas como historico.
-
-Use:
-- `docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/relato_apuracao_sesacre_top10.txt`

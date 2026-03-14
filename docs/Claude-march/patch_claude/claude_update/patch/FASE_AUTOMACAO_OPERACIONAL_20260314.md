@@ -229,3 +229,44 @@ estado final:
 - `RB_CONTRATO_SANCIONADO = 0`
 - `v_rb_contrato_ceis_valida = 0`
 - `v_rb_contrato_ceis_invalida = 5`
+
+consolidacao final dos nomes:
+- arquivos legados `denuncia_preliminar_*` e `representacao_preliminar_*` foram removidos do acervo ativo
+- sobraram apenas dois mecanismos de compatibilidade intencionais:
+  - `src/ui/ops_shared.py` para mapear estagios antigos eventualmente existentes no banco
+  - `src/core/ops_guard.py` para detectar linguagem legada em qualquer saida nova
+
+## Runbook operacional por caso (2026-03-14)
+
+escopo:
+- ligar `ops_case_registry` a um runbook institucional por caso;
+- derivar destinatario, peca, dossie minimo, documentos a requerer e passos de diligencia;
+- expor isso no Streamlit sem criar mais um fluxo paralelo de scripts.
+
+resultado:
+- `src/core/ops_runbook.py`
+- `src/ui/ops_runbook.py`
+- `scripts/sync_ops_runbook.py`
+- aba nova `Runbook` dentro da bancada de caso
+- contagem validada:
+  - `runbook_rows = 12`
+  - `runbook_steps = 60`
+
+amostras validadas:
+- `rb:contrato:3898`
+  - `recommended_mode = NOTICIA_FATO`
+  - `destinatario_principal = Controladoria Geral do Municipio de Rio Branco`
+- `cedimp:saude_societario:13325100000130`
+  - `recommended_mode = PEDIDO_DOCUMENTAL`
+  - `destinatario_principal = Secretaria Municipal de Saude - RH / SEMSA`
+- `sesacre:sancao:*`
+  - `recommended_mode = NOTICIA_FATO`
+  - `destinatario_principal = Controladoria-Geral do Estado do Acre`
+
+validacao executada:
+- `python -m py_compile src/core/ops_runbook.py src/ui/ops_runbook.py src/core/ops_registry.py src/ui/ops_data.py src/ui/ops_sections.py src/ui/streamlit_ops.py scripts/sync_ops_runbook.py`
+- `.venv/bin/python scripts/sync_ops_runbook.py`
+- `.venv/bin/python scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/validate_ops_output_guard.py`
+- `streamlit run app.py --server.headless true --server.port 8782`
+- `curl -I http://localhost:8782 -> 200`

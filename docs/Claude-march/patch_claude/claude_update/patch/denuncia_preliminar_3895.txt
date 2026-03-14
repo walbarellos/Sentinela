@@ -1,9 +1,0 @@
-ARQUIVO LEGADO DESATIVADO
-
-Este arquivo foi substituido por:
-- `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/nota_historica_3895_sancao_invalidada.txt`
-
-Motivo:
-- o cruzamento sancionatorio do contrato `3895` foi invalidado por filtro temporal;
-- a sancao encontrada comecou depois da data de referencia do contrato;
-- o caso nao integra mais a fila municipal ativa.

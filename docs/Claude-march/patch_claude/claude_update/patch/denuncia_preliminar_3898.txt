@@ -1,8 +1,0 @@
-ARQUIVO LEGADO DESATIVADO
-
-Este arquivo foi substituido por:
-- `docs/Claude-march/patch_claude/claude_update/patch/relato_apuracao_3898.txt`
-
-Motivo:
-- o fluxo operacional ativo usa nomenclatura neutra;
-- a saida correta para o `3898` e `noticia de fato` ou `pedido de apuracao preliminar`, nao `denuncia preliminar`.

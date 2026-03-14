@@ -13,6 +13,8 @@ from src.ui.ops_data import (
     load_ops_case_checklist,
     load_ops_case_contradictions,
     load_ops_case_export_gate,
+    load_ops_case_runbook,
+    load_ops_case_runbook_steps,
     load_ops_case_language_guard,
     load_ops_case_semantic,
     load_ops_case_timeline,
@@ -20,6 +22,7 @@ from src.ui.ops_data import (
 from src.ui.ops_diff import render_artifact_diff
 from src.ui.ops_export import render_export_tab
 from src.ui.ops_preview import render_artifact_preview
+from src.ui.ops_runbook import render_runbook_tab
 from src.ui.ops_semantic import render_semantic_diff
 from src.ui.ops_shared import format_brl, format_case_label, present_external_usage, present_stage_label
 from src.ui.ops_timeline import render_timeline_tab
@@ -71,13 +74,14 @@ def render_overview_tab(summary: dict[str, Any], runs_df: pd.DataFrame, sources_
     burden2.metric("Ônus pend. doc", summary.get("burden_pending_doc", 0))
     burden3.metric("Ônus pend. jurid.", summary.get("burden_pending_legal", 0))
     burden4.metric("Ônus sem base", summary.get("burden_no_basis", 0))
-    extra1, extra2, extra3, extra4, extra5, extra6 = st.columns(6)
+    extra1, extra2, extra3, extra4, extra5, extra6, extra7 = st.columns(7)
     extra1.metric("Contradições", summary.get("contradictions", 0))
     extra2.metric("Guard linguagem", summary.get("language_guard", 0))
     extra3.metric("Gates export", summary.get("export_gate", 0))
-    extra4.metric("Exports congelados", summary.get("generated_export", 0))
-    extra5.metric("Falhas de regra", summary.get("rule_validation_fail", 0))
+    extra4.metric("Runbooks", summary.get("runbooks", 0))
+    extra5.metric("Exports congelados", summary.get("generated_export", 0))
     extra6.metric("Diffs congelados", summary.get("generated_export_diff", 0))
+    extra7.metric("Falhas de regra", summary.get("rule_validation_fail", 0))
 
     block1, block2 = st.columns([1, 1])
     with block1:
@@ -150,12 +154,14 @@ def render_case_workbench(filtered: pd.DataFrame) -> None:
     checklist_df = load_ops_case_checklist(selected_case_id)
     contradiction_df = load_ops_case_contradictions(selected_case_id)
     export_gate_df = load_ops_case_export_gate(selected_case_id)
+    runbook_df = load_ops_case_runbook(selected_case_id)
+    runbook_steps_df = load_ops_case_runbook_steps(selected_case_id)
     guard_df = load_ops_case_language_guard(selected_case_id)
     semantic_df = load_ops_case_semantic(selected_case_id)
     timeline_df = load_ops_case_timeline(selected_case_id)
 
     with workbench_right:
-        resume_tab, export_tab, checklist_tab, burden_tab, evidence_tab, timeline_tab, diff_tab = st.tabs(["Resumo", "Exportação", "Checklist", "Ônus", "Evidências", "Timeline", "Diff"])
+        resume_tab, runbook_tab, export_tab, checklist_tab, burden_tab, evidence_tab, timeline_tab, diff_tab = st.tabs(["Resumo", "Runbook", "Exportação", "Checklist", "Ônus", "Evidências", "Timeline", "Diff"])
         with resume_tab:
             head_left, head_right = st.columns([1.4, 1])
             with head_left:
@@ -185,6 +191,9 @@ def render_case_workbench(filtered: pd.DataFrame) -> None:
 
         with export_tab:
             render_export_tab(selected_case_id, export_gate_df)
+
+        with runbook_tab:
+            render_runbook_tab(runbook_df, runbook_steps_df)
 
         with checklist_tab:
             render_checklist_tab(checklist_df, contradiction_df, guard_df)

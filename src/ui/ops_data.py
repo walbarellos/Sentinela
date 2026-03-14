@@ -161,6 +161,9 @@ def load_ops_dashboard_data():
         generated_export_count = 0
         if "ops_case_generated_export" in tables:
             generated_export_count = int(con.execute("SELECT COUNT(*) FROM ops_case_generated_export").fetchone()[0] or 0)
+        runbook_count = 0
+        if "ops_case_runbook" in tables:
+            runbook_count = int(con.execute("SELECT COUNT(*) FROM ops_case_runbook").fetchone()[0] or 0)
         generated_export_diff_count = 0
         if "ops_case_generated_export_diff" in tables:
             generated_export_diff_count = int(con.execute("SELECT COUNT(*) FROM ops_case_generated_export_diff").fetchone()[0] or 0)
@@ -214,6 +217,7 @@ def load_ops_dashboard_data():
         "language_guard": language_guard_count,
         "export_gate": export_gate_count,
         "generated_export": generated_export_count,
+        "runbooks": runbook_count,
         "generated_export_diff": generated_export_diff_count,
         "rule_validation_fail": rule_validation_fail_count,
         "by_stage": by_stage_df.to_dict("records"),
@@ -505,6 +509,68 @@ def load_ops_case_generated_export_diffs(case_id: str) -> pd.DataFrame:
             FROM v_ops_case_generated_export_diff
             WHERE case_id = ?
             ORDER BY updated_at DESC, export_mode
+            """,
+            [case_id],
+        ).df()
+    finally:
+        con.close()
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def load_ops_case_runbook(case_id: str) -> pd.DataFrame:
+    con = duckdb.connect(str(DB_PATH), read_only=True)
+    try:
+        tables = set(con.execute("SHOW TABLES").df()["name"].tolist())
+        if "ops_case_runbook" not in tables:
+            return pd.DataFrame()
+        return con.execute(
+            """
+            SELECT
+                recommended_mode,
+                peca_recomendada,
+                destinatario_principal,
+                destinatarios_secundarios_json,
+                canal_preferencial,
+                objetivo_operacional,
+                contradicao_central,
+                risco_controlado,
+                status_resumo,
+                next_best_action,
+                dossier_minimo_json,
+                documentos_requeridos_json,
+                legal_anchors_json,
+                source_refs_json
+            FROM v_ops_case_runbook
+            WHERE case_id = ?
+            """,
+            [case_id],
+        ).df()
+    finally:
+        con.close()
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def load_ops_case_runbook_steps(case_id: str) -> pd.DataFrame:
+    con = duckdb.connect(str(DB_PATH), read_only=True)
+    try:
+        tables = set(con.execute("SHOW TABLES").df()["name"].tolist())
+        if "ops_case_runbook_step" not in tables:
+            return pd.DataFrame()
+        return con.execute(
+            """
+            SELECT
+                step_order,
+                phase_label,
+                action_label,
+                target_orgao,
+                deliverable,
+                blocking,
+                status_hint,
+                legal_anchors_json,
+                source_refs_json
+            FROM v_ops_case_runbook_step
+            WHERE case_id = ?
+            ORDER BY step_order
             """,
             [case_id],
         ).df()
