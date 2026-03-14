@@ -21,10 +21,16 @@ Follow-up conservador com `CNES` oficial, contrato publico e perfil funcional lo
 - endereco CNES: `RUA VALERIO MAGALHAES 63 / BOSQUE / RIO BRANCO - IBGE - 120040 / AC`
 - horario amostra: `Segunda-Feira: 08:00 às 18:00; Terça-Feira: 08:00 às 18:00; Quarta-Feira: 08:00 às 18:00`
 - classificacoes CNES de diagnostico: `MAMOGRAFIA, MAMOGRAFIA POR TELEMEDICINA, RADIOLOGIA, RESSONANCIA MAGNETICA, RESSONANCIA MAGNETICA POR TELEMEDICINA, TOMOGRAFIA COMPUTADORIZADA, TOMOGRAFIA COMPUTADORIZADA POR TELEMEDICINA, ULTRASONOGRAFIA`
-- flags objetivas: `empresa_com_cnes_oficial, estabelecimento_sadt, gestao_cnes_estadual, contrato_estadual_sesacre, socios_medicos_semsa, atividade_cadastral_diagnostico, objeto_contratual_diagnostico, cnes_classificacao_correlata, socio_listado_como_profissional_no_cnes, especialidade_publica_correlata_ao_objeto`
+- flags objetivas: `empresa_com_cnes_oficial, estabelecimento_sadt, gestao_cnes_estadual, contrato_estadual_sesacre, socios_medicos_semsa, atividade_cadastral_diagnostico, objeto_contratual_diagnostico, cnes_classificacao_correlata, socio_listado_como_profissional_no_cnes, historico_cnes_concomitancia_publico_empresa, historico_cnes_estatutario_servidor_proprio, carga_concomitante_documentada_cnes, carga_documentada_ge_60h, carga_documentada_ge_80h, especialidade_publica_correlata_ao_objeto`
 - profissionais coincidentes no CNES:
   - `MAIRA SANTIAGO PIRES PARENTE` / `225320 - MEDICO EM RADIOLOGIA E DIAGNOSTICO POR IMAGEM` / amb `20Hs.` / total `20Hs.` / `VINCULO EMPREGATICIO` / `CELETISTA` / situacao `Ativo`
   - `MARCOS PAULO PARENTE ARAUJO` / `225320 - MEDICO EM RADIOLOGIA E DIAGNOSTICO POR IMAGEM` / amb `20Hs.` / total `20Hs.` / `AUTONOMO` / `PESSOA FISICA` / situacao `Ativo`
+- historico oficial do CNES:
+  - `MAIRA SANTIAGO PIRES PARENTE` / CNS `700708906395971` / competencias concomitantes `01/2016, 01/2017, 01/2018, 01/2019, 01/2020, 01/2021 ... (+125)` / publico `CAD IMAGEM / ESTATUTARIO / SERVIDOR PROPRIO` / empresa `CEDIMP / PESSOA JURIDICA / NAO SE APLICA`
+  - `MARCOS PAULO PARENTE ARAUJO` / CNS `700105928933618` / competencias concomitantes `01/2016, 01/2017, 01/2018, 01/2019, 01/2020, 01/2021 ... (+125)` / publico `CAD IMAGEM / ESTATUTARIO / SERVIDOR PROPRIO` / empresa `CEDIMP / PESSOA JURIDICA / NAO SE APLICA`
+- metricas documentais de carga: `262` competencias / `>=60h` `234` / `>=80h` `28` / pico `100h`
+  - `MAIRA SANTIAGO PIRES PARENTE` / pico `10/2019` / publico `80h` / empresa `24h` / total `100h` / `>=60h` `104` / `>=80h` `3`
+  - `MARCOS PAULO PARENTE ARAUJO` / pico `01/2022` / publico `40h` / empresa `40h` / total `80h` / `>=60h` `130` / `>=80h` `25`
 - socios publicos locais:
   - `MAIRA SANTIAGO PIRES PARENTE` / `1617 - MEDICO ULTRASONOGRAFISTA` / `SEMSA` / `20h` / admissao `24/02/2017` / faixa liquida `R$ 6.151,87` a `R$ 8.901,25`
   - `MARCOS PAULO PARENTE ARAUJO` / `706 - MEDICO RADIOLOGIA 20H GPO-5B` / `SEMSA` / `20h` / admissao `26/02/2015` / faixa liquida `R$ 6.396,26` a `R$ 9.258,26`

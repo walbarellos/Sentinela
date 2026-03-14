@@ -73,6 +73,16 @@ Sim, ja existem elementos concretos para representacao preliminar.
   `8` classificacoes CNES de diagnostico por imagem, incluindo `RADIOLOGIA`, `TOMOGRAFIA COMPUTADORIZADA` e `ULTRASONOGRAFIA`
   o modulo de profissionais do proprio `CNES` lista nominalmente os `2` socios como profissionais ativos do estabelecimento, ambos com `CBO 225320 - MEDICO EM RADIOLOGIA E DIAGNOSTICO POR IMAGEM` e `20h` ambulatoriais
   isso gerou um segundo insight factual: `FATO_DOCUMENTAL / DOCUMENTAL_CORROBORADO / APTO_APURACAO`
+  a ficha individual oficial desses mesmos profissionais no proprio `CNES` agora materializa `131` competencias com concomitancia documental entre linha `ESTATUTARIO / SERVIDOR PROPRIO` e linha da `CEDIMP`
+  isso gerou um terceiro insight factual: `VINCULO_EXATO_CNES_HISTORICO_PUBLICO_PRIVADO_SAUDE`, classificado como `FATO_DOCUMENTAL / DOCUMENTAL_PRIMARIO / APTO_APURACAO`
+  a mesma trilha agora foi convertida em metrica documental de carga:
+  `2` profissionais com concomitancia
+  `262` competencias concomitantes no total
+  `234` competencias `>=60h`
+  `28` competencias `>=80h`
+  pico documental de `100h` no proprio historico oficial do `CNES`
+  isso gerou um quarto insight factual: `VINCULO_EXATO_CNES_CARGA_CONCOMITANTE_SAUDE`, ainda tratado como fato documental para apuracao, e nao como juizo automatico de ilegalidade
+  o sistema continua conservador: essa camada prova coexistencia documental em fonte primaria de saude, nao prova sozinha acumulo ilicito, impedimento legal ou nepotismo
 
 ## O que esta nesta pasta
 
@@ -129,6 +139,7 @@ Sim, ja existem elementos concretos para representacao preliminar.
 - `TRACE_VINCULO_SOCIETARIO_SAUDE_DOSSIE.md`
 - `TRACE_VINCULO_SOCIETARIO_SAUDE_MANIFEST.json`
 - `trace_vinculo_societario_saude_followup.csv`
+- `RF_RNF_VINCULO_SOCIETARIO_SAUDE.md`
 - `trace_agro_unidades/`
 - `trace_agro_unidades/073_2023_iapen_1.pdf`
 - `trace_agro_unidades/073_2023_iapen_1.txt`
@@ -173,6 +184,8 @@ O software hoje ja prova:
   `8` classificacoes oficiais de diagnostico por imagem no `CNES`
   o modulo oficial de profissionais do mesmo `CNES` lista `MAIRA SANTIAGO PIRES PARENTE` e `MARCOS PAULO PARENTE ARAUJO` como profissionais ativos do estabelecimento, ambos com `CBO 225320`
   isso eleva a trilha de saude para fato documental corroborado sobre coincidencia funcional, mas ainda nao fecha ilicitude
+  a ficha individual oficial desses profissionais agora materializa `131` competencias com concomitancia entre historico `ESTATUTARIO / SERVIDOR PROPRIO` e historico da `CEDIMP`, elevando a trilha para um terceiro fato documental, ainda sem concluir ilegalidade por si so
+  a camada seguinte ja ficou quantificada em metrica documental: `262` competencias concomitantes no total, `234` com `>=60h`, `28` com `>=80h` e pico documental de `100h`, sempre como triagem tecnica e nao como veredito juridico automatico
 
 O software ainda nao prova sozinho:
 - nepotismo da `NORTE`

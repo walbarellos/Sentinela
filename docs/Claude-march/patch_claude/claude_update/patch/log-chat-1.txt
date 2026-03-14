@@ -218,6 +218,88 @@
 - Cobertura apos o preenchimento:
   top 10 SESACRE = 10/10 com QSA
   top 10 SESACRE = 9/10 com socios
+
+[2026-03-13 20:31:44 -05] follow-up CNES aprofundado com historico individual oficial do caso CEDIMP
+- Objetivo:
+  endurecer o caso `CEDIMP` sem extrapolar conclusao, saindo da coincidencia nominal no modulo profissional para concomitancia documental no historico individual oficial do `CNES`
+- Scripts alterados:
+  scripts/sync_vinculo_societario_saude_followup.py
+  scripts/export_vinculo_societario_saude_followup.py
+- Ajuste tecnico relevante:
+  o parser do `CNES` passou a usar `requests.Session()` persistente no fluxo `Mod_Profissional.asp -> Exibe_Ficha_Prof_Sus.asp?J=...`
+  sem a mesma sessao, a ficha individual do profissional nao devolve o historico correto
+- Dados novos materializados no banco:
+  vinculo_societario_saude_followup:
+    n_cnes_profissionais_match = 2
+    n_cnes_profissionais_historico = 2
+  caso unico mantido = `CEDIMP` / `13.325.100/0001-30`
+  historico oficial do `CNES` agora materializa:
+    `MAIRA SANTIAGO PIRES PARENTE` / CNS `700708906395971`
+    `MARCOS PAULO PARENTE ARAUJO` / CNS `700105928933618`
+    `131` competencias com concomitancia documental entre linha `ESTATUTARIO / SERVIDOR PROPRIO` e linha da `CEDIMP`
+- Leitura probatoria:
+  isso nao prova sozinho impedimento legal, acumulo ilicito ou nepotismo
+  isso prova coexistencia documental em fonte primaria de saude entre:
+    historico funcional estatutario/servidor proprio
+    historico profissional da `CEDIMP`
+    base municipal local da `SEMSA`
+    contrato estadual `779/2023` da `SESACRE`
+- Insight novo no banco:
+  `vps_saude_hist:13325100000130`
+  kind = `VINCULO_EXATO_CNES_HISTORICO_PUBLICO_PRIVADO_SAUDE`
+  classificacao = `FATO_DOCUMENTAL / DOCUMENTAL_PRIMARIO / APTO_APURACAO`
+- Validacao executada:
+  python -m py_compile scripts/sync_vinculo_societario_saude_followup.py scripts/export_vinculo_societario_saude_followup.py
+  .venv/bin/python scripts/sync_vinculo_societario_saude_followup.py
+  .venv/bin/python scripts/export_vinculo_societario_saude_followup.py
+- Artefatos atualizados:
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_DOSSIE.md
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_vinculo_societario_saude_followup.csv
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_MANIFEST.json
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/README.md
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/PROXIMO_PASSO.md
+- Hashes atuais dos artefatos de saude:
+  dossier = `bf73d1bf6502d0570577d958563cd464b2503f7a61bb9973cc20fcfd31c8c119`
+  csv = `09f4bdaf9b36b39ee54573e04261b14c2ec8c81c34497ed3a84b33b8b2ba46f6`
+  manifest = `dcfb11397162d10b6106fcbda436ccd8ad9c669f43732f78c6a4c5daf878ea13`
+- Proximo alvo correto:
+  transformar essa concomitancia historica em metrica documental de carga por competencia e confrontar com o regime/jornada aplicavel, sem subir o caso alem do que a prova atual permite
+
+[2026-03-13 20:49:12 -05] metricas documentais de carga concomitante implementadas no caso CEDIMP
+- Objetivo:
+  converter a concomitancia historica do `CNES` em numeros auditaveis por competencia, sem tratar isso como veredito juridico automatico
+- Scripts alterados:
+  scripts/sync_vinculo_societario_saude_followup.py
+  scripts/export_vinculo_societario_saude_followup.py
+- Documento novo:
+  docs/Claude-march/patch_claude/claude_update/patch/RF_RNF_VINCULO_SOCIETARIO_SAUDE.md
+- RF/RNF fixados para o modulo:
+  usar apenas match exato nesta etapa
+  separar `sobreposicao`, `profissional no CNES`, `historico concomitante` e `carga documentada`
+  tratar `>=60h` e `>=80h` apenas como marcos tecnicos de triagem, nunca como ilegalidade automatica
+- Dados novos materializados no banco:
+  n_profissionais_concomitancia = `2`
+  n_competencias_concomitantes_total = `262`
+  n_competencias_ge_60h = `234`
+  n_competencias_ge_80h = `28`
+  max_ch_total_publico = `80`
+  max_ch_total_empresa = `40`
+  max_ch_total_concomitante = `100`
+- Insight novo no banco:
+  `vps_saude_carga:13325100000130`
+  kind = `VINCULO_EXATO_CNES_CARGA_CONCOMITANTE_SAUDE`
+  classificacao = `FATO_DOCUMENTAL / DOCUMENTAL_PRIMARIO / APTO_APURACAO`
+- Validacao executada:
+  python -m py_compile scripts/sync_vinculo_societario_saude_followup.py scripts/export_vinculo_societario_saude_followup.py
+  .venv/bin/python scripts/sync_vinculo_societario_saude_followup.py
+  .venv/bin/python scripts/export_vinculo_societario_saude_followup.py
+- Artefatos atualizados:
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_DOSSIE.md
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/README.md
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/PROXIMO_PASSO.md
+- Leitura probatoria:
+  o sistema agora nao so prova a coexistencia documental em fonte primaria, mas tambem mede a carga concomitante documentada
+  isso ainda nao basta para afirmar acumulacao ilicita ou impedimento; o passo seguinte e confrontar regime, jornada e norma aplicavel
   top 10 SESACRE = 1/10 com detalhe financeiro
 - Artefatos reemitidos:
   relatorio_final_acre_rio_branco_sus.md

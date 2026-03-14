@@ -14,16 +14,26 @@ Status atual:
   os mesmos `2` nomes aparecem no modulo oficial de profissionais do `CNES` da propria `CEDIMP`
   ambos com `CBO 225320 - MEDICO EM RADIOLOGIA E DIAGNOSTICO POR IMAGEM`
   ambos com `20h` ambulatoriais no estabelecimento privado
+- o follow-up agora ficou mais forte:
+  a ficha individual oficial desses mesmos profissionais no `CNES` materializa `131` competencias com concomitancia documental entre linha `ESTATUTARIO / SERVIDOR PROPRIO` e linha da `CEDIMP`
+- a camada agora tambem ficou quantificada:
+  `2` profissionais com concomitancia
+  `262` competencias concomitantes no total
+  `234` competencias `>=60h`
+  `28` competencias `>=80h`
+  pico documental de `100h`
 - o sistema classificou isso corretamente como:
   `HIPOTESE_INVESTIGATIVA / EXPLORATORIO / REVISAO_INTERNA` para a camada societaria basica
   `HIPOTESE_INVESTIGATIVA / INDICIARIO / REVISAO_INTERNA` para o follow-up de saude
   `FATO_DOCUMENTAL / DOCUMENTAL_CORROBORADO / APTO_APURACAO` para a coincidencia nominal na ficha oficial de profissionais do CNES
+  `FATO_DOCUMENTAL / DOCUMENTAL_PRIMARIO / APTO_APURACAO` para a concomitancia documental no historico oficial do CNES
+  `FATO_DOCUMENTAL / DOCUMENTAL_PRIMARIO / APTO_APURACAO` para a carga concomitante documentada no historico oficial do CNES
 
 Entrega esperada:
-- confirmar se existe incompatibilidade juridica real ou apenas acumulacao licita
-- buscar fonte externa primaria para desambiguar CPF mascarado do QSA
-- checar regime, lotacao, carga horaria e compatibilidade funcional dos dois medicos
-- checar se os `CNS` do modulo de profissionais permitem amarrar melhor a identidade sem depender de CPF mascarado
+- confirmar se a concomitancia documental do CNES revela incompatibilidade juridica real ou apenas acumulacao licita
+- usar os `CNS` oficiais ja capturados para reduzir a dependencia do CPF mascarado do QSA
+- confrontar a metrica ja calculada por competencia com a regra juridica aplicavel, sem transformar `>=60h` ou `>=80h` em veredito automatico
+- checar regime, lotacao, jornada e compatibilidade funcional dos dois medicos a luz da norma aplicavel
 - se houver base suficiente, elevar de `sobreposicao societaria exata` para `potencial conflito de interesse`; se nao houver, manter como triagem interna e nao como representacao
 
 ## Passo 1. Fechar os blocos AGRO fora do eixo principal da SEJUSP
@@ -157,3 +167,5 @@ Hoje ainda nao temos prova suficiente para afirmar, so com o banco atual, nepoti
 O melhor proximo passo agora e aprofundar os blocos `AGRO / DETRAN` e `AGRO / ISE`, porque o `170/2023` da `SEJUSP/PMAC` saiu da fila de pendencia.
 O `073/2023` do `IAPEN` e o `170/2023` da `SEJUSP` deixaram de ser pendencias: ambos agora estao amarrados a fonte primaria suficiente para trilha probatoria.
 No eixo de vinculo societario/saude, o melhor proximo passo deixou de ser raspagem basica e passou a ser compatibilidade juridico-funcional: CPF completo, jornada, acumulacao licita e vinculo profissional no ecossistema CNES.
+Com a ficha individual oficial do `CNES` ja amarrada, o proximo ciclo correto e transformar a concomitancia historica em metrica documental de carga por competencia e depois confrontar isso com a regra juridica aplicavel.
+Essa parte de metrica documental ja foi implementada. O ciclo seguinte agora e juridico-funcional: regime, norma, jornada e eventual compatibilidade real.

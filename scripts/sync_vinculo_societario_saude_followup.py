@@ -67,6 +67,16 @@ CREATE TABLE IF NOT EXISTS vinculo_societario_saude_followup (
     cnes_servicos_classificacao_json JSON,
     cnes_profissionais_match_json JSON,
     n_cnes_profissionais_match INTEGER,
+    cnes_profissionais_historico_json JSON,
+    n_cnes_profissionais_historico INTEGER,
+    cnes_historico_metricas_json JSON,
+    n_profissionais_concomitancia INTEGER,
+    n_competencias_concomitantes_total INTEGER,
+    n_competencias_ge_60h INTEGER,
+    n_competencias_ge_80h INTEGER,
+    max_ch_total_publico INTEGER,
+    max_ch_total_empresa INTEGER,
+    max_ch_total_concomitante INTEGER,
     socios_publicos_json JSON,
     overlap_flags_json JSON,
     evidence_json JSON,
@@ -81,6 +91,16 @@ EXTRA_COLUMNS = [
     ("cnes_servicos_classificacao_json", "JSON"),
     ("cnes_profissionais_match_json", "JSON"),
     ("n_cnes_profissionais_match", "INTEGER"),
+    ("cnes_profissionais_historico_json", "JSON"),
+    ("n_cnes_profissionais_historico", "INTEGER"),
+    ("cnes_historico_metricas_json", "JSON"),
+    ("n_profissionais_concomitancia", "INTEGER"),
+    ("n_competencias_concomitantes_total", "INTEGER"),
+    ("n_competencias_ge_60h", "INTEGER"),
+    ("n_competencias_ge_80h", "INTEGER"),
+    ("max_ch_total_publico", "INTEGER"),
+    ("max_ch_total_empresa", "INTEGER"),
+    ("max_ch_total_concomitante", "INTEGER"),
 ]
 
 
@@ -111,8 +131,9 @@ def normalize_text(value: object) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def fetch(url: str) -> str:
-    response = requests.get(url, timeout=30)
+def fetch(url: str, session: requests.Session | None = None) -> str:
+    client = session or requests
+    response = client.get(url, timeout=30)
     response.raise_for_status()
     return response.text
 
@@ -344,12 +365,206 @@ def fetch_cnes_info(entry: dict[str, str]) -> dict[str, Any]:
     }
 
 
+def extract_table_rows(table: Any) -> list[list[str]]:
+    rows = [
+        [fix_text(td.get_text(" ", strip=True)) for td in tr.find_all(["td", "th"])]
+        for tr in table.find_all("tr")
+    ]
+    return [row for row in rows if any(cell.strip() for cell in row)]
+
+
+def find_table_with_header(soup: BeautifulSoup, expected_head: list[str]) -> list[list[str]]:
+    target = [normalize_text(item) for item in expected_head]
+    for table in soup.find_all("table"):
+        rows = extract_table_rows(table)
+        if not rows:
+            continue
+        for row in rows[:3]:
+            normalized = [normalize_text(cell) for cell in row]
+            if normalized[: len(target)] == target:
+                return rows
+    return []
+
+
+def parse_professional_identification(soup: BeautifulSoup) -> dict[str, str]:
+    target = [
+        normalize_text("Nome:"),
+        normalize_text("Sexo:"),
+        normalize_text("CNS:"),
+        normalize_text("* CNS Master/Principal:"),
+        normalize_text("Data Atribuição:"),
+    ]
+    for table in soup.find_all("table"):
+        rows = extract_table_rows(table)
+        if not rows:
+            continue
+        for idx, row in enumerate(rows[:-1]):
+            normalized = [normalize_text(cell) for cell in row]
+            if normalized[: len(target)] != target:
+                continue
+            values = rows[idx + 1]
+            if len(values) < len(target):
+                continue
+            return {
+                "nome": values[0] if len(values) > 0 else "",
+                "sexo": values[1] if len(values) > 1 else "",
+                "cns": values[2] if len(values) > 2 else "",
+                "cns_master": values[3] if len(values) > 3 else "",
+                "data_atribuicao": values[4] if len(values) > 4 else "",
+            }
+    return {}
+
+
+def parse_professional_history(soup: BeautifulSoup) -> list[dict[str, Any]]:
+    rows = find_table_with_header(
+        soup,
+        [
+            "Comp.",
+            "Cbo",
+            "Especialidade",
+            "Cnes",
+            "Municipio",
+            "Estabelecimento",
+            "CH Outros",
+            "CH Amb.",
+            "CH Hosp.",
+            "Vinculação",
+            "SUS",
+            "Tipo",
+            "Subtipo",
+        ],
+    )
+    out: list[dict[str, Any]] = []
+    for row in rows[1:]:
+        if len(row) < 13:
+            continue
+        if normalize_text(row[0]) == "COMP":
+            continue
+        out.append(
+            {
+                "comp": row[0],
+                "cbo": row[1],
+                "especialidade": row[2],
+                "cnes": clean_doc(row[3]),
+                "municipio": row[4],
+                "estabelecimento": row[5],
+                "ch_outros": int(clean_doc(row[6]) or 0),
+                "ch_amb": int(clean_doc(row[7]) or 0),
+                "ch_hosp": int(clean_doc(row[8]) or 0),
+                "vinculacao": row[9],
+                "sus": row[10],
+                "tipo": row[11],
+                "subtipo": row[12],
+            }
+        )
+    return out
+
+
+def summarize_professional_history(
+    history_rows: list[dict[str, Any]],
+    *,
+    company_cnes: str,
+    company_name: str,
+) -> dict[str, Any]:
+    public_rows: list[dict[str, Any]] = []
+    company_rows: list[dict[str, Any]] = []
+    by_comp: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    company_name_norm = normalize_text(company_name)
+
+    for row in history_rows:
+        row_company_hit = False
+        if company_cnes and clean_doc(row.get("cnes")) == clean_doc(company_cnes):
+            row_company_hit = True
+        elif company_name_norm and company_name_norm in normalize_text(row.get("estabelecimento")):
+            row_company_hit = True
+
+        row_public_hit = (
+            normalize_text(row.get("tipo")) == "ESTATUTARIO"
+            or normalize_text(row.get("subtipo")) == "SERVIDOR PROPRIO"
+        )
+
+        if row_company_hit:
+            company_rows.append(row)
+        if row_public_hit:
+            public_rows.append(row)
+        if not row_company_hit and not row_public_hit:
+            continue
+        comp_bucket = by_comp.setdefault(row["comp"], {"publico": [], "empresa": []})
+        if row_public_hit:
+            comp_bucket["publico"].append(row)
+        if row_company_hit:
+            comp_bucket["empresa"].append(row)
+
+    concomitancias: list[dict[str, Any]] = []
+    for comp, bucket in sorted(by_comp.items()):
+        if not bucket["publico"] or not bucket["empresa"]:
+            continue
+        concomitancias.append(
+            {
+                "comp": comp,
+                "publico": bucket["publico"],
+                "empresa": bucket["empresa"],
+                "ch_amb_publico": sum(int(item.get("ch_amb") or 0) for item in bucket["publico"]),
+                "ch_amb_empresa": sum(int(item.get("ch_amb") or 0) for item in bucket["empresa"]),
+                "ch_total_publico": sum(
+                    int(item.get("ch_amb") or 0) + int(item.get("ch_hosp") or 0) + int(item.get("ch_outros") or 0)
+                    for item in bucket["publico"]
+                ),
+                "ch_total_empresa": sum(
+                    int(item.get("ch_amb") or 0) + int(item.get("ch_hosp") or 0) + int(item.get("ch_outros") or 0)
+                    for item in bucket["empresa"]
+                ),
+            }
+        )
+
+    flags: list[str] = []
+    if public_rows:
+        flags.append("historico_cnes_estatutario_servidor_proprio")
+    if company_rows:
+        flags.append("historico_cnes_empresa_correlata")
+    if concomitancias:
+        flags.append("historico_cnes_concomitancia_publico_empresa")
+
+    return {
+        "n_total_rows": len(history_rows),
+        "publico_rows": public_rows,
+        "empresa_rows": company_rows,
+        "concomitancias": concomitancias,
+        "flags": flags,
+    }
+
+
+def fetch_cnes_profissional_detail(
+    session: requests.Session,
+    detail_url: str,
+    *,
+    company_cnes: str,
+    company_name: str,
+) -> dict[str, Any]:
+    soup = BeautifulSoup(fetch(detail_url, session=session), "html.parser")
+    identification = parse_professional_identification(soup)
+    history_rows = parse_professional_history(soup)
+    history_summary = summarize_professional_history(
+        history_rows,
+        company_cnes=company_cnes,
+        company_name=company_name,
+    )
+    return {
+        "cnes_profissional_ficha_url": detail_url,
+        "detail_cns": identification.get("cns", ""),
+        "detail_cns_master": identification.get("cns_master", ""),
+        "detail_data_atribuicao": identification.get("data_atribuicao", ""),
+        "historico_cnes_resumo": history_summary,
+    }
+
+
 def fetch_cnes_profissionais(entry: dict[str, str], socio_names: list[str]) -> list[dict[str, Any]]:
     match = re.search(r"VCo_Unidade=(\d+)", entry["cnes_ficha_url"])
     if not match:
         return []
     url = f"https://cnes2.datasus.gov.br/Mod_Profissional.asp?VCo_Unidade={match.group(1)}"
-    soup = BeautifulSoup(fetch(url), "html.parser")
+    session = requests.Session()
+    soup = BeautifulSoup(fetch(url, session=session), "html.parser")
     target_names = {normalize_text(name): fix_text(name) for name in socio_names if normalize_text(name)}
     matches: list[dict[str, Any]] = []
 
@@ -372,30 +587,128 @@ def fetch_cnes_profissionais(entry: dict[str, str], socio_names: list[str]) -> l
             norm_name = normalize_text(row[0])
             if norm_name not in target_names:
                 continue
-            matches.append(
-                {
-                    "nome": row[0],
-                    "dt_entrada": row[1],
-                    "cns": row[2],
-                    "cns_master": row[3],
-                    "dt_atribuicao": row[4],
-                    "cbo": row[5],
-                    "ch_outros": row[6],
-                    "ch_amb": row[7],
-                    "ch_hosp": row[8],
-                    "total": row[9],
-                    "sus": row[10],
-                    "vinculacao": row[11],
-                    "tipo": row[12],
-                    "subtipo": row[13],
-                    "comp_desativacao": row[14],
-                    "situacao": row[15],
-                    "portaria_134": row[16],
-                    "cnes_profissionais_url": url,
-                }
+            prof_match = {
+                "nome": row[0],
+                "dt_entrada": row[1],
+                "cns": row[2],
+                "cns_master": row[3],
+                "dt_atribuicao": row[4],
+                "cbo": row[5],
+                "ch_outros": row[6],
+                "ch_amb": row[7],
+                "ch_hosp": row[8],
+                "total": row[9],
+                "sus": row[10],
+                "vinculacao": row[11],
+                "tipo": row[12],
+                "subtipo": row[13],
+                "comp_desativacao": row[14],
+                "situacao": row[15],
+                "portaria_134": row[16],
+                "cnes_profissionais_url": url,
+            }
+            detail_anchor = next(
+                (
+                    anchor
+                    for anchor in table.find_all("a", href=re.compile(r"Exibe_Ficha_Prof_Sus\.asp\?J=", re.I))
+                    if normalize_text(anchor.get_text(" ", strip=True)) == norm_name
+                ),
+                None,
             )
+            if detail_anchor:
+                detail_url = requests.compat.urljoin(url, detail_anchor.get("href") or "")
+                prof_match.update(
+                    fetch_cnes_profissional_detail(
+                        session,
+                        detail_url,
+                        company_cnes=entry.get("cnes_code", ""),
+                        company_name=entry.get("cnes_nome", ""),
+                    )
+                )
+            matches.append(prof_match)
         break
     return matches
+
+
+def extract_professional_history_summary(prof_matches: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for prof in prof_matches:
+        summary = prof.get("historico_cnes_resumo") or {}
+        if not summary:
+            continue
+        out.append(
+            {
+                "nome": prof.get("nome", ""),
+                "cns": prof.get("detail_cns") or prof.get("cns", ""),
+                "cns_master": prof.get("detail_cns_master") or prof.get("cns_master", ""),
+                "cnes_profissional_ficha_url": prof.get("cnes_profissional_ficha_url", ""),
+                "flags": summary.get("flags", []),
+                "n_total_rows": int(summary.get("n_total_rows") or 0),
+                "publico_rows": summary.get("publico_rows", []),
+                "empresa_rows": summary.get("empresa_rows", []),
+                "concomitancias": summary.get("concomitancias", []),
+            }
+        )
+    return out
+
+
+def build_case_history_metrics(history_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    metricas_profissionais: list[dict[str, Any]] = []
+    max_publico = 0
+    max_empresa = 0
+    max_concomitante = 0
+    total_comp = 0
+    total_ge_60 = 0
+    total_ge_80 = 0
+
+    for item in history_rows:
+        concomitancias = item.get("concomitancias", [])
+        if not concomitancias:
+            continue
+        totals = [int(comp.get("ch_total_publico") or 0) + int(comp.get("ch_total_empresa") or 0) for comp in concomitancias]
+        public_totals = [int(comp.get("ch_total_publico") or 0) for comp in concomitancias]
+        company_totals = [int(comp.get("ch_total_empresa") or 0) for comp in concomitancias]
+        max_idx = max(range(len(concomitancias)), key=lambda idx: totals[idx])
+        metric = {
+            "nome": item.get("nome", ""),
+            "cns": item.get("cns", ""),
+            "n_competencias_concomitantes": len(concomitancias),
+            "n_competencias_ge_60h": sum(1 for value in totals if value >= 60),
+            "n_competencias_ge_80h": sum(1 for value in totals if value >= 80),
+            "max_ch_total_publico": max(public_totals) if public_totals else 0,
+            "max_ch_total_empresa": max(company_totals) if company_totals else 0,
+            "max_ch_total_concomitante": max(totals) if totals else 0,
+            "competencia_pico": concomitancias[max_idx].get("comp", ""),
+            "publico_pico": concomitancias[max_idx].get("publico", []),
+            "empresa_pico": concomitancias[max_idx].get("empresa", []),
+        }
+        metricas_profissionais.append(metric)
+        total_comp += metric["n_competencias_concomitantes"]
+        total_ge_60 += metric["n_competencias_ge_60h"]
+        total_ge_80 += metric["n_competencias_ge_80h"]
+        max_publico = max(max_publico, metric["max_ch_total_publico"])
+        max_empresa = max(max_empresa, metric["max_ch_total_empresa"])
+        max_concomitante = max(max_concomitante, metric["max_ch_total_concomitante"])
+
+    flags: list[str] = []
+    if total_comp:
+        flags.append("carga_concomitante_documentada_cnes")
+    if total_ge_60:
+        flags.append("carga_documentada_ge_60h")
+    if total_ge_80:
+        flags.append("carga_documentada_ge_80h")
+
+    return {
+        "profissionais": metricas_profissionais,
+        "n_profissionais_concomitancia": len(metricas_profissionais),
+        "n_competencias_concomitantes_total": total_comp,
+        "n_competencias_ge_60h": total_ge_60,
+        "n_competencias_ge_80h": total_ge_80,
+        "max_ch_total_publico": max_publico,
+        "max_ch_total_empresa": max_empresa,
+        "max_ch_total_concomitante": max_concomitante,
+        "flags": flags,
+    }
 
 
 def load_positive_cases(con: duckdb.DuckDBPyConnection) -> list[dict[str, Any]]:
@@ -574,6 +887,15 @@ def derive_flags(case: dict[str, Any], contracts: list[dict[str, Any]], cnes: di
         flags.append("cnes_classificacao_correlata")
     if cnes.get("cnes_profissionais_match_json"):
         flags.append("socio_listado_como_profissional_no_cnes")
+    historico_rows = cnes.get("cnes_profissionais_historico_json", [])
+    if any(item.get("concomitancias") for item in historico_rows):
+        flags.append("historico_cnes_concomitancia_publico_empresa")
+    if any("historico_cnes_estatutario_servidor_proprio" in item.get("flags", []) for item in historico_rows):
+        flags.append("historico_cnes_estatutario_servidor_proprio")
+    metricas = cnes.get("cnes_historico_metricas_json", {})
+    for flag in metricas.get("flags", []):
+        if flag not in flags:
+            flags.append(flag)
     if (
         any(token in socio_text for token in ("RADIOLOG", "ULTRASONOGRAF", "IMAGEM"))
         and any(token in (cnae + " " + contract_text + " " + cnes_text) for token in ("TOMOGRAF", "DIAGNOST", "IMAGEM", "RADIOLOG", "ULTRASONOGRAF"))
@@ -602,8 +924,12 @@ def upsert_case(con: duckdb.DuckDBPyConnection, case: dict[str, Any], contracts:
             cnes_endereco, cnes_bairro, cnes_cep, cnes_municipio, cnes_uf, cnes_telefone,
             cnes_horario_json, cnes_turno_atendimento, cnes_instalacoes_json, cnes_servicos_apoio_json,
             cnes_servicos_classificacao_json, cnes_profissionais_match_json, n_cnes_profissionais_match,
+            cnes_profissionais_historico_json, n_cnes_profissionais_historico,
+            cnes_historico_metricas_json, n_profissionais_concomitancia, n_competencias_concomitantes_total,
+            n_competencias_ge_60h, n_competencias_ge_80h, max_ch_total_publico, max_ch_total_empresa,
+            max_ch_total_concomitante,
             socios_publicos_json, overlap_flags_json, evidence_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         [
             row_hash("vps_saude", case["cnpj"]),
@@ -641,6 +967,16 @@ def upsert_case(con: duckdb.DuckDBPyConnection, case: dict[str, Any], contracts:
             json.dumps(cnes.get("cnes_servicos_classificacao_json", []), ensure_ascii=False),
             json.dumps(cnes.get("cnes_profissionais_match_json", []), ensure_ascii=False),
             len(cnes.get("cnes_profissionais_match_json", [])),
+            json.dumps(cnes.get("cnes_profissionais_historico_json", []), ensure_ascii=False),
+            len(cnes.get("cnes_profissionais_historico_json", [])),
+            json.dumps(cnes.get("cnes_historico_metricas_json", {}), ensure_ascii=False),
+            int(cnes.get("n_profissionais_concomitancia") or 0),
+            int(cnes.get("n_competencias_concomitantes_total") or 0),
+            int(cnes.get("n_competencias_ge_60h") or 0),
+            int(cnes.get("n_competencias_ge_80h") or 0),
+            int(cnes.get("max_ch_total_publico") or 0),
+            int(cnes.get("max_ch_total_empresa") or 0),
+            int(cnes.get("max_ch_total_concomitante") or 0),
             json.dumps(socios, ensure_ascii=False),
             json.dumps(flags, ensure_ascii=False),
             json.dumps(evidence, ensure_ascii=False),
@@ -841,6 +1177,217 @@ def upsert_insight(con: duckdb.DuckDBPyConnection, case: dict[str, Any], contrac
         ],
     )
 
+    historico_rows = cnes.get("cnes_profissionais_historico_json", [])
+    historico_com_concomitancia = [item for item in historico_rows if item.get("concomitancias")]
+    if not historico_com_concomitancia:
+        return
+
+    historico_lines = []
+    for item in historico_com_concomitancia:
+        comps = ", ".join(sorted({row.get("comp", "") for row in item.get("concomitancias", []) if row.get("comp")}))
+        publico_rows = item.get("publico_rows", [])
+        empresa_rows = item.get("empresa_rows", [])
+        publico_amostra = publico_rows[0] if publico_rows else {}
+        empresa_amostra = empresa_rows[0] if empresa_rows else {}
+        historico_lines.append(
+            f"- {item['nome']} / CNS `{item.get('cns') or 'N/I'}` / competencias `{comps or 'N/I'}` / "
+            f"publico `{publico_amostra.get('estabelecimento','N/I')}` `{publico_amostra.get('tipo','N/I')}` `{publico_amostra.get('subtipo','N/I')}` / "
+            f"empresa `{empresa_amostra.get('estabelecimento','N/I')}` `{empresa_amostra.get('tipo','N/I')}` `{empresa_amostra.get('subtipo','N/I')}`"
+        )
+
+    historico_description = (
+        f"O historico oficial de profissionais do `CNES` para **{case['razao_social']}** (`{case['cnpj']}`), "
+        f"acessado a partir da ficha oficial do estabelecimento `{cnes.get('cnes_code','N/I')}`, mostra "
+        f"**{len(historico_com_concomitancia)}** profissional(is) com concomitancia documental entre "
+        "linha de historico `ESTATUTARIO / SERVIDOR PROPRIO` e linha de historico da empresa na mesma competencia. "
+        f"O caso continua amarrado ao contrato estadual `{top_contract['numero']}` da `{top_contract['orgao']}` no valor de "
+        f"**R$ {top_contract['valor_brl']:,.2f}**.\n\n"
+        "Profissionais com concomitancia oficial no CNES:\n"
+        + "\n".join(historico_lines)
+        + "\n\n"
+        + "Isto prova coexistencia documental em fonte primaria de saude entre historico profissional estatutario/servidor proprio "
+        + "e historico profissional da empresa. Nao prova, sozinho, acumulacao ilicita, impedimento legal, conflito de interesses ou nepotismo."
+    )
+    historico_payload = {
+        "id": f"vps_saude_hist:{case['cnpj']}",
+        "kind": "VINCULO_EXATO_CNES_HISTORICO_PUBLICO_PRIVADO_SAUDE",
+        "severity": "MEDIO",
+        "confidence": 98,
+        "exposure_brl": float(top_contract["valor_brl"] or 0),
+        "title": f"Historico CNES com concomitancia publico-empresa para {case['razao_social']}",
+        "description_md": historico_description,
+        "pattern": "cnes_historico_profissional -> estatutario_servidor_proprio -> empresa -> contrato_estadual_saude",
+        "sources": json.dumps(
+            [
+                "CNES",
+                "DATASUS",
+                "empresa_socios",
+                "estado_ac_contratos",
+                "rb_servidores_lotacao",
+                "rb_servidores_mass",
+            ],
+            ensure_ascii=False,
+        ),
+        "tags": json.dumps(
+            ["vinculo_societario", "saude", "cnes", "historico", "publico_privado", case["cnpj"], *flags],
+            ensure_ascii=False,
+        ),
+        "sample_n": len(historico_com_concomitancia),
+        "unit_total": float(top_contract["valor_brl"] or 0),
+        "valor_referencia": float(top_contract["valor_brl"] or 0),
+        "ano_referencia": top_contract["ano"],
+        "fonte": "vinculo_societario_saude_followup",
+    }
+    historico_institutional = classify_insight_record(historico_payload)
+    historico_probative = classify_probative_record(historico_payload)
+    con.execute(
+        """
+        INSERT INTO insight (
+            id, kind, severity, confidence, exposure_brl, title, description_md,
+            pattern, sources, tags, sample_n, unit_total, created_at,
+            esfera, ente, orgao, municipio, uf, area_tematica, sus,
+            valor_referencia, ano_referencia, fonte,
+            classe_achado, grau_probatorio, fonte_primaria, uso_externo,
+            inferencia_permitida, limite_conclusao
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        [
+            historico_payload["id"],
+            historico_payload["kind"],
+            historico_payload["severity"],
+            historico_payload["confidence"],
+            historico_payload["exposure_brl"],
+            historico_payload["title"],
+            historico_payload["description_md"],
+            historico_payload["pattern"],
+            historico_payload["sources"],
+            historico_payload["tags"],
+            historico_payload["sample_n"],
+            historico_payload["unit_total"],
+            datetime.now(),
+            historico_institutional["esfera"],
+            historico_institutional["ente"],
+            historico_institutional["orgao"],
+            historico_institutional["municipio"],
+            historico_institutional["uf"],
+            historico_institutional["area_tematica"],
+            historico_institutional["sus"],
+            historico_payload["valor_referencia"],
+            historico_payload["ano_referencia"],
+            historico_payload["fonte"],
+            historico_probative["classe_achado"],
+            historico_probative["grau_probatorio"],
+            historico_probative["fonte_primaria"],
+            historico_probative["uso_externo"],
+            historico_probative["inferencia_permitida"],
+            historico_probative["limite_conclusao"],
+        ],
+    )
+
+    metricas = cnes.get("cnes_historico_metricas_json", {})
+    metricas_profissionais = metricas.get("profissionais", [])
+    if not metricas_profissionais:
+        return
+
+    metric_lines = []
+    for item in metricas_profissionais:
+        metric_lines.append(
+            f"- {item['nome']} / CNS `{item.get('cns') or 'N/I'}` / "
+            f"{item['n_competencias_concomitantes']} competencias concomitantes / "
+            f">=60h `{item['n_competencias_ge_60h']}` / >=80h `{item['n_competencias_ge_80h']}` / "
+            f"pico `{item['competencia_pico']}` com publico `{item['max_ch_total_publico']}h`, empresa `{item['max_ch_total_empresa']}h`, total `{item['max_ch_total_concomitante']}h`"
+        )
+
+    metric_description = (
+        f"O historico individual oficial do `CNES` para **{case['razao_social']}** (`{case['cnpj']}`) "
+        f"materializa **{metricas.get('n_competencias_concomitantes_total', 0)}** competencias com concomitancia "
+        "entre linha publica `ESTATUTARIO / SERVIDOR PROPRIO` e linha da empresa. "
+        f"No pico documentado, a carga concomitante chega a **{metricas.get('max_ch_total_concomitante', 0)}h**, "
+        f"sendo **{metricas.get('max_ch_total_publico', 0)}h** na frente publica e **{metricas.get('max_ch_total_empresa', 0)}h** na frente da empresa. "
+        f"O recorte tambem mostra **{metricas.get('n_competencias_ge_60h', 0)}** competencias com `>=60h` documentadas "
+        f"e **{metricas.get('n_competencias_ge_80h', 0)}** competencias com `>=80h` documentadas.\n\n"
+        "Metricas por profissional:\n"
+        + "\n".join(metric_lines)
+        + "\n\n"
+        + "Os marcos `>=60h` e `>=80h` sao criterios tecnicos de triagem documental do sistema, nao declaracao automatica de ilegalidade. "
+        + "O achado prova carga concomitante documentada em fonte primaria; a qualificacao juridica depende de regime, regra aplicavel e contexto funcional."
+    )
+    metric_payload = {
+        "id": f"vps_saude_carga:{case['cnpj']}",
+        "kind": "VINCULO_EXATO_CNES_CARGA_CONCOMITANTE_SAUDE",
+        "severity": "MEDIO",
+        "confidence": 98,
+        "exposure_brl": float(top_contract["valor_brl"] or 0),
+        "title": f"Carga concomitante documentada no CNES para {case['razao_social']}",
+        "description_md": metric_description,
+        "pattern": "cnes_historico_profissional -> carga_documentada -> servidor_publico -> empresa_saude -> contrato_estadual",
+        "sources": json.dumps(
+            [
+                "CNES",
+                "DATASUS",
+                "empresa_socios",
+                "estado_ac_contratos",
+                "rb_servidores_lotacao",
+                "rb_servidores_mass",
+            ],
+            ensure_ascii=False,
+        ),
+        "tags": json.dumps(
+            ["vinculo_societario", "saude", "cnes", "carga", "concomitancia", case["cnpj"], *flags],
+            ensure_ascii=False,
+        ),
+        "sample_n": int(metricas.get("n_profissionais_concomitancia") or 0),
+        "unit_total": float(top_contract["valor_brl"] or 0),
+        "valor_referencia": float(top_contract["valor_brl"] or 0),
+        "ano_referencia": top_contract["ano"],
+        "fonte": "vinculo_societario_saude_followup",
+    }
+    metric_institutional = classify_insight_record(metric_payload)
+    metric_probative = classify_probative_record(metric_payload)
+    con.execute(
+        """
+        INSERT INTO insight (
+            id, kind, severity, confidence, exposure_brl, title, description_md,
+            pattern, sources, tags, sample_n, unit_total, created_at,
+            esfera, ente, orgao, municipio, uf, area_tematica, sus,
+            valor_referencia, ano_referencia, fonte,
+            classe_achado, grau_probatorio, fonte_primaria, uso_externo,
+            inferencia_permitida, limite_conclusao
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        [
+            metric_payload["id"],
+            metric_payload["kind"],
+            metric_payload["severity"],
+            metric_payload["confidence"],
+            metric_payload["exposure_brl"],
+            metric_payload["title"],
+            metric_payload["description_md"],
+            metric_payload["pattern"],
+            metric_payload["sources"],
+            metric_payload["tags"],
+            metric_payload["sample_n"],
+            metric_payload["unit_total"],
+            datetime.now(),
+            metric_institutional["esfera"],
+            metric_institutional["ente"],
+            metric_institutional["orgao"],
+            metric_institutional["municipio"],
+            metric_institutional["uf"],
+            metric_institutional["area_tematica"],
+            metric_institutional["sus"],
+            metric_payload["valor_referencia"],
+            metric_payload["ano_referencia"],
+            metric_payload["fonte"],
+            metric_probative["classe_achado"],
+            metric_probative["grau_probatorio"],
+            metric_probative["fonte_primaria"],
+            metric_probative["uso_externo"],
+            metric_probative["inferencia_permitida"],
+            metric_probative["limite_conclusao"],
+        ],
+    )
+
 
 def main() -> int:
     con = duckdb.connect(str(DB_PATH))
@@ -851,7 +1398,12 @@ def main() -> int:
     con.execute(
         """
         DELETE FROM insight
-        WHERE kind IN ('QSA_VINCULO_SOCIETARIO_SAUDE_EXATO', 'VINCULO_EXATO_CNES_PROFISSIONAL_SAUDE')
+        WHERE kind IN (
+            'QSA_VINCULO_SOCIETARIO_SAUDE_EXATO',
+            'VINCULO_EXATO_CNES_PROFISSIONAL_SAUDE',
+            'VINCULO_EXATO_CNES_HISTORICO_PUBLICO_PRIVADO_SAUDE',
+            'VINCULO_EXATO_CNES_CARGA_CONCOMITANTE_SAUDE'
+        )
         """
     )
 
@@ -871,6 +1423,15 @@ def main() -> int:
         cnes.update(fetch_cnes_info(entry))
         cnes["cnes_profissionais_match_json"] = fetch_cnes_profissionais(
             entry, [s["socio_nome"] for s in socio_rows]
+        )
+        cnes["cnes_profissionais_historico_json"] = extract_professional_history_summary(
+            cnes["cnes_profissionais_match_json"]
+        )
+        cnes["cnes_historico_metricas_json"] = build_case_history_metrics(
+            cnes["cnes_profissionais_historico_json"]
+        )
+        cnes.update(
+            {key: value for key, value in cnes["cnes_historico_metricas_json"].items() if key != "profissionais" and key != "flags"}
         )
         flags = derive_flags(case, contracts, cnes, socio_rows)
         if not {"empresa_com_cnes_oficial", "socios_medicos_semsa"} <= set(flags):

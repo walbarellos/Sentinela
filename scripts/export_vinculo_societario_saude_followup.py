@@ -78,6 +78,8 @@ def build_dossier(rows: list[dict]) -> str:
         horario = json.loads(row.get("cnes_horario_json") or "[]")
         classificacoes = json.loads(row.get("cnes_servicos_classificacao_json") or "[]")
         profissionais = json.loads(row.get("cnes_profissionais_match_json") or "[]")
+        historico = json.loads(row.get("cnes_profissionais_historico_json") or "[]")
+        metricas = json.loads(row.get("cnes_historico_metricas_json") or "{}")
         lines.append(f"### {row['razao_social']}")
         lines.append("")
         lines.append(f"- CNPJ: `{row['cnpj']}`")
@@ -113,6 +115,42 @@ def build_dossier(rows: list[dict]) -> str:
                     f"  - `{prof['nome']}` / `{prof['cbo']}` / amb `{prof['ch_amb']}` / total `{prof['total']}` / "
                     f"`{prof['vinculacao']}` / `{prof['tipo']}` / situacao `{prof['situacao']}`"
                 )
+        if historico:
+            lines.append("- historico oficial do CNES:")
+            for prof in historico:
+                comp_list = [item.get("comp", "") for item in prof.get("concomitancias", []) if item.get("comp")]
+                comp_sample = ", ".join(comp_list[:6]) if comp_list else "-"
+                if len(comp_list) > 6:
+                    comp_sample += f" ... (+{len(comp_list) - 6})"
+                publico = prof.get("publico_rows", [])
+                empresa = prof.get("empresa_rows", [])
+                publico_txt = (
+                    f"{publico[0].get('estabelecimento','-')} / {publico[0].get('tipo','-')} / {publico[0].get('subtipo','-')}"
+                    if publico
+                    else "-"
+                )
+                empresa_txt = (
+                    f"{empresa[0].get('estabelecimento','-')} / {empresa[0].get('tipo','-')} / {empresa[0].get('subtipo','-')}"
+                    if empresa
+                    else "-"
+                )
+                lines.append(
+                    f"  - `{prof['nome']}` / CNS `{prof.get('cns') or '-'}` / competencias concomitantes `{comp_sample}` / "
+                    f"publico `{publico_txt}` / empresa `{empresa_txt}`"
+                )
+        if metricas:
+            lines.append(
+                f"- metricas documentais de carga: `{metricas.get('n_competencias_concomitantes_total', 0)}` competencias / "
+                f"`>=60h` `{metricas.get('n_competencias_ge_60h', 0)}` / `>=80h` `{metricas.get('n_competencias_ge_80h', 0)}` / "
+                f"pico `{metricas.get('max_ch_total_concomitante', 0)}h`"
+            )
+            for item in metricas.get("profissionais", []):
+                lines.append(
+                    f"  - `{item['nome']}` / pico `{item.get('competencia_pico') or '-'}` / "
+                    f"publico `{item.get('max_ch_total_publico', 0)}h` / empresa `{item.get('max_ch_total_empresa', 0)}h` / "
+                    f"total `{item.get('max_ch_total_concomitante', 0)}h` / `>=60h` `{item.get('n_competencias_ge_60h', 0)}` / "
+                    f"`>=80h` `{item.get('n_competencias_ge_80h', 0)}`"
+                )
         lines.append("- socios publicos locais:")
         for socio in socios:
             lines.append(
@@ -142,7 +180,12 @@ def main() -> int:
         """
         SELECT id, kind, classe_achado, grau_probatorio, uso_externo, inferencia_permitida, limite_conclusao
         FROM insight
-        WHERE kind IN ('QSA_VINCULO_SOCIETARIO_SAUDE_EXATO', 'VINCULO_EXATO_CNES_PROFISSIONAL_SAUDE')
+        WHERE kind IN (
+            'QSA_VINCULO_SOCIETARIO_SAUDE_EXATO',
+            'VINCULO_EXATO_CNES_PROFISSIONAL_SAUDE',
+            'VINCULO_EXATO_CNES_HISTORICO_PUBLICO_PRIVADO_SAUDE',
+            'VINCULO_EXATO_CNES_CARGA_CONCOMITANTE_SAUDE'
+        )
         ORDER BY id
         """,
     )
