@@ -2042,3 +2042,53 @@ validacao:
 - `python -m py_compile insights_engine.py scripts/validate_insights_engine.py`
 - `python -m py_compile scripts/sync_v2.py`
 - `.venv/bin/python scripts/validate_insights_engine.py`
+
+aposentadoria de detectores fracos do legado:
+- `viagem_bloco` e `concentracao_mercado` agora estao em `RETIRED_DEFAULT`
+- nao rodam mais nem com `--allow-internal`
+- `DETECTOR_STATUS` criado para os `8` detectores do `cross_reference_engine.py`
+- o CLI faz early-exit para detectores aposentados, sem depender de abrir o DuckDB
+- `README.md` deixou de sugerir esses sinais como eixo ativo de obras/diarias
+
+validacao:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector viagem_bloco --allow-internal`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector concentracao_mercado --allow-internal`
+
+segunda rodada de poda do legado:
+- `fim_de_semana` agora esta em `RETIRED_DEFAULT`
+- `outlier_salarial` permaneceu apenas em `LAB_INTERNO`, mas endurecido para:
+  - `n >= 30`
+  - `z > 4.0`
+  - `delta >= R$ 5.000,00`
+- o validador agora trava esses thresholds
+
+validacao:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector fim_de_semana --allow-internal`
+
+destino final de empresa_suspensa e fracionamento:
+- `empresa_suspensa` agora esta em `RETIRED_DEFAULT` com status `COBERTO_OPS`
+- o cruzamento sancionatorio legado deixa de existir como caminho executavel
+- `fracionamento` virou `CANDIDATO_OPS`
+- `fracionamento` agora exige:
+  - `4` contratos minimos
+  - janela maxima de `90` dias
+  - uso externo sempre bloqueado
+- o validador ganhou sample guard sintetico para `fracionamento`
+
+validacao:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector empresa_suspensa --allow-internal`
+
+aposentadoria do detector de sobrenome:
+- `nepotismo_sobrenome` agora esta em `RETIRED_DEFAULT`
+- coincidencia de sobrenome deixa de existir como caminho executavel no legado
+
+validacao:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector nepotismo_sobrenome --allow-internal`

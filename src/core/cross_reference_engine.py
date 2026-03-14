@@ -101,6 +101,11 @@ COMMON_ACRE_SURNAMES = frozenset(
 )
 MIN_SOBRENOME_LEN = 6
 LIMITE_DISPENSA_BENS_SERVICOS = 50_000.00
+FRACIONAMENTO_MIN_COUNT = 4
+FRACIONAMENTO_MAX_WINDOW_DAYS = 90
+OUTLIER_MIN_GROUP_N = 30
+OUTLIER_Z_THRESHOLD = 4.0
+OUTLIER_MIN_DELTA_BRL = 5_000.0
 
 LEGAL = {
     "fracionamento": (
@@ -141,7 +146,26 @@ INTERNAL_ONLY_DEFAULT = {
     "nepotismo_sobrenome",
 }
 
+RETIRED_DEFAULT = {
+    "viagem_bloco",
+    "concentracao_mercado",
+    "fim_de_semana",
+    "empresa_suspensa",
+    "nepotismo_sobrenome",
+}
+
 LEGACY_INTERNAL_USAGE = "REVISAO_INTERNA"
+
+DETECTOR_STATUS = {
+    "fracionamento": "CANDIDATO_OPS",
+    "outlier_salarial": "LAB_INTERNO",
+    "viagem_bloco": "APOSENTADO",
+    "concentracao_mercado": "APOSENTADO",
+    "empresa_suspensa": "COBERTO_OPS",
+    "doacao_contrato": "LAB_INTERNO",
+    "fim_de_semana": "APOSENTADO",
+    "nepotismo_sobrenome": "APOSENTADO",
+}
 
 
 @dataclass
@@ -229,15 +253,18 @@ def detect_fracionamento(conn: duckdb.DuckDBPyConnection) -> list[Alert]:
             SUM(valor_total) AS valor_agregado,
             MAX(valor_total) AS maior_contrato,
             MIN(data_ref) AS primeiro,
-            MAX(data_ref) AS ultimo
+            MAX(data_ref) AS ultimo,
+            DATE_DIFF('day', MIN(data_ref), MAX(data_ref)) AS janela_dias
         FROM contratos
         WHERE valor_total > 0
           AND valor_total < {LIMITE_DISPENSA_BENS_SERVICOS}
           AND empresa_nome IS NOT NULL
           AND secretaria IS NOT NULL
+          AND data_ref IS NOT NULL
         GROUP BY 1, 2
-        HAVING COUNT(*) >= 3
+        HAVING COUNT(*) >= {FRACIONAMENTO_MIN_COUNT}
            AND SUM(valor_total) > {LIMITE_DISPENSA_BENS_SERVICOS}
+           AND DATE_DIFF('day', MIN(data_ref), MAX(data_ref)) BETWEEN 0 AND {FRACIONAMENTO_MAX_WINDOW_DAYS}
         ORDER BY valor_agregado DESC
         LIMIT 100
         """
@@ -249,22 +276,23 @@ def detect_fracionamento(conn: duckdb.DuckDBPyConnection) -> list[Alert]:
         alerts.append(
             Alert(
                 detector_id="FRAC",
-                severity="CRÍTICO" if n >= 5 else "ALTO",
+                severity="ALTO" if n >= 5 else "MÉDIO",
                 entity_type="empresa",
                 entity_name=row["empresa_nome"],
                 description=(
                     f"{n} contratações abaixo de R$ {LIMITE_DISPENSA_BENS_SERVICOS:,.2f} "
                     f"para {row['empresa_nome']} em {row['secretaria']}, totalizando "
-                    f"R$ {float(row['valor_agregado'] or 0):,.2f} entre {row['primeiro']} e {row['ultimo']}."
+                    f"R$ {float(row['valor_agregado'] or 0):,.2f} entre {row['primeiro']} e {row['ultimo']} "
+                    f"(janela de {int(row['janela_dias'] or 0)} dias)."
                 ),
                 exposure_brl=float(row["valor_agregado"] or 0),
                 base_legal=LEGAL["fracionamento"],
                 classe_achado="RASTRO_CONTRATUAL",
-                grau_probatorio="DOCUMENTAL_PRIMARIO" if n >= 5 else "INDICIARIO",
+                grau_probatorio="INDICIARIO",
                 fonte_primaria="PORTAL_LOCAL",
-                uso_externo="APTO_APURACAO" if n >= 5 else "REVISAO_INTERNA",
-                inferencia_permitida="Há padrão contratual compatível com fracionamento e que exige conferência do processo integral.",
-                limite_conclusao="O padrão não basta para afirmar dolo ou fracionamento ilícito sem comparar objeto, cronologia e modalidade usada.",
+                uso_externo="REVISAO_INTERNA",
+                inferencia_permitida="Há padrão contratual compacto que justifica abrir o processo integral e comparar objeto, cronologia e modalidade.",
+                limite_conclusao="O sinal não basta para afirmar fracionamento ilícito; exige cotejo do objeto, fundamento legal e planejamento da contratação.",
             )
         )
     return alerts
@@ -281,13 +309,13 @@ def detect_outlier_salarial(conn: duckdb.DuckDBPyConnection) -> list[Alert]:
                 cargo,
                 AVG(CAST(valor_liquido AS DOUBLE)) AS media,
                 STDDEV(CAST(valor_liquido AS DOUBLE)) AS desvio,
-                COUNT(*) AS n
+               COUNT(*) AS n
             FROM servidores
             WHERE valor_liquido IS NOT NULL
               AND CAST(valor_liquido AS DOUBLE) > 0
               AND cargo IS NOT NULL
             GROUP BY 1
-            HAVING COUNT(*) >= 30
+            HAVING COUNT(*) >= {OUTLIER_MIN_GROUP_N}
                AND STDDEV(CAST(valor_liquido AS DOUBLE)) > 0
         )
         SELECT
@@ -301,7 +329,8 @@ def detect_outlier_salarial(conn: duckdb.DuckDBPyConnection) -> list[Alert]:
             (CAST(s.valor_liquido AS DOUBLE) - st.media) / st.desvio AS zscore
         FROM servidores s
         JOIN stats st ON s.cargo = st.cargo
-        WHERE (CAST(s.valor_liquido AS DOUBLE) - st.media) / st.desvio > 3.5
+        WHERE (CAST(s.valor_liquido AS DOUBLE) - st.media) / st.desvio > {OUTLIER_Z_THRESHOLD}
+          AND CAST(s.valor_liquido AS DOUBLE) - st.media >= {OUTLIER_MIN_DELTA_BRL}
         ORDER BY zscore DESC
         LIMIT 100
         """
@@ -312,13 +341,13 @@ def detect_outlier_salarial(conn: duckdb.DuckDBPyConnection) -> list[Alert]:
         alerts.append(
             Alert(
                 detector_id="SAL",
-                severity="ALTO" if float(row["zscore"] or 0) > 5 else "MÉDIO",
+                severity="ALTO" if float(row["zscore"] or 0) > 5.5 else "MÉDIO",
                 entity_type="servidor",
                 entity_name=row["servidor_nome"],
                 description=(
                     f"Valor líquido de R$ {float(row['salario'] or 0):,.2f}, "
                     f"{float(row['zscore'] or 0):.1f}σ acima da média do cargo {row['cargo']} "
-                    f"(média R$ {float(row['media'] or 0):,.2f}, n={int(row['n'] or 0)})."
+                    f"(média R$ {float(row['media'] or 0):,.2f}, n={int(row['n'] or 0)}; delta mínimo de triagem R$ {OUTLIER_MIN_DELTA_BRL:,.2f})."
                 ),
                 exposure_brl=max(0.0, float(row["salario"] or 0) - float(row["media"] or 0)),
                 base_legal=LEGAL["outlier_salarial"],
@@ -683,6 +712,14 @@ def run_all_detectors(
     allow_internal: bool = False,
 ) -> list[Alert]:
     selected = {k: v for k, v in DETECTORS.items() if detector_ids is None or k in detector_ids}
+    retired = [k for k in selected if k in RETIRED_DEFAULT]
+    if retired:
+        selected = {k: v for k, v in selected.items() if k not in RETIRED_DEFAULT}
+        console.print(
+            "[yellow]Engine legado: detectores aposentados e removidos do fluxo operacional "
+            f"({', '.join(sorted(retired))}).[/yellow]"
+        )
+
     blocked = [k for k in selected if k in INTERNAL_ONLY_DEFAULT]
     if not allow_internal:
         selected = {k: v for k, v in selected.items() if k not in INTERNAL_ONLY_DEFAULT}
@@ -830,13 +867,21 @@ def main() -> int:
     parser.add_argument(
         "--allow-internal",
         action="store_true",
-        help="Inclui detectores internos/mais sensíveis que ficam bloqueados por padrão.",
+        help="Inclui apenas detectores de laboratório interno; detectores aposentados continuam indisponíveis.",
     )
     args = parser.parse_args()
 
+    detector_ids = [args.detector] if args.detector else None
+    if detector_ids and all(detector_id in RETIRED_DEFAULT for detector_id in detector_ids):
+        console.print(
+            "[yellow]Engine legado: detectores aposentados e removidos do fluxo operacional "
+            f"({', '.join(sorted(detector_ids))}).[/yellow]"
+        )
+        console.print("[yellow]Nenhum alerta legado gerado.[/yellow]")
+        return 0
+
     conn = duckdb.connect(DB_PATH)
     try:
-        detector_ids = [args.detector] if args.detector else None
         alerts = run_all_detectors(conn, detector_ids, allow_internal=args.allow_internal)
         if not alerts:
             if not args.allow_internal:

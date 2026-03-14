@@ -468,3 +468,103 @@ validacao executada:
 - `python -m py_compile insights_engine.py scripts/validate_insights_engine.py`
 - `python -m py_compile scripts/sync_v2.py`
 - `.venv/bin/python scripts/validate_insights_engine.py`
+
+## Aposentadoria de detectores fracos do legado (2026-03-14)
+
+escopo:
+- definir destino final de `viagem_bloco` e `concentracao_mercado` no `cross_reference_engine.py`;
+- impedir que esses detectores voltem a rodar nem mesmo com `--allow-internal`;
+- reduzir ruído operacional no legado.
+
+resultado:
+- `src/core/cross_reference_engine.py`
+  - `RETIRED_DEFAULT` criado com:
+    - `viagem_bloco`
+    - `concentracao_mercado`
+  - `DETECTOR_STATUS` criado para todos os `8` detectores
+  - detectores aposentados saem antes mesmo de abrir o DuckDB no CLI
+- `scripts/validate_cross_reference_engine.py`
+  - agora valida tambem status e aposentadoria
+- `README.md`
+  - obras/diarias deixaram de sugerir esses detectores como eixo ativo
+- `AUDITORIA_ENGINE_LEGADO_20260314.md`
+  - atualizada com a distincao `LAB_INTERNO` vs `APOSENTADO`
+
+validacao executada:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector viagem_bloco --allow-internal`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector concentracao_mercado --allow-internal`
+
+## Segunda rodada de poda do legado (2026-03-14)
+
+escopo:
+- retirar `fim_de_semana` do fluxo legado;
+- endurecer `outlier_salarial` como laboratorio interno conservador;
+- travar thresholds minimos no validador.
+
+resultado:
+- `src/core/cross_reference_engine.py`
+  - `fim_de_semana` movido para `RETIRED_DEFAULT`
+  - `outlier_salarial` agora exige:
+    - `n >= 30`
+    - `z > 4.0`
+    - `delta >= R$ 5.000,00`
+- `scripts/validate_cross_reference_engine.py`
+  - valida aposentadoria do `fim_de_semana`
+  - valida thresholds minimos do `outlier_salarial`
+- `README.md`
+  - folha descrita como triagem conservadora
+- `AUDITORIA_ENGINE_LEGADO_20260314.md`
+  - atualizada com a nova classificacao
+
+validacao executada:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector fim_de_semana --allow-internal`
+
+## Destino final de empresa_suspensa e fracionamento (2026-03-14)
+
+escopo:
+- decidir se `empresa_suspensa` ainda faz sentido no engine legado;
+- decidir se `fracionamento` sobrevive como laboratorio ou se deve ser aposentado;
+- travar essa decisao no codigo e no validador.
+
+resultado:
+- `empresa_suspensa`
+  - movido para `RETIRED_DEFAULT`
+  - status `COBERTO_OPS`
+  - deixa de rodar no legado porque o cruzamento sancionatorio confiavel ja vive na trilha `ops`
+- `fracionamento`
+  - status `CANDIDATO_OPS`
+  - segue apenas com `--allow-internal`
+  - endurecido para:
+    - minimo de `4` contratos
+    - janela maxima de `90` dias
+    - uso externo sempre bloqueado
+- `scripts/validate_cross_reference_engine.py`
+  - ganhou sample guard de fracionamento com base sintetica
+  - valida o status `COBERTO_OPS`
+
+validacao executada:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector empresa_suspensa --allow-internal`
+
+## Aposentadoria do detector de sobrenome (2026-03-14)
+
+escopo:
+- remover `nepotismo_sobrenome` do fluxo executavel do legado;
+- impedir que coincidencia nominal volte a ser usada como triagem operacional corrente.
+
+resultado:
+- `src/core/cross_reference_engine.py`
+  - `nepotismo_sobrenome` movido para `RETIRED_DEFAULT`
+  - status `APOSENTADO`
+- `AUDITORIA_ENGINE_LEGADO_20260314.md`
+  - atualizada com a nova classificacao
+
+validacao executada:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector nepotismo_sobrenome --allow-internal`

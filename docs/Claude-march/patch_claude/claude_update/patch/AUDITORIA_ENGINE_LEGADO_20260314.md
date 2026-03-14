@@ -22,7 +22,10 @@ Lista atual:
 - `nepotismo_sobrenome`
 
 Regra:
-- so rodam com `--allow-internal`
+- `fracionamento` fica em `CANDIDATO_OPS` e so roda com `--allow-internal`
+- `outlier_salarial` e `doacao_contrato` ficam em `LAB_INTERNO` e so rodam com `--allow-internal`
+- `empresa_suspensa` fica em `COBERTO_OPS` e nao roda mais no legado
+- `viagem_bloco`, `concentracao_mercado`, `fim_de_semana` e `nepotismo_sobrenome` ficam em `APOSENTADO` e nao rodam mais nem com `--allow-internal`
 - qualquer `Alert` legado fica com `uso_externo = REVISAO_INTERNA`
 
 ## Motivo
@@ -46,3 +49,25 @@ Uso normal do produto:
 
 Uso excepcional, tecnico e interno:
 - `cross_reference_engine.py --allow-internal`
+
+Detectores aposentados:
+- `viagem_bloco`
+- `concentracao_mercado`
+- `fim_de_semana`
+- `nepotismo_sobrenome`
+
+Detector endurecido mas mantido em laboratorio:
+- `outlier_salarial`
+  - `n >= 30`
+  - `z > 4.0`
+  - `delta absoluto >= R$ 5.000,00`
+
+Detector coberto na trilha principal:
+- `empresa_suspensa`
+  - o cruzamento sancionatório confiável permanece em `ops` e nos syncs canônicos, não no engine legado
+
+Detector candidato a reescrita futura em `ops`:
+- `fracionamento`
+  - mínimo de `4` contratos
+  - janela máxima de `90` dias
+  - saída apenas interna até existir cotejo de objeto, modalidade e processo integral
