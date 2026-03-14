@@ -12,6 +12,8 @@ DB_PATH = ROOT / "data" / "sentinela_analytics.duckdb"
 TMP_DIR = ROOT / "data" / "tmp" / "sejusp_ctx"
 FORMAL_DIR = ROOT / "data" / "tmp" / "sejusp_formal"
 FOLLOWUP_DIR = ROOT / "data" / "tmp" / "sejusp_2023_followup"
+PROBE170_DIR = ROOT / "data" / "tmp" / "sejusp_170_probe"
+PROBE170_TJAC_DIR = PROBE170_DIR / "tjac"
 
 DDL_BLOCOS = """
 CREATE TABLE IF NOT EXISTS trace_norte_sejusp_blocos (
@@ -93,6 +95,8 @@ DOC_SOURCE_URLS = {
     "doe_13883_2024-10-15": "https://diario.ac.gov.br/download.php?arquivo=KEQxQHI3IyEpRE8xNzI5MDQ0OTYyNzM3NC5wZGY=",
     "doe_13483_2023-03-01": "https://diario.ac.gov.br/download.php?arquivo=KEQxQHI3IyEpRE8xNjc3Njg4NzkyNDM5LnBkZg==",
     "doe_13638_2023-10-19": "https://diario.ac.gov.br/download.php?arquivo=KEQxQHI3IyEpRE8xNjk3NzE2ODg0NzgxOS5wZGY=",
+    "2023-12-08": "https://diario.ac.gov.br/ (data=20231208)",
+    "0005193-89.2023-Homologacao-publicada-PE-91-2023-TJAC": "https://www.tjac.jus.br/wp-content/uploads/2023/11/0005193-89.2023-Homologacao-publicada-PE-91-2023-TJAC.pdf",
 }
 
 
@@ -134,6 +138,13 @@ def extract_qty(text: object) -> int | None:
     if not normalized:
         return None
     match = re.search(r"\b0*(\d{1,3})\s*\(", normalized)
+    if match:
+        return int(match.group(1))
+    match = re.search(
+        r"\b0*(\d{1,3})\s+(?:caminhonete(?:s)?|ve[ií]culo(?:s)?|pick-?up(?:s)?|viatura(?:s)?|motocicleta(?:s)?)\b",
+        normalized,
+        re.IGNORECASE,
+    )
     if match:
         return int(match.group(1))
     return None
@@ -673,6 +684,90 @@ def parse_local_docs(text_path: Path) -> list[dict]:
             },
         ]
 
+    if stem == "2023-12-08":
+        start = text.find("PORTARIA SEJUSP Nº 624, DE 21 DE NOVEMBRO DE 2023")
+        if start < 0:
+            raise RuntimeError(f"Trecho esperado nao encontrado em {text_path.name}")
+        end = text.find("Art. 2° Compete aos gestores", start)
+        if end < 0:
+            end = start + 1800
+        excerpt = text[start:end]
+        processo_match = re.search(r"Processo SEI nº (?P<processo_sei>0819\.012803\.00093/2023-03)", excerpt, re.IGNORECASE)
+        contrato_match = re.search(r"Contrato nº (?P<numero_contrato>170/2023)", excerpt, re.IGNORECASE)
+        if not (
+            processo_match
+            and contrato_match
+            and "AGRO NORTE IMPORTAÇÃO E EXPORTAÇÃO LTDA" in excerpt
+            and "aquisição de 02 (dois) veículos automotores, tipo caminhonete" in excerpt
+            and "Polícia Militar do Estado do Acre-PMAC" in excerpt
+        ):
+            raise RuntimeError(f"Trecho esperado nao encontrado em {text_path.name}")
+        return [
+            {
+                "doc_key": "sejusp_2023_agro_portaria170",
+                "ano": 2023,
+                "categoria": "viaturas",
+                "tipo_documento": "portaria_gestor_fiscal",
+                "fornecedor_nome": "AGRO NORTE IMPORTAÇÃO E EXPORTAÇÃO LTDA",
+                "cnpj": "04582979000104",
+                "orgao": "SEJUSP",
+                "unidade_gestora": "SECRETARIA DE ESTADO DE JUSTIÇA E SEGURANÇA PÚBLICA – SEJUSP",
+                "numero_contrato": contrato_match.group("numero_contrato"),
+                "numero_adesao": None,
+                "processo": None,
+                "processo_sei": processo_match.group("processo_sei"),
+                "lic_numero": None,
+                "lic_modalidade": None,
+                "ata_registro_precos": None,
+                "valor_brl": None,
+                "objeto_resumo": "Portaria de gestao e fiscalizacao do contrato 170/2023 para aquisicao de 2 caminhonetes destinadas a PMAC, com recursos do Plano de Aplicacao: Fortalecimento das Instituicoes de Seguranca Publica - 2022, Acao 07.",
+                "excerpt": excerpt,
+            }
+        ]
+
+    if stem == "0005193-89.2023-Homologacao-publicada-PE-91-2023-TJAC":
+        process_match = re.search(r"Processo Administrativo nº:? ?(?P<processo>0008767-23\.2023\.8\.01\.0000)", text, re.IGNORECASE)
+        oficio_match = re.search(r"OF[IÍ]CIO Nº (?P<oficio>4782/2023/SEJUSP)", text, re.IGNORECASE)
+        if not (
+            process_match
+            and oficio_match
+            and "Secretaria de Estado de Justiça e Segurança Pública do Acre" in text
+            and "Ata de Registro de Preços nº 304/2022" in text
+            and "Pregão Eletrônico SRP nº 74/2022" in text
+            and "Automóvel Utilitário tipo caminhonete (Pick-up)" in text
+            and "R$ 266.000,00 R$ 532.000,00" in text
+        ):
+            raise RuntimeError(f"Trecho esperado nao encontrado em {text_path.name}")
+        start = text.find("Processo Administrativo nº:0008767-23.2023.8.01.0000")
+        end = text.find("Processo Administrativo n. 0005193-89.2023.8.01.0000", start)
+        excerpt = text[start:end].strip() if start >= 0 and end > start else text
+        return [
+            {
+                "doc_key": "sejusp_2023_agro_tjac_autorizacao170",
+                "ano": 2023,
+                "categoria": "viaturas",
+                "tipo_documento": "autorizacao_adesao",
+                "fornecedor_nome": "AGRO NORTE IMPORTAÇÃO E EXPORTAÇÃO LTDA",
+                "cnpj": "04582979000104",
+                "orgao": "SEJUSP",
+                "unidade_gestora": "SECRETARIA DE ESTADO DE JUSTIÇA E SEGURANÇA PÚBLICA – SEJUSP",
+                "numero_contrato": "170/2023",
+                "numero_adesao": None,
+                "processo": process_match.group("processo"),
+                "processo_sei": None,
+                "lic_numero": "74/2022",
+                "lic_modalidade": "PREGAO_ELETRONICO_SRP",
+                "ata_registro_precos": "304/2022",
+                "valor_brl": 532000.0,
+                "objeto_resumo": (
+                    "Autorizacao do TJAC para a SEJUSP aderir a ARP 304/2022, oriunda do PE SRP 74/2022, "
+                    "nos quantitativos do Oficio 4782/2023/SEJUSP: 2 caminhonetes pick-up para a PMAC, "
+                    "valor total de R$ 532.000,00."
+                ),
+                "excerpt": excerpt,
+            }
+        ]
+
     raise RuntimeError(f"Arquivo nao mapeado: {text_path.name}")
 
 
@@ -694,6 +789,8 @@ def main() -> int:
         (FORMAL_DIR, "doe_13883_2024-10-15.txt"),
         (FOLLOWUP_DIR, "doe_13483_2023-03-01.txt"),
         (FOLLOWUP_DIR, "doe_13638_2023-10-19.txt"),
+        (PROBE170_DIR, "2023-12-08.txt"),
+        (PROBE170_TJAC_DIR, "0005193-89.2023-Homologacao-publicada-PE-91-2023-TJAC.txt"),
     ]
     for base_dir, name in sources:
         text_path = base_dir / name
@@ -722,6 +819,8 @@ def main() -> int:
                 "sejusp_2023_agro_contrato004",
                 "sejusp_2023_agro_portaria151",
                 "sejusp_2023_agro_contrato151",
+                "sejusp_2023_agro_portaria170",
+                "sejusp_2023_agro_tjac_autorizacao170",
                 "sejusp_2024_agro_portaria82",
                 "sejusp_2024_agro_contrato82",
                 "sejusp_2024_agro_adesao33",
@@ -835,7 +934,11 @@ def main() -> int:
     audit_docs = {
         doc["numero_contrato"]: doc
         for doc in docs
-        if doc["doc_key"] in {"sejusp_2023_agro_contrato004", "sejusp_2023_agro_contrato151"}
+        if doc["doc_key"] in {
+            "sejusp_2023_agro_contrato004",
+            "sejusp_2023_agro_contrato151",
+            "sejusp_2023_agro_tjac_autorizacao170",
+        }
     }
     portal_rows = con.execute(
         """
@@ -843,7 +946,7 @@ def main() -> int:
         FROM trace_norte_rede_vinculo_exato
         WHERE orgao = 'SEJUSP'
           AND cnpj = '04582979000104'
-          AND numero_contrato IN ('004/2023', '151/2023')
+          AND numero_contrato IN ('004/2023', '151/2023', '170/2023')
         ORDER BY numero_contrato
         """
     ).fetchall()
@@ -855,7 +958,7 @@ def main() -> int:
             continue
         portal_objeto = normalize_space(raw.get("objeto"))
         portal_qty = extract_qty(portal_objeto)
-        doc_qty = extract_qty(doc.get("excerpt") or doc.get("objeto_resumo"))
+        doc_qty = extract_qty(doc.get("objeto_resumo")) or extract_qty(doc.get("excerpt"))
         status = "CONSISTENTE"
         observacao = "Portal e DOE mantem a mesma ordem de grandeza no objeto publicado."
         if portal_qty is not None and doc_qty is not None and portal_qty != doc_qty:
@@ -863,6 +966,12 @@ def main() -> int:
             observacao = (
                 f"Portal publica quantidade {portal_qty} para o contrato {numero_contrato}, "
                 f"mas o DOE oficial aponta quantidade {doc_qty}."
+            )
+        elif str(numero_contrato) == "170/2023":
+            status = "CONSISTENTE_ORIGEM_ADESAO"
+            observacao = (
+                "Portal e TJAC convergem para a mesma origem de adesao: ARP 304/2022, "
+                "PE SRP 74/2022, 2 caminhonetes e valor total de R$ 532.000,00."
             )
         audit_rows.append(
             (
@@ -918,7 +1027,9 @@ def main() -> int:
         WHERE kind IN (
             'TRACE_NORTE_SEJUSP_TERCEIRIZACAO_SEM_ID_LICITACAO',
             'TRACE_NORTE_SEJUSP_VIATURAS_RASTRO_DOE',
-            'TRACE_NORTE_SEJUSP_PORTAL_OBJETO_DIVERGENTE'
+            'TRACE_NORTE_SEJUSP_PORTAL_OBJETO_DIVERGENTE',
+            'TRACE_NORTE_SEJUSP_170_RASTRO_DOE_PARCIAL',
+            'TRACE_NORTE_SEJUSP_170_ORIGEM_ADESAO_TJAC'
         )
         """
     )
@@ -1006,7 +1117,10 @@ def main() -> int:
             f"O portal estadual materializa o bloco atual de **{fornecedor_nome}** na unidade **{unidade_gestora}** "
             f"como **aquisicao de viaturas/caminhonetes** somando **R$ {float(total_brl):,.2f}**, "
             f"com contratos {', '.join(contratos)} e sem `id_licitacao` exposto no card atual. "
-            f"Mesmo assim, o DOE de 2024 ja fecha parte relevante do rastro documental: "
+            f"Mesmo assim, o DOE de 2023/2024 ja fecha parte relevante do rastro documental: "
+            f"**004/2023** e **151/2023** na **ARP 008/2022 / PE 318/2022 - SEPA**, "
+            f"o **170/2023** na **ARP 304/2022 / PE 74/2022 - TJAC**, com autorizacao de adesao "
+            f"do TJAC e portaria de gestao no processo **0819.012803.00093/2023-03**, "
             f"contrato **082/2024** no processo **0819.016417.00053/2024-94**, "
             f"contrato **147/2024** e adesao **69/2024** na **ARP 49/2023 / PE 206/2023**, "
             f"além da portaria do contrato **149/2024** com recursos do **Fundo Nacional de Seguranca Publica**."
@@ -1037,6 +1151,8 @@ def main() -> int:
                                 "sejusp_2023_agro_contrato004",
                                 "sejusp_2023_agro_portaria151",
                                 "sejusp_2023_agro_contrato151",
+                                "sejusp_2023_agro_portaria170",
+                                "sejusp_2023_agro_tjac_autorizacao170",
                                 "sejusp_2024_agro_portaria82",
                                 "sejusp_2024_agro_contrato82",
                                 "sejusp_2024_agro_adesao33",
@@ -1060,6 +1176,78 @@ def main() -> int:
                 False,
                 float(total_brl or 0),
                 2024,
+                "portal_transparencia_acre",
+            ],
+        )
+
+    contract_170 = con.execute(
+        """
+        SELECT numero_contrato, cnpj, fornecedor_nome, unidade_gestora, valor_brl, raw_contrato_json
+        FROM trace_norte_rede_vinculo_exato
+        WHERE orgao = 'SEJUSP'
+          AND cnpj = '04582979000104'
+          AND numero_contrato = '170/2023'
+        ORDER BY valor_brl DESC
+        LIMIT 1
+        """
+    ).fetchone()
+    doc_170_portaria = next((doc for doc in docs if doc["doc_key"] == "sejusp_2023_agro_portaria170"), None)
+    doc_170_tjac = next((doc for doc in docs if doc["doc_key"] == "sejusp_2023_agro_tjac_autorizacao170"), None)
+    if contract_170 and doc_170_portaria and doc_170_tjac:
+        numero_contrato, cnpj, fornecedor_nome, unidade_gestora, valor_brl, raw_contrato_json = contract_170
+        raw = json.loads(str(raw_contrato_json))
+        portal_objeto = normalize_space(raw.get("objeto"))
+        description = (
+            f"O contrato **{numero_contrato}** de **{fornecedor_nome}** agora tem origem formal rastreada. "
+            f"O DOE de **08/12/2023** traz a **Portaria SEJUSP 624/2023**, com processo **{doc_170_portaria['processo_sei']}** "
+            f"e objeto de **2 caminhonetes para a PMAC**. Antes disso, o **DJE/TJAC de 24/10/2023** autorizou a **SEJUSP** "
+            f"a aderir à **ARP {doc_170_tjac['ata_registro_precos']}**, oriunda do **PE SRP {doc_170_tjac['lic_numero']}**, "
+            f"nos quantitativos do **Ofício 4782/2023/SEJUSP**: **2 pick-ups** por **R$ 532.000,00**. "
+            f"Portal: `{portal_objeto}`."
+        )
+        con.execute(
+            """
+            INSERT INTO insight (
+                id, kind, severity, confidence, exposure_brl, title, description_md,
+                pattern, sources, tags, sample_n, unit_total, esfera, ente, orgao,
+                municipio, uf, area_tematica, sus, valor_referencia, ano_referencia, fonte
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                "TRACE_NORTE_SEJUSP:04582979000104:170:tjac",
+                "TRACE_NORTE_SEJUSP_170_ORIGEM_ADESAO_TJAC",
+                "HIGH",
+                96,
+                float(valor_brl or 0),
+                "Contrato 170/2023 ganhou origem formal via adesão autorizada pelo TJAC",
+                description,
+                "SEJUSP -> CONTRATO_170_ORIGEM_ADESAO_TJAC",
+                json.dumps(
+                    [
+                        {"fonte": "portal_contratos", "numero_contrato": numero_contrato, "cnpj": cnpj},
+                        {"fonte": "doe", "doc_key": doc_170_portaria["doc_key"], "processo_sei": doc_170_portaria["processo_sei"]},
+                        {
+                            "fonte": "dje_tjac",
+                            "doc_key": doc_170_tjac["doc_key"],
+                            "processo": doc_170_tjac["processo"],
+                            "arp": doc_170_tjac["ata_registro_precos"],
+                            "pregao": doc_170_tjac["lic_numero"],
+                        },
+                    ],
+                    ensure_ascii=False,
+                ),
+                json.dumps(["trace_norte", "sejusp", "viaturas", "170_2023", cnpj], ensure_ascii=False),
+                1,
+                float(valor_brl or 0),
+                "estadual",
+                "AC",
+                "SEJUSP",
+                None,
+                "AC",
+                "seguranca_publica",
+                False,
+                float(valor_brl or 0),
+                2023,
                 "portal_transparencia_acre",
             ],
         )

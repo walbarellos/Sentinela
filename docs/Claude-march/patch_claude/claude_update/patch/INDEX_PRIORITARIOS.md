@@ -1,6 +1,6 @@
 # Indice Prioritario - Acre / Rio Branco / SUS
 
-Atualizado em `2026-03-13 11:16 -05`.
+Atualizado em `2026-03-13 20:39 -05`.
 
 Este arquivo aponta para os artefatos probatorios principais ja gerados no projeto para o recorte atual.
 
@@ -47,10 +47,24 @@ Top 10 materializado:
 
 ## 3. Log de progresso
 
+- Pacote AGRO / follow-up: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_AGRO_UNIDADES_FOLLOWUP.md`
+- Manifesto AGRO / follow-up: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_AGRO_UNIDADES_FOLLOWUP_MANIFEST.json`
+- CSV resumo AGRO / follow-up: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_agro_unidades_resumo.csv`
+- CSV contratos AGRO / follow-up: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_agro_unidades_followup.csv`
+- CSV docs AGRO / follow-up: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_agro_unidades_docs.csv`
+- CSV audit AGRO / follow-up: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_agro_unidades_audit.csv`
+- Bundle AGRO / follow-up: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_agro_unidades_bundle_20260313.tar.gz`
+- Hash do bundle AGRO / follow-up: `35662bb9a5d6162b8367dec4085d2d31df14263e9f5c26739433dc3b19eed1b3`
+
 - `docs/Claude-march/patch_claude/claude_update/patch/log-chat-1.txt`
 
 ## 4. Estado operacional
 
 - Municipal: pacote pronto para representacao com 2 casos prioritarios.
 - Estadual: pacote pronto com top 10 sancionados ativos da SESACRE.
-- Proximo ciclo natural: aprofundar QSA/socios e detalhamento fornecedor a fornecedor onde ainda houver cobertura vazia.
+- NORTE / AGRO:
+  `SEJUSP` com linha do tempo local e auditoria `portal x DOE` ja materializadas.
+  `170/2023` agora fechado com `DJE/TJAC 24/10/2023`, `ARP 304/2022`, `PE SRP 74/2022`, valor `R$ 532.000,00` e DOE `08/12/2023` no processo SEI `0819.012803.00093/2023-03`.
+  `DETRAN` com cadeia objetiva `aquisicao -> manutencao` no mesmo CNPJ, agora com `6` unidades formalizadas no DOE do `022/2023` e compatibilidade quantitativa com o `071/2023`.
+  `FUNPENACRE / IAPEN / ISE` com `R$ 4.068.000,00`; `038/2023` e `073/2023` ja estao formalmente fechados em DOE, e o `072/2024` segue com divergencia nominal documentada (`portal x DOE`).
+- Proximo ciclo natural: deslocar o foco para `DETRAN 022/2023` e `ISE 072/2024`, porque `038/2023`, `073/2023` e `170/2023` ja sairam da fila de pendencia.

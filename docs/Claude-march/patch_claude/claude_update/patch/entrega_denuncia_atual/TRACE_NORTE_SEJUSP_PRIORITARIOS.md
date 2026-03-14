@@ -1,6 +1,6 @@
 # Trace NORTE - SEJUSP Prioritários
 
-Gerado em: `2026-03-13 18:31:32`
+Gerado em: `2026-03-13 20:39:09`
 
 Este dossiê isola o recorte `SEJUSP` dentro da trilha `NORTE`, separando dois eixos que não devem ser misturados:
 
@@ -46,6 +46,7 @@ Este dossiê isola o recorte `SEJUSP` dentro da trilha `NORTE`, separando dois e
 
 - `004/2023` | processo `0853.013719.00030/2022-18` | `ARP 008/2022` | `PE 318/2022 - SEPA` | `R$ 250.000,00` | 1 caminhonete para o `NASP`
 - `151/2023` | processo `0819.012805.00066/2022-40` | `ARP 008/2022` | `PE 318/2022 - SEPA` | `R$ 250.000,00` | 1 caminhonete para o `CIEPS`
+- `170/2023` | origem formal fechada | DJE/TJAC `24/10/2023` + DOE `08/12/2023` | `ARP 304/2022` | `PE SRP 74/2022 - TJAC` | `R$ 532.000,00` | 2 caminhonetes para a `PMAC`
 - `082/2024` | processo `0819.016417.00053/2024-94` | extrato `R$ 733.491,00` | 3 caminhonetes para patrulhamento velado
 - `33/2024` | termo de adesão do mesmo bloco | `ARP 49/2023` | `PE 206/2023` | `R$ 733.491,00`
 - `147/2024` | processo `0064.014914.00006/2024-48` | `ARP 49/2023` | `PE 206/2023` | `R$ 977.988,00`
@@ -58,6 +59,8 @@ Este dossiê isola o recorte `SEJUSP` dentro da trilha `NORTE`, separando dois e
   observação: Portal e DOE mantem a mesma ordem de grandeza no objeto publicado.
 - `151/2023` | status `QUANTIDADE_DIVERGENTE` | portal `10` x DOE `1`
   observação: Portal publica quantidade 10 para o contrato 151/2023, mas o DOE oficial aponta quantidade 1.
+- `170/2023` | status `CONSISTENTE_ORIGEM_ADESAO` | portal `2` x DOE `2`
+  observação: Portal e TJAC convergem para a mesma origem de adesao: ARP 304/2022, PE SRP 74/2022, 2 caminhonetes e valor total de R$ 532.000,00.
 
 ### Contratos do bloco
 
@@ -76,23 +79,27 @@ Este dossiê isola o recorte `SEJUSP` dentro da trilha `NORTE`, separando dois e
 
 ## Leitura técnica
 
-Este recorte fecha quatro conclusões objetivas.
+Este recorte fecha cinco conclusões objetivas.
 
 1. O eixo `NORTE-CENTRO / SEJUSP` é de serviços continuados com mão de obra e apoio operacional. O portal não expõe `id_licitacao` no card do `076/2024`, mas o DOE de `26/12/2024` já fecha o vínculo formal com `ARP 04/2024` e `PP 053/2023`.
-2. O eixo `AGRO NORTE / SEJUSP` ganhou fechamento documental adicional em `2023`: `004/2023` e `151/2023` agora estão amarrados a `ARP 008/2022` e `PE 318/2022 - SEPA`, além dos atos de `2024` já fechados.
-3. O contrato `151/2023` tem divergência objetiva entre o portal e o DOE: o portal publica objeto compatível com `10` caminhonetes, enquanto o extrato oficial materializa `1` caminhonete para o `CIEPS`, no mesmo valor de `R$ 250.000,00`.
-4. O recorte `SEJUSP` continua separado em dois problemas diferentes: terceirização/apoio (`NORTE-CENTRO`) e viaturas (`AGRO NORTE`). Misturar os dois reduziria a força probatória.
+2. O contrato `170/2023` deixou de ser pendência de origem: o DJE/TJAC de `24/10/2023` autorizou a `SEJUSP` a aderir à `ARP 304/2022`, oriunda do `PE SRP 74/2022`, nos exatos quantitativos do contrato (`2` pick-ups, `R$ 532.000,00`), e o DOE de `08/12/2023` materializa a portaria de gestão/fiscalização com processo SEI `0819.012803.00093/2023-03`.
+3. O eixo `AGRO NORTE / SEJUSP` ganhou fechamento documental adicional em `2023`: `004/2023` e `151/2023` estão amarrados a `ARP 008/2022` e `PE 318/2022 - SEPA`, enquanto `170/2023` agora está ligado a `ARP 304/2022` e `PE SRP 74/2022 - TJAC`, além dos atos de `2024` já fechados.
+4. O contrato `151/2023` tem divergência objetiva entre o portal e o DOE: o portal publica objeto compatível com `10` caminhonetes, enquanto o extrato oficial materializa `1` caminhonete para o `CIEPS`, no mesmo valor de `R$ 250.000,00`.
+5. O recorte `SEJUSP` continua separado em dois problemas diferentes: terceirização/apoio (`NORTE-CENTRO`) e viaturas (`AGRO NORTE`). Misturar os dois reduziria a força probatória.
 
 ## Próximo passo técnico
 
-- fechar o contrato `170/2023`, que ainda segue sem trilha formal local neste recorte;
-- expandir o mesmo método documental para `DETRAN` e `IAPEN`, que já aparecem com blocos altos do mesmo CNPJ;
+- expandir o mesmo método documental para `DETRAN` e `ISE`, que ainda concentram os maiores blocos relevantes do mesmo CNPJ fora do `SEJUSP`;
 - consolidar depois o recorte `SEJUSP` em linha do tempo única por processo, ARP e fonte de recurso, incluindo a divergência documental do `151/2023`.
 
 ## Arquivos congelados
 
+- `trace_norte_sejusp/0005193-89.2023-Homologacao-publicada-PE-91-2023-TJAC.pdf`
+- `trace_norte_sejusp/0005193-89.2023-Homologacao-publicada-PE-91-2023-TJAC.txt`
 - `trace_norte_sejusp/2020_norte_centro_sejusp_apoio.pdf`
 - `trace_norte_sejusp/2020_norte_centro_sejusp_apoio.txt`
+- `trace_norte_sejusp/2023-12-08.pdf`
+- `trace_norte_sejusp/2023-12-08.txt`
 - `trace_norte_sejusp/2023_jwc_sejusp_contrato33_aditivo.pdf`
 - `trace_norte_sejusp/2023_jwc_sejusp_contrato33_aditivo.txt`
 - `trace_norte_sejusp/2025_norte_centro_sejusp_limpeza_aditivo.pdf`

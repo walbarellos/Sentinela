@@ -480,3 +480,169 @@
   buscas no Diario por 004/2023 e 151/2023 ainda nao fecharam atos formais do bloco AGRO / SEJUSP
   a busca exata por 004/2023 trouxe falso positivo de outro orgao/unidade (PCAC / F.R. SOARES DAMASCENO LTDA), entao o vinculo nao foi forçado
   151/2023 segue sem rastro formal local confirmado por busca textual simples
+
+[2026-03-13 18:47:41 -0500] pacote AGRO fora da SEJUSP materializado e exportado
+- Scripts novos:
+  scripts/sync_trace_agro_unidades_followup.py
+  scripts/export_trace_agro_unidades_followup.py
+- Tabelas / views novas:
+  trace_agro_unidades_followup
+  v_trace_agro_unidades_followup
+  trace_agro_unidades_resumo
+  v_trace_agro_unidades_resumo
+- Resultado materializado:
+  contratos = 8
+  blocos = 2
+  AGRO / DETRAN = R$ 2.716.895,28 em 5 contratos
+    aquisicao principal 022/2023 = R$ 2.296.950,00, sem id_licitacao exposto no portal
+    manutencoes / revisoes posteriores = 001/2023, 071/2023, 007/2024, 086/2024
+    insight novo: TRACE_AGRO_DETRAN_FROTA_CADEIA
+  AGRO / execucao penal = R$ 4.068.000,00 em 3 contratos
+    038/2023 / FUNPENACRE = R$ 1.330.000,00
+    073/2023 / IAPEN = R$ 254.000,00
+    072/2024 / ISE = R$ 2.484.000,00
+    os tres blocos seguem sem id_licitacao exposto no portal
+    insight novo: TRACE_AGRO_EXECUCAO_PENAL_FROTA
+- Artefatos de entrega atualizados:
+  entrega_denuncia_atual/TRACE_AGRO_UNIDADES_FOLLOWUP.md
+  entrega_denuncia_atual/TRACE_AGRO_UNIDADES_FOLLOWUP_MANIFEST.json
+  entrega_denuncia_atual/trace_agro_unidades_resumo.csv
+  entrega_denuncia_atual/trace_agro_unidades_followup.csv
+  entrega_denuncia_atual/trace_agro_unidades_bundle_20260313.tar.gz
+- Hash atual do bundle AGRO follow-up:
+  8876b98849d0d1b15f9ffad65a017bb16bd3d90860f889b814aef105e5912251
+- Leitura operacional:
+  o ciclo seguinte deixa de ser genericamente "fechar a NORTE" e passa a ser:
+    DETRAN 022/2023
+    ISE 072/2024
+    FUNPENACRE 038/2023
+  o 170/2023 da SEJUSP permanece como pendencia isolada e ja nao bloqueia a evolucao da trilha AGRO
+
+[2026-03-13 19:10:12 -0500] contrato 170/2023 da SEJUSP ganhou rastro formal parcial local e pacote SEJUSP foi reemitido
+- Scripts atualizados:
+  scripts/sync_trace_norte_sejusp_prioritarios.py
+  scripts/export_trace_norte_sejusp_prioritarios.py
+- Evidencia nova incorporada:
+  data/tmp/sejusp_170_probe/2023-12-08.txt
+  data/tmp/sejusp_170_probe/2023-12-08.pdf
+  portaria SEJUSP 624/2023 com contrato 170/2023, processo SEI 0819.012803.00093/2023-03, AGRO NORTE e objeto de 2 caminhonetes para a PMAC
+- Resultado materializado:
+  trace_norte_sejusp_docs = 14
+  insight TRACE_NORTE_SEJUSP_170_RASTRO_DOE_PARCIAL = 1
+  insight TRACE_NORTE_SEJUSP_TERCEIRIZACAO_SEM_ID_LICITACAO = 1
+  insight TRACE_NORTE_SEJUSP_VIATURAS_RASTRO_DOE = 1
+  insight TRACE_NORTE_SEJUSP_PORTAL_OBJETO_DIVERGENTE = 1
+- Leitura de rigor:
+  170/2023 deixou de ser um ponto sem trilha local
+  agora ha rastro formal parcial via DOE 08/12/2023
+  o que continua em aberto e a origem da contratacao em ARP/pregao/extrato contratual mais forte
+- Artefatos reemitidos:
+  entrega_denuncia_atual/TRACE_NORTE_SEJUSP_PRIORITARIOS.md
+  entrega_denuncia_atual/TRACE_NORTE_SEJUSP_PRIORITARIOS_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_sejusp_docs.csv
+  entrega_denuncia_atual/trace_norte_sejusp_bundle_20260313.tar.gz
+- Hash atual do bundle SEJUSP:
+  089d6a6d2b6501703d3ea09b9699a49f9ef1e86a730f312f1a09f27a909be201
+- Ajuste de consistencia no pacote AGRO:
+  bundle AGRO follow-up reemitido com hash correto
+  novo hash = 434d1a8ee19c9122e24e6342664df4eba120306bebc2a136f34716e4fe6b0dc2
+
+[2026-03-13 19:18:44 -0500] follow-up tecnico do 170/2023 nao fechou a origem licitatoria, mas reduziu o espaco de busca
+- Consultas executadas:
+  busca textual por processo SEI 0819.012803.00093/2023-03 e objeto do contrato em data/tmp/sejusp_170_probe/
+  consulta canônica em estado_ac_licitacoes por caminhonete + PMAC/policia militar + fortalecimento das instituicoes de seguranca publica
+- Resultado:
+  nenhum candidato objetivo apareceu em estado_ac_licitacoes para o contrato 170/2023
+  a prova local continua sendo:
+    portal contratual do 170/2023 com valor R$ 532.000,00
+    portaria DOE de 08/12/2023 com processo SEI 0819.012803.00093/2023-03
+- Leitura de rigor:
+  o gargalo do 170/2023 permanece na origem ARP/pregao/extrato contratual
+  a ausencia de licitacao candidata no catalogo canônico estadual sugere ou publicacao incompleta no portal, ou origem fora da camada já ingerida
+
+[2026-03-13 19:58:41 -0500] pacote AGRO reforcado com docs estruturados e auditoria formal
+- Scripts atualizados:
+  scripts/sync_trace_agro_unidades_followup.py
+  scripts/export_trace_agro_unidades_followup.py
+- Tabelas / views novas:
+  trace_agro_unidades_docs
+  v_trace_agro_unidades_docs
+  trace_agro_unidades_audit
+  v_trace_agro_unidades_audit
+- Resultado materializado:
+  trace_agro_unidades_docs = 3
+  trace_agro_unidades_audit = 2
+  insights TRACE_AGRO_DETRAN_FROTA_CADEIA = 1
+  insights TRACE_AGRO_EXECUCAO_PENAL_FROTA = 1
+  insights TRACE_AGRO_ISE_PORTAL_VALOR_DIVERGENTE = 1
+- Fechamentos novos:
+  DETRAN 022/2023 com processo 0068.008553.00042/2023-71, 6 unidades e valor unitario R$ 382.825,00
+  auditoria de compatibilidade quantitativa entre 022/2023 e 071/2023: 6 unidades no DOE x 6 veiculos L200 na manutencao
+  ISE 072/2024 com 10 unidades e valor oficial DOE de R$ 2.480.000,00
+  divergencia nominal objetiva no 072/2024: portal R$ 2.484.000,00 x DOE R$ 2.480.000,00
+- Artefatos reemitidos:
+  entrega_denuncia_atual/TRACE_AGRO_UNIDADES_FOLLOWUP.md
+  entrega_denuncia_atual/TRACE_AGRO_UNIDADES_FOLLOWUP_MANIFEST.json
+  entrega_denuncia_atual/trace_agro_unidades_docs.csv
+  entrega_denuncia_atual/trace_agro_unidades_audit.csv
+  entrega_denuncia_atual/trace_agro_unidades_bundle_20260313.tar.gz
+- Hash atual do bundle AGRO follow-up:
+  e8d9008323e13b5b6fdb8e27f9ce05f4e5d18f1bd4ea52a19995beb951f5cb5b
+- Proximo alvo tecnico:
+  fechar a ponte formal do 038/2023
+  aprofundar o 073/2023 do IAPEN
+
+[2026-03-13 20:24:11 -0500] DOE de 04/08/2023 fechou o 073/2023 do IAPEN e isolou o 170/2023 como proximo gargalo
+- Scripts atualizados:
+  scripts/sync_trace_agro_unidades_followup.py
+  scripts/export_trace_agro_unidades_followup.py
+- Evidencia nova incorporada:
+  data/tmp/agro_followup_doe/073_2023_iapen_1.pdf
+  data/tmp/agro_followup_doe/073_2023_iapen_1.txt
+  contrato 073/2023 do IAPEN com termo de adesao 26/2023/IAPEN
+  processo 4005.014141.00047/2023-70
+  PE SRP 258/2022
+  ARP 010/2022-SEPA
+  valor R$ 254.000,00
+- Resultado materializado:
+  trace_agro_unidades_docs = 6
+  trace_agro_unidades_audit = 4
+  insight TRACE_AGRO_IAPEN_073_PORTAL_CIAP = 1
+  auditoria PORTAL_X_DOE_ORIGEM / 073/2023 = CONSISTENTE_PORTAL_DOE
+- Leitura de rigor:
+  o 073/2023 saiu da condicao de rastro de card
+  agora ha contrato exato publicado em DOE e card estadual convergente
+  o proximo buraco relevante do eixo AGRO passou a ser o 170/2023 da SEJUSP/PMAC
+- Artefatos reemitidos:
+  entrega_denuncia_atual/TRACE_AGRO_UNIDADES_FOLLOWUP.md
+  entrega_denuncia_atual/TRACE_AGRO_UNIDADES_FOLLOWUP_MANIFEST.json
+  entrega_denuncia_atual/trace_agro_unidades_docs.csv
+  entrega_denuncia_atual/trace_agro_unidades_audit.csv
+  entrega_denuncia_atual/trace_agro_unidades_bundle_20260313.tar.gz
+  entrega_denuncia_atual/trace_agro_unidades/073_2023_iapen_1.pdf
+  entrega_denuncia_atual/trace_agro_unidades/073_2023_iapen_1.txt
+- Hash atual do bundle AGRO follow-up:
+  35662bb9a5d6162b8367dec4085d2d31df14263e9f5c26739433dc3b19eed1b3
+
+[2026-03-13 20:39:23 -0500] TJAC fechou a origem do 170/2023 da SEJUSP e o pacote SEJUSP foi reemitido
+- Evidencia primaria nova:
+  data/tmp/sejusp_170_probe/tjac/0005193-89.2023-Homologacao-publicada-PE-91-2023-TJAC.pdf
+  data/tmp/sejusp_170_probe/tjac/0005193-89.2023-Homologacao-publicada-PE-91-2023-TJAC.txt
+  DJE/TJAC de 24/10/2023 autorizando a SEJUSP a aderir a ARP 304/2022, oriunda do PE SRP 74/2022
+  quantitativos do Oficio 4782/2023/SEJUSP: 2 pick-ups, R$ 266.000,00 cada, total R$ 532.000,00
+- Scripts atualizados:
+  scripts/sync_trace_norte_sejusp_prioritarios.py
+  scripts/export_trace_norte_sejusp_prioritarios.py
+- Resultado materializado:
+  trace_norte_sejusp_docs = 15
+  trace_norte_sejusp_audit = 3
+  170/2023 = CONSISTENTE_ORIGEM_ADESAO
+  insight TRACE_NORTE_SEJUSP_170_ORIGEM_ADESAO_TJAC = 1
+- Leitura de rigor:
+  o 170/2023 saiu da condicao de rastro parcial e passou a ter origem formal fechada
+  o proximo buraco relevante da trilha AGRO deixou de ser SEJUSP e migrou para DETRAN/ISE
+- Artefatos reemitidos:
+  entrega_denuncia_atual/TRACE_NORTE_SEJUSP_PRIORITARIOS.md
+  entrega_denuncia_atual/TRACE_NORTE_SEJUSP_PRIORITARIOS_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_sejusp_bundle_20260313.tar.gz
+  novo hash = abf3715be9ab926aea21ca6bf5712f6fed93336762f624012e352910824a26c4
