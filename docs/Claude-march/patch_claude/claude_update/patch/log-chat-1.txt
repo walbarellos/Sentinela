@@ -2095,13 +2095,17 @@ validacao:
 
 fechamento do mapa do legado:
 - `doacao_contrato` agora esta em `RETIRED_DEFAULT`
+- `fracionamento` agora tambem esta em `RETIRED_DEFAULT`
+- motivo do `fracionamento`: sem superficie minima confiavel nos dados reais atuais
+- `outlier_salarial` agora tambem esta em `RETIRED_DEFAULT`
+- motivo do `outlier_salarial`: base sem competencia explicita e com duplicidade suficiente para ruido estrutural
 - mapa final:
-  - `CANDIDATO_OPS`: `fracionamento`
-  - `LAB_INTERNO`: `outlier_salarial`
   - `COBERTO_OPS`: `empresa_suspensa`
-  - `APOSENTADO`: `viagem_bloco`, `concentracao_mercado`, `fim_de_semana`, `nepotismo_sobrenome`, `doacao_contrato`
+  - `APOSENTADO`: `fracionamento`, `outlier_salarial`, `viagem_bloco`, `concentracao_mercado`, `fim_de_semana`, `nepotismo_sobrenome`, `doacao_contrato`
 
 validacao:
 - `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
 - `.venv/bin/python scripts/validate_cross_reference_engine.py`
 - `.venv/bin/python -m src.core.cross_reference_engine --detector doacao_contrato --allow-internal`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector fracionamento --allow-internal`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector outlier_salarial --allow-internal`

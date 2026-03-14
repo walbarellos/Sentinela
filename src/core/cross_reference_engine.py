@@ -147,6 +147,8 @@ INTERNAL_ONLY_DEFAULT = {
 }
 
 RETIRED_DEFAULT = {
+    "fracionamento",
+    "outlier_salarial",
     "viagem_bloco",
     "concentracao_mercado",
     "fim_de_semana",
@@ -158,8 +160,8 @@ RETIRED_DEFAULT = {
 LEGACY_INTERNAL_USAGE = "REVISAO_INTERNA"
 
 DETECTOR_STATUS = {
-    "fracionamento": "CANDIDATO_OPS",
-    "outlier_salarial": "LAB_INTERNO",
+    "fracionamento": "APOSENTADO",
+    "outlier_salarial": "APOSENTADO",
     "viagem_bloco": "APOSENTADO",
     "concentracao_mercado": "APOSENTADO",
     "empresa_suspensa": "COBERTO_OPS",

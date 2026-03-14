@@ -579,13 +579,21 @@ resultado:
 - `doacao_contrato`
   - movido para `RETIRED_DEFAULT`
   - status `APOSENTADO`
+- `fracionamento`
+  - movido para `RETIRED_DEFAULT`
+  - status `APOSENTADO`
+  - motivo: sem superficie minima confiavel nos dados reais atuais
+- `outlier_salarial`
+  - movido para `RETIRED_DEFAULT`
+  - status `APOSENTADO`
+  - motivo: base consolidada sem competencia explicita e com duplicidade suficiente para gerar ruido estrutural
 - mapa final do legado:
-  - `CANDIDATO_OPS`: `fracionamento`
-  - `LAB_INTERNO`: `outlier_salarial`
   - `COBERTO_OPS`: `empresa_suspensa`
-  - `APOSENTADO`: `viagem_bloco`, `concentracao_mercado`, `fim_de_semana`, `nepotismo_sobrenome`, `doacao_contrato`
+  - `APOSENTADO`: `fracionamento`, `outlier_salarial`, `viagem_bloco`, `concentracao_mercado`, `fim_de_semana`, `nepotismo_sobrenome`, `doacao_contrato`
 
 validacao executada:
 - `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
 - `.venv/bin/python scripts/validate_cross_reference_engine.py`
 - `.venv/bin/python -m src.core.cross_reference_engine --detector doacao_contrato --allow-internal`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector fracionamento --allow-internal`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector outlier_salarial --allow-internal`
