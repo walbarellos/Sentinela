@@ -99,7 +99,15 @@ O Streamlit agora também pode operar como fila de casos probatórios:
 - `ops_source_cache`: catálogo/cache de fontes públicas com `ttl`, `etag`, `last_modified` e snapshot local quando disponível
 - `ops_case_inbox_document`: caixa operacional de respostas oficiais por caso
 - `v_ops_case_timeline_event`: timeline documental por caso
-- aba `📂 OPERAÇÕES`: resumo, filtros, detalhe do caso, inbox, timeline, diff e visualização local de artefatos
+- `ops_artifact_text_index`: índice textual local dos artefatos e anexos suportados
+- `ops_case_burden_item`: matriz de ônus probatório por caso
+- `ops_case_semantic_issue`: diff semântico materializado por caso
+- `ops_case_contradiction`: contradições objetivas materializadas
+- `ops_case_checklist`: checklist probatório por caso
+- `ops_case_language_guard`: gate de linguagem externa não-acusatória
+- `ops_case_generated_export`: exportações seguras congeladas como artefato controlado do caso
+- aba `📂 OPERAÇÕES`: resumo, filtros, detalhe do caso, busca textual, inbox, timeline, diff e visualização local de artefatos
+- cobertura atual da inbox: `13` casos (`RB_SUS`, `SESACRE` e `CEDIMP`)
 
 Para rematerializar essa camada:
 ```bash
@@ -107,6 +115,19 @@ Para rematerializar essa camada:
 .venv/bin/python scripts/sync_ops_source_cache.py
 .venv/bin/python scripts/sync_ops_inbox.py
 .venv/bin/python scripts/sync_ops_timeline.py
+.venv/bin/python scripts/sync_ops_search_index.py
+.venv/bin/python scripts/sync_ops_burden.py
+.venv/bin/python scripts/sync_ops_semantic.py
+.venv/bin/python scripts/sync_ops_contradiction.py
+.venv/bin/python scripts/sync_ops_checklist.py
+.venv/bin/python scripts/sync_ops_guard.py
+.venv/bin/python scripts/sync_ops_export_gate.py
+.venv/bin/python scripts/validate_ops_output_guard.py
+```
+
+Para congelar uma saída segura como artefato versionado do caso:
+```bash
+.venv/bin/python scripts/freeze_ops_case_export.py --case-id rb:contrato:3898 --mode NOTICIA_FATO
 ```
 
 ---

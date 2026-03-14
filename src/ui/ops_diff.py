@@ -86,6 +86,50 @@ def render_artifact_diff(artifacts_df: pd.DataFrame) -> None:
         st.warning("Um dos artefatos não tem texto extraível para diff. Prefira `md`, `txt`, `json`, `csv`, `html` ou PDF com `.txt` espelho.")
         return
 
+    left_suffix = Path(str(left_row["path"])).suffix.lower()
+    right_suffix = Path(str(right_row["path"])).suffix.lower()
+    if left_suffix == right_suffix == ".json":
+        try:
+            left_json = json.loads(left_text)
+            right_json = json.loads(right_text)
+            if isinstance(left_json, dict) and isinstance(right_json, dict):
+                left_keys = set(left_json.keys())
+                right_keys = set(right_json.keys())
+                s1, s2, s3 = st.columns(3)
+                s1.metric("Chaves A", len(left_keys))
+                s2.metric("Chaves B", len(right_keys))
+                s3.metric("Chaves divergentes", len(left_keys ^ right_keys))
+                if left_keys ^ right_keys:
+                    diff_len = max(len(left_keys - right_keys), len(right_keys - left_keys))
+                    st.dataframe(
+                        pd.DataFrame(
+                            {
+                                "apenas_em_A": sorted(left_keys - right_keys)[:diff_len],
+                                "apenas_em_B": sorted(right_keys - left_keys)[:diff_len],
+                            }
+                        ),
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+        except Exception:
+            pass
+
+    if left_suffix == right_suffix == ".csv":
+        try:
+            left_df = pd.read_csv(StringIO(left_text))
+            right_df = pd.read_csv(StringIO(right_text))
+            s1, s2, s3, s4 = st.columns(4)
+            s1.metric("Linhas A", len(left_df))
+            s2.metric("Linhas B", len(right_df))
+            s3.metric("Cols A", len(left_df.columns))
+            s4.metric("Cols B", len(right_df.columns))
+            col_diff = sorted(set(left_df.columns) ^ set(right_df.columns))
+            if col_diff:
+                st.caption("Colunas divergentes")
+                st.code(", ".join(col_diff[:80]), language="text")
+        except Exception:
+            pass
+
     left_lines = left_text.splitlines()
     right_lines = right_text.splitlines()
     diff = list(

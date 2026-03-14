@@ -14,6 +14,7 @@
 - `SEC / EDGAR`
   - https://www.sec.gov/search-filings
   - ponto util: leitura documental primeiro, timeline e anexos acessiveis
+  - pagina oficial de ajuda: https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data
 
 ## O que vale trazer para o Sentinela
 
@@ -26,6 +27,36 @@
   - analise juridico-funcional
   - representacao preliminar
 - export simples do caso
+
+## O que ja foi incorporado
+
+- `Oversight.gov`
+  - fila de pendencias documentais por caso
+  - inbox operacional com status objetivo
+  - workflow do caso com trilha de execucao
+- `USAspending`
+  - filtros fortes na fila de casos
+  - visao de sujeito/valor/orgao antes do detalhe
+  - escalabilidade por caso/fornecedor para o municipio
+- `SEC / EDGAR`
+  - documento primeiro
+  - inspetor de artefatos no mesmo fluxo
+  - timeline documental e diff textual quando houver texto extraivel
+- `EDGAR + search-first`
+  - busca textual por documento e anexo local antes de abrir arquivo bruto
+
+## O que faz sentido para Rio Branco
+
+- sim:
+  - fila de casos
+  - caixa de diligencias
+  - timeline documental
+  - diff e preview local
+  - perfil por fornecedor/contrato
+- nao:
+  - navegação burocrática em muitas telas
+  - taxonomia federal excessiva para o operador municipal
+  - graficos de mercado sem efeito probatorio
 
 ## O que nao vale copiar
 

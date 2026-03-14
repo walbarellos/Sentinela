@@ -5,10 +5,24 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
-from src.ui.ops_data import load_ops_case_artifacts, load_ops_case_timeline
+from src.ui.ops_burden import render_burden_tab
+from src.ui.ops_checklist import render_checklist_tab
+from src.ui.ops_data import (
+    load_ops_case_artifacts,
+    load_ops_case_burden,
+    load_ops_case_checklist,
+    load_ops_case_contradictions,
+    load_ops_case_export_gate,
+    load_ops_case_language_guard,
+    load_ops_case_semantic,
+    load_ops_case_timeline,
+)
 from src.ui.ops_diff import render_artifact_diff
+from src.ui.ops_export import render_export_tab
 from src.ui.ops_preview import render_artifact_preview
-from src.ui.ops_shared import format_brl, format_case_label
+from src.ui.ops_semantic import render_semantic_diff
+from src.ui.ops_shared import format_brl, format_case_label, present_external_usage, present_stage_label
+from src.ui.ops_timeline import render_timeline_tab
 
 
 def apply_case_filters(ops_cases: pd.DataFrame) -> pd.DataFrame:
@@ -44,11 +58,24 @@ def apply_case_filters(ops_cases: pd.DataFrame) -> pd.DataFrame:
 
 
 def render_overview_tab(summary: dict[str, Any], runs_df: pd.DataFrame, sources_df: pd.DataFrame) -> None:
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     col1.metric("Casos", summary["total_cases"])
     col2.metric("Prontos p/ uso externo", summary["external_ready"])
     col3.metric("Pedido documental", summary["document_request_ready"])
-    col4.metric("Valor rastreado", format_brl(summary["total_value_brl"]))
+    col4.metric("Docs pendentes", summary.get("pending_docs", 0))
+    col5.metric("Docs recebidos", summary.get("received_docs", 0))
+    col6.metric("Valor rastreado", format_brl(summary["total_value_brl"]))
+
+    burden1, burden2, burden3, burden4 = st.columns(4)
+    burden1.metric("Ônus comprovado", summary.get("burden_documental", 0))
+    burden2.metric("Ônus pend. doc", summary.get("burden_pending_doc", 0))
+    burden3.metric("Ônus pend. jurid.", summary.get("burden_pending_legal", 0))
+    burden4.metric("Ônus sem base", summary.get("burden_no_basis", 0))
+    extra1, extra2, extra3, extra4 = st.columns(4)
+    extra1.metric("Contradições", summary.get("contradictions", 0))
+    extra2.metric("Guard linguagem", summary.get("language_guard", 0))
+    extra3.metric("Gates export", summary.get("export_gate", 0))
+    extra4.metric("Exports congelados", summary.get("generated_export", 0))
 
     block1, block2 = st.columns([1, 1])
     with block1:
@@ -117,10 +144,16 @@ def render_case_workbench(filtered: pd.DataFrame) -> None:
 
     selected_case = filtered.loc[filtered["case_id"] == selected_case_id].iloc[0]
     artifacts_df = load_ops_case_artifacts(selected_case_id)
+    burden_df = load_ops_case_burden(selected_case_id)
+    checklist_df = load_ops_case_checklist(selected_case_id)
+    contradiction_df = load_ops_case_contradictions(selected_case_id)
+    export_gate_df = load_ops_case_export_gate(selected_case_id)
+    guard_df = load_ops_case_language_guard(selected_case_id)
+    semantic_df = load_ops_case_semantic(selected_case_id)
     timeline_df = load_ops_case_timeline(selected_case_id)
 
     with workbench_right:
-        resume_tab, evidence_tab, timeline_tab, diff_tab = st.tabs(["Resumo", "Evidências", "Timeline", "Diff"])
+        resume_tab, export_tab, checklist_tab, burden_tab, evidence_tab, timeline_tab, diff_tab = st.tabs(["Resumo", "Exportação", "Checklist", "Ônus", "Evidências", "Timeline", "Diff"])
         with resume_tab:
             head_left, head_right = st.columns([1.4, 1])
             with head_left:
@@ -131,8 +164,8 @@ def render_case_workbench(filtered: pd.DataFrame) -> None:
                 if pd.notna(selected_case["subject_doc"]):
                     st.markdown(f"**Documento:** `{selected_case['subject_doc']}`")
                 st.markdown(f"**Classe:** `{selected_case.get('classe_achado') or 'N/D'}`")
-                st.markdown(f"**Estágio:** `{selected_case.get('estagio_operacional') or 'N/D'}`")
-                st.markdown(f"**Uso externo:** `{selected_case.get('uso_externo') or 'N/D'}`")
+                st.markdown(f"**Estágio:** `{present_stage_label(selected_case.get('estagio_operacional'))}`")
+                st.markdown(f"**Uso externo:** `{present_external_usage(selected_case.get('uso_externo'))}`")
                 st.markdown(f"**Resumo:** {selected_case.get('resumo_curto') or 'N/D'}")
                 st.markdown(f"**Próximo passo:** {selected_case.get('proximo_passo') or 'N/D'}")
             with head_right:
@@ -143,6 +176,19 @@ def render_case_workbench(filtered: pd.DataFrame) -> None:
                     st.caption(f"Bundle: `{selected_case['bundle_path']}`")
                 if pd.notna(selected_case["bundle_sha256"]):
                     st.code(str(selected_case["bundle_sha256"]), language="text")
+                if not contradiction_df.empty:
+                    st.metric("Contradições", len(contradiction_df))
+                if not guard_df.empty:
+                    st.metric("Guard linguagem", len(guard_df))
+
+        with export_tab:
+            render_export_tab(selected_case_id, export_gate_df)
+
+        with checklist_tab:
+            render_checklist_tab(checklist_df, contradiction_df, guard_df)
+
+        with burden_tab:
+            render_burden_tab(burden_df)
 
         with evidence_tab:
             st.markdown("#### Evidências")
@@ -172,17 +218,17 @@ def render_case_workbench(filtered: pd.DataFrame) -> None:
                         render_artifact_preview(str(selected_artifact.get("path") or ""), str(selected_artifact.get("kind") or ""))
 
         with timeline_tab:
-            st.markdown("#### Timeline documental")
-            if timeline_df.empty:
-                st.info("Sem eventos materializados para este caso.")
-            else:
-                st.dataframe(timeline_df, use_container_width=True, hide_index=True)
+            render_timeline_tab(timeline_df)
 
         with diff_tab:
-            if artifacts_df.empty:
-                st.info("Nenhum artefato materializado para este caso.")
-            else:
-                render_artifact_diff(artifacts_df)
+            semantic_left, semantic_right = st.columns([1.1, 0.9])
+            with semantic_left:
+                render_semantic_diff(semantic_df)
+            with semantic_right:
+                if artifacts_df.empty:
+                    st.info("Nenhum artefato materializado para este caso.")
+                else:
+                    render_artifact_diff(artifacts_df)
 
 
 def render_runtime_tab(runs_df: pd.DataFrame, sources_df: pd.DataFrame) -> None:

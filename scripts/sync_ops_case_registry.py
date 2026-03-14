@@ -37,6 +37,14 @@ def main() -> int:
         )
         print(f"cases={stats['cases']}")
         print(f"artifacts={stats['artifacts']}")
+        print(f"burden_rows={stats.get('burden_rows', 0)}")
+        print(f"semantic_rows={stats.get('semantic_rows', 0)}")
+        print(f"contradiction_rows={stats.get('contradiction_rows', 0)}")
+        print(f"checklist_rows={stats.get('checklist_rows', 0)}")
+        print(f"language_guard_rows={stats.get('language_guard_rows', 0)}")
+        print(f"export_gate_rows={stats.get('export_gate_rows', 0)}")
+        print(f"generated_export_rows={stats.get('generated_export_rows', 0)}")
+        print(f"indexed_docs={stats.get('indexed_docs', 0)}")
         return 0
     except Exception as exc:
         finish_pipeline_run(

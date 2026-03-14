@@ -16,6 +16,6 @@ Bloqueios remanescentes:
 Proximo passo recomendado:
 1. Protocolar pedidos objetivos para SEMSA/RH e SESACRE.
 2. Anexar respostas oficiais na caixa local do caso com hash.
-3. Nao escalar para representacao preliminar sem documento funcional recebido.
+3. Nao escalar para noticia de fato sem documento funcional recebido.
 
 Limite: Esta camada decide fluxo operacional, nao ilegalidade. Ela nao autoriza afirmar nepotismo, fraude penal ou acumulacao ilicita sem fechamento juridico-funcional.

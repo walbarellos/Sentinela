@@ -7,6 +7,7 @@ import pandas as pd
 import streamlit as st
 
 from src.core.ops_inbox import get_case_inbox_spec, run_case_workflow, sync_ops_inbox, upload_case_inbox_document
+from src.ui.ops_data import load_ops_inbox_queue
 from src.ui.ops_shared import DB_PATH
 
 
@@ -58,6 +59,11 @@ def render_inbox_tab(cases_df: pd.DataFrame) -> None:
         st.info("Nenhum caso com caixa operacional configurada.")
         return
 
+    queue_df = load_ops_inbox_queue()
+    if not queue_df.empty:
+        st.caption("Fila de pendências documentais inspirada no modelo de recomendações abertas: prioriza o que ainda falta receber.")
+        st.dataframe(queue_df, use_container_width=True, hide_index=True)
+
     case_id = st.selectbox(
         "Caso com caixa de respostas",
         available_cases["case_id"].tolist(),
@@ -94,6 +100,10 @@ def render_inbox_tab(cases_df: pd.DataFrame) -> None:
     if inbox_df.empty:
         st.warning("A caixa ainda não foi sincronizada para este caso.")
     else:
+        metric1, metric2, metric3 = st.columns(3)
+        metric1.metric("Pendentes", int(inbox_df["status_documento"].isin(["PENDENTE", "ARQUIVO_NAO_LOCALIZADO"]).sum()))
+        metric2.metric("Recebidos", int((inbox_df["status_documento"] == "RECEBIDO").sum()))
+        metric3.metric("Documentos", len(inbox_df))
         st.dataframe(inbox_df, use_container_width=True, hide_index=True)
 
     st.markdown("#### Anexar resposta oficial")

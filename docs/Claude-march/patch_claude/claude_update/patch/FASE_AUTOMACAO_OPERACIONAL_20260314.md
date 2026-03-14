@@ -46,15 +46,31 @@ A trilha correta do produto e:
 9. rerun de workflow do `CEDIMP` entregue sem shell
 10. timeline documental por caso implementada
 11. diff textual de artefatos suportados implementado
+12. inbox generalizada para `RB_SUS` e `SESACRE`
+13. fila de pendencias documentais por caso implementada
+14. indice textual local implementado
+15. aba `Busca` operacional implementada
+16. matriz de onus probatorio implementada
+17. timeline agrupada por fase investigativa implementada
+18. diff semantico materializado para contrato x licitacao x edital/publicacao x proposta congelada
+19. busca full-text refinada com filtros operacionais e snippet denso
+20. gate de linguagem nao-acusatoria implementado
+21. motor de contradicoes objetivas implementado
+22. checklist probatorio por caso implementado
+23. gate de exportacao segura implementado
+24. gerador on-demand de texto neutro por caso implementado
 
 ## TODO imediato
 
-1. implementar `inbox operacional`
-2. generalizar timeline e inbox para outros casos
-3. melhorar diff documental por tipo de artefato
+1. diff semantico orientado a proposta congelada quando houver espelho local do documento
+2. timeline com agrupamento visual por fase e contadores por etapa no overview
+3. busca full-text com ranking por evento e preview semantico por tipo documental
 4. ligar rerun de maturidade/gate ao fluxo de resposta oficial
 5. continuar quebrando modulos grandes somente quando houver ganho real de manutencao
 6. generalizar a caixa operacional para outros casos alem de `CEDIMP`
+7. reduzir retrabalho em exports legados para que bundles reemitidos ja nascam com linguagem neutra
+8. concluido: exportacao on-demand agora pode ser congelada como artefato controlado do caso
+9. ligar diff semantico a exportacoes congeladas quando houver duas versoes homologas da mesma peca
 
 ## Regra de produto
 
@@ -87,6 +103,44 @@ A trilha correta do produto e:
   - `src/core/ops_timeline.py`
   - `scripts/sync_ops_timeline.py`
   - `src/ui/ops_diff.py`
+- inbox multi-caso:
+  - `RB_SUS`
+  - `SESACRE`
+  - `CEDIMP`
+- busca local:
+- `src/core/ops_search.py`
+  - `src/ui/ops_search.py`
+  - `scripts/sync_ops_search_index.py`
+- onus probatorio:
+  - `src/core/ops_legal.py`
+  - `src/core/ops_burden.py`
+  - `src/ui/ops_burden.py`
+  - `scripts/sync_ops_burden.py`
+- diff semantico:
+  - `src/core/ops_semantic.py`
+  - `src/ui/ops_semantic.py`
+  - `scripts/sync_ops_semantic.py`
+- timeline por fase:
+  - `src/core/ops_timeline.py`
+  - `src/ui/ops_timeline.py`
+- saida nao-acusatoria:
+  - `src/core/ops_guard.py`
+  - `src/core/ops_contradiction.py`
+  - `src/core/ops_checklist.py`
+  - `src/core/ops_export.py`
+  - `src/ui/ops_checklist.py`
+  - `src/ui/ops_export.py`
+  - `scripts/sync_ops_guard.py`
+  - `scripts/sync_ops_contradiction.py`
+  - `scripts/sync_ops_checklist.py`
+  - `scripts/sync_ops_export_gate.py`
+  - `scripts/validate_ops_output_guard.py`
+- congelamento da saida controlada:
+  - `scripts/freeze_ops_case_export.py`
+  - `ops_case_generated_export`
+  - `src/core/ops_export.py`
 - proximos modulos de produto:
-  - timeline agrupada por fase
-  - diff documental semantico
+  - motor de contradicoes
+  - checklist probatorio por caso
+  - diff semantico com proposta congelada quando existir
+  - comparacao entre versoes congeladas da mesma saida controlada

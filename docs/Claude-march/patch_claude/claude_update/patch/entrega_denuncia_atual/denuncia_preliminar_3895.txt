@@ -1,10 +1,10 @@
-ASSUNTO: representacao preliminar sobre contratacao SUS municipal com fornecedor sancionado
+ASSUNTO: noticia de fato sobre contratacao SUS municipal com fornecedor sancionado
 
 FATOS OBJETIVOS
 1. No contrato 3895, processo 3044, vinculado a 01.10.00.00000.000.00 - Secretaria Municipal de Saúde - SEMSA, consta o fornecedor NORTE DISTRIBUIDORA DE PRODUTOS LTDA, CNPJ 37306014000148.
 2. O valor de referencia do contrato no portal municipal e R$ 82.950,00.
 3. O banco local materializou 5 sancao(oes) ativa(s) associadas a esse CNPJ, com origem CEIS.
-4. A triagem final do projeto classificou o caso como denuncia_imediata.
+4. A triagem final do projeto classificou o caso como apuracao_prioritaria.
 
 REQUERIMENTO INICIAL
 Solicita-se a apuracao da regularidade da contratacao, com verificacao da compatibilidade entre a situacao sancionatoria do fornecedor e a sua contratacao pela Secretaria Municipal de Saude de Rio Branco.

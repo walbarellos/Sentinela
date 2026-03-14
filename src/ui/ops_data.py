@@ -61,6 +61,36 @@ def sync_ops_source_cache_now() -> dict[str, Any]:
     return _run_logged_pipeline("sync_ops_source_cache", refresh_source_cache)
 
 
+def sync_ops_search_index_now() -> dict[str, Any]:
+    from src.core.ops_search import sync_ops_search_index
+
+    return _run_logged_pipeline("sync_ops_search_index", sync_ops_search_index)
+
+
+def freeze_ops_case_export_now(case_id: str, export_mode: str) -> dict[str, Any]:
+    from src.core.ops_export import freeze_case_external_text
+
+    def _runner(con: duckdb.DuckDBPyConnection) -> dict[str, Any]:
+        frozen = freeze_case_external_text(con, case_id=case_id, export_mode=export_mode, actor="app")
+        registry_stats = sync_ops_case_registry(con)
+        return {
+            "rows_written": int(frozen.get("rows_written", 0)),
+            "artifacts_written": 1,
+            "case_id": case_id,
+            "export_mode": export_mode,
+            "path": frozen.get("path"),
+            "sha256": frozen.get("sha256"),
+            "size_bytes": int(frozen.get("size_bytes", 0) or 0),
+            "reused": bool(frozen.get("reused")),
+            "export_id": frozen.get("export_id"),
+            "registry_cases": int(registry_stats.get("cases", 0)),
+            "registry_artifacts": int(registry_stats.get("artifacts", 0)),
+        }
+
+    pipeline = f"freeze_ops_case_export:{case_id}:{export_mode.lower()}"
+    return _run_logged_pipeline(pipeline, _runner)
+
+
 @st.cache_data(ttl=30, show_spinner=False)
 def load_ops_dashboard_data():
     con = duckdb.connect(str(DB_PATH), read_only=True)
@@ -80,6 +110,17 @@ def load_ops_dashboard_data():
             FROM ops_case_registry
             """
         ).fetchone()
+        inbox_summary_row = (0, 0, 0)
+        if "ops_case_inbox_document" in tables:
+            inbox_summary_row = con.execute(
+                """
+                SELECT
+                    COUNT(*) FILTER (WHERE status_documento IN ('PENDENTE', 'ARQUIVO_NAO_LOCALIZADO')) AS pending_docs,
+                    COUNT(*) FILTER (WHERE status_documento = 'RECEBIDO') AS received_docs,
+                    COUNT(DISTINCT case_id) AS inbox_cases
+                FROM ops_case_inbox_document
+                """
+            ).fetchone()
         by_stage_df = con.execute(
             """
             SELECT estagio_operacional, COUNT(*) AS total
@@ -96,6 +137,30 @@ def load_ops_dashboard_data():
             ORDER BY total DESC, family
             """
         ).df()
+        burden_row = (0, 0, 0, 0)
+        if "ops_case_burden_item" in tables:
+            burden_row = con.execute(
+                """
+                SELECT
+                    COUNT(*) FILTER (WHERE status = 'COMPROVADO_DOCUMENTAL') AS comprovado_documental,
+                    COUNT(*) FILTER (WHERE status = 'PENDENTE_DOCUMENTO') AS pendente_documento,
+                    COUNT(*) FILTER (WHERE status = 'PENDENTE_ENQUADRAMENTO') AS pendente_enquadramento,
+                    COUNT(*) FILTER (WHERE status = 'SEM_BASE_ATUAL') AS sem_base_atual
+                FROM ops_case_burden_item
+                """
+            ).fetchone()
+        contradiction_count = 0
+        if "ops_case_contradiction" in tables:
+            contradiction_count = int(con.execute("SELECT COUNT(*) FROM ops_case_contradiction").fetchone()[0] or 0)
+        language_guard_count = 0
+        if "ops_case_language_guard" in tables:
+            language_guard_count = int(con.execute("SELECT COUNT(*) FROM ops_case_language_guard").fetchone()[0] or 0)
+        export_gate_count = 0
+        if "ops_case_export_gate" in tables:
+            export_gate_count = int(con.execute("SELECT COUNT(*) FROM ops_case_export_gate").fetchone()[0] or 0)
+        generated_export_count = 0
+        if "ops_case_generated_export" in tables:
+            generated_export_count = int(con.execute("SELECT COUNT(*) FROM ops_case_generated_export").fetchone()[0] or 0)
         cases_df = con.execute(
             """
             SELECT
@@ -130,6 +195,17 @@ def load_ops_dashboard_data():
         "document_request_ready": int(summary_row[2] or 0),
         "total_value_brl": float(summary_row[3] or 0),
         "last_updated": summary_row[4],
+        "pending_docs": int(inbox_summary_row[0] or 0),
+        "received_docs": int(inbox_summary_row[1] or 0),
+        "inbox_cases": int(inbox_summary_row[2] or 0),
+        "burden_documental": int(burden_row[0] or 0),
+        "burden_pending_doc": int(burden_row[1] or 0),
+        "burden_pending_legal": int(burden_row[2] or 0),
+        "burden_no_basis": int(burden_row[3] or 0),
+        "contradictions": contradiction_count,
+        "language_guard": language_guard_count,
+        "export_gate": export_gate_count,
+        "generated_export": generated_export_count,
         "by_stage": by_stage_df.to_dict("records"),
         "by_family": by_family_df.to_dict("records"),
     }
@@ -213,6 +289,8 @@ def load_ops_case_timeline(case_id: str) -> pd.DataFrame:
             """
             SELECT
                 event_at,
+                phase_order,
+                phase_label,
                 event_type,
                 event_group,
                 title,
@@ -221,9 +299,203 @@ def load_ops_case_timeline(case_id: str) -> pd.DataFrame:
                 path_ref
             FROM v_ops_case_timeline_event
             WHERE case_id = ?
-            ORDER BY event_at DESC, event_type, title
+            ORDER BY phase_order, event_at DESC, event_type, title
             """,
             [case_id],
+        ).df()
+    finally:
+        con.close()
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def load_ops_case_burden(case_id: str) -> pd.DataFrame:
+    con = duckdb.connect(str(DB_PATH), read_only=True)
+    try:
+        tables = set(con.execute("SHOW TABLES").df()["name"].tolist())
+        if "ops_case_burden_item" not in tables:
+            return pd.DataFrame()
+        return con.execute(
+            """
+            SELECT
+                item_label,
+                status,
+                evidence_grade,
+                rationale,
+                next_action,
+                legal_anchors_json,
+                source_refs_json
+            FROM v_ops_case_burden_item
+            WHERE case_id = ?
+            ORDER BY status_order, item_key
+            """,
+            [case_id],
+        ).df()
+    finally:
+        con.close()
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def load_ops_case_semantic(case_id: str) -> pd.DataFrame:
+    con = duckdb.connect(str(DB_PATH), read_only=True)
+    try:
+        tables = set(con.execute("SHOW TABLES").df()["name"].tolist())
+        if "ops_case_semantic_issue" not in tables:
+            return pd.DataFrame()
+        return con.execute(
+            """
+            SELECT
+                comparator,
+                field_key,
+                status,
+                severity,
+                left_label,
+                left_value,
+                center_label,
+                center_value,
+                right_label,
+                right_value,
+                rationale,
+                source_refs_json
+            FROM v_ops_case_semantic_issue
+            WHERE case_id = ?
+            ORDER BY severity DESC, comparator, field_key
+            """,
+            [case_id],
+        ).df()
+    finally:
+        con.close()
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def load_ops_case_contradictions(case_id: str) -> pd.DataFrame:
+    con = duckdb.connect(str(DB_PATH), read_only=True)
+    try:
+        tables = set(con.execute("SHOW TABLES").df()["name"].tolist())
+        if "ops_case_contradiction" not in tables:
+            return pd.DataFrame()
+        return con.execute(
+            """
+            SELECT title, severity, status, comparator, rationale, next_action, source_refs_json
+            FROM v_ops_case_contradiction
+            WHERE case_id = ?
+            ORDER BY severity DESC, title
+            """,
+            [case_id],
+        ).df()
+    finally:
+        con.close()
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def load_ops_case_checklist(case_id: str) -> pd.DataFrame:
+    con = duckdb.connect(str(DB_PATH), read_only=True)
+    try:
+        tables = set(con.execute("SHOW TABLES").df()["name"].tolist())
+        if "ops_case_checklist" not in tables:
+            return pd.DataFrame()
+        return con.execute(
+            """
+            SELECT step_group, step_label, step_status, blocking, rationale, source_refs_json
+            FROM v_ops_case_checklist
+            WHERE case_id = ?
+            ORDER BY blocking DESC, step_group, step_label
+            """,
+            [case_id],
+        ).df()
+    finally:
+        con.close()
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def load_ops_case_language_guard(case_id: str) -> pd.DataFrame:
+    con = duckdb.connect(str(DB_PATH), read_only=True)
+    try:
+        tables = set(con.execute("SHOW TABLES").df()["name"].tolist())
+        if "ops_case_language_guard" not in tables:
+            return pd.DataFrame()
+        return con.execute(
+            """
+            SELECT label, issue_type, severity, snippet, rationale, suggestion
+            FROM v_ops_case_language_guard
+            WHERE case_id = ?
+            ORDER BY severity DESC, label, issue_type
+            """,
+            [case_id],
+        ).df()
+    finally:
+        con.close()
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def load_ops_case_export_gate(case_id: str) -> pd.DataFrame:
+    con = duckdb.connect(str(DB_PATH), read_only=True)
+    try:
+        tables = set(con.execute("SHOW TABLES").df()["name"].tolist())
+        if "ops_case_export_gate" not in tables:
+            return pd.DataFrame()
+        return con.execute(
+            """
+            SELECT export_mode, allowed, blocking_reason, rationale, disclaimer
+            FROM v_ops_case_export_gate
+            WHERE case_id = ?
+            ORDER BY export_mode
+            """,
+            [case_id],
+        ).df()
+    finally:
+        con.close()
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def load_ops_case_generated_exports(case_id: str) -> pd.DataFrame:
+    con = duckdb.connect(str(DB_PATH), read_only=True)
+    try:
+        tables = set(con.execute("SHOW TABLES").df()["name"].tolist())
+        if "ops_case_generated_export" not in tables:
+            return pd.DataFrame()
+        return con.execute(
+            """
+            SELECT
+                export_mode,
+                label,
+                path,
+                sha256,
+                size_bytes,
+                actor,
+                created_at
+            FROM v_ops_case_generated_export
+            WHERE case_id = ?
+            ORDER BY created_at DESC, export_mode
+            """,
+            [case_id],
+        ).df()
+    finally:
+        con.close()
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def load_ops_inbox_queue() -> pd.DataFrame:
+    con = duckdb.connect(str(DB_PATH), read_only=True)
+    try:
+        tables = set(con.execute("SHOW TABLES").df()["name"].tolist())
+        if "ops_case_inbox_document" not in tables or "ops_case_registry" not in tables:
+            return pd.DataFrame()
+        return con.execute(
+            """
+            SELECT
+                r.case_id,
+                r.family,
+                r.subject_name,
+                r.orgao,
+                COUNT(*) AS total_docs,
+                COUNT(*) FILTER (WHERE d.status_documento IN ('PENDENTE', 'ARQUIVO_NAO_LOCALIZADO')) AS pending_docs,
+                COUNT(*) FILTER (WHERE d.status_documento = 'RECEBIDO') AS received_docs,
+                MAX(d.updated_at) AS last_updated
+            FROM ops_case_registry r
+            JOIN ops_case_inbox_document d ON d.case_id = r.case_id
+            GROUP BY 1,2,3,4
+            ORDER BY pending_docs DESC, received_docs ASC, last_updated DESC, case_id
+            """
         ).df()
     finally:
         con.close()

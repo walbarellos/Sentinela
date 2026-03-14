@@ -11,6 +11,7 @@ from typing import Any
 import duckdb
 
 from src.core.ops_runtime import begin_pipeline_run, ensure_ops_runtime, finish_pipeline_run
+from src.core.ops_search import ensure_ops_search_index, sync_ops_search_index
 from src.core.ops_timeline import ensure_ops_timeline
 
 
@@ -24,6 +25,22 @@ ENTREGA_DIR = (
     / "patch"
     / "entrega_denuncia_atual"
 )
+CEDIMP_CASE_ID = "cedimp:saude_societario:13325100000130"
+INDEX_FIELDS = [
+    "case_key",
+    "cnpj",
+    "razao_social",
+    "destino",
+    "eixo",
+    "documento_chave",
+    "categoria_documental",
+    "descricao_documento",
+    "status_documento",
+    "protocolo",
+    "recebido_em",
+    "file_relpath",
+    "notas",
+]
 
 INBOX_DDL = """
 CREATE TABLE IF NOT EXISTS ops_case_inbox_document (
@@ -63,31 +80,362 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _write_index_csv(index_csv: Path, rows: list[dict[str, Any]]) -> None:
+    index_csv.parent.mkdir(parents=True, exist_ok=True)
+    with index_csv.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=INDEX_FIELDS)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _write_case_readme(path: Path, title: str, body: list[str]) -> None:
+    if path.exists():
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join([f"# {title}", "", *body, ""]), encoding="utf-8")
+
+
 def ensure_ops_inbox(con: duckdb.DuckDBPyConnection) -> None:
     con.execute(INBOX_DDL)
     con.execute(INBOX_VIEW)
     ensure_ops_timeline(con)
+    ensure_ops_search_index(con)
 
 
-def inbox_specs() -> dict[str, dict[str, Any]]:
+def _cedimp_spec() -> dict[str, Any]:
     return {
-        "cedimp:saude_societario:13325100000130": {
-            "index_csv": ENTREGA_DIR / "cedimp_respostas" / "cedimp_respostas_index.csv",
-            "upload_dir": ENTREGA_DIR / "cedimp_respostas" / "anexos",
-            "base_dir": ENTREGA_DIR,
-            "workflow_commands": [
-                [".venv/bin/python", "scripts/sync_vinculo_societario_saude_respostas.py"],
-                [".venv/bin/python", "scripts/sync_vinculo_societario_saude_maturidade.py"],
-                [".venv/bin/python", "scripts/export_vinculo_societario_saude_respostas.py"],
-                [".venv/bin/python", "scripts/validate_cedimp_quality.py"],
-                [".venv/bin/python", "scripts/sync_ops_case_registry.py"],
-            ],
-        }
+        "case_id": CEDIMP_CASE_ID,
+        "index_csv": ENTREGA_DIR / "cedimp_respostas" / "cedimp_respostas_index.csv",
+        "upload_dir": ENTREGA_DIR / "cedimp_respostas" / "anexos",
+        "base_dir": ENTREGA_DIR,
+        "workflow_commands": [
+            [".venv/bin/python", "scripts/sync_vinculo_societario_saude_respostas.py"],
+            [".venv/bin/python", "scripts/sync_vinculo_societario_saude_maturidade.py"],
+            [".venv/bin/python", "scripts/export_vinculo_societario_saude_respostas.py"],
+            [".venv/bin/python", "scripts/validate_cedimp_quality.py"],
+            [".venv/bin/python", "scripts/sync_ops_case_registry.py"],
+            [".venv/bin/python", "scripts/sync_ops_timeline.py"],
+        ],
     }
 
 
+def _rb_case_rows(case_id: str) -> list[dict[str, Any]]:
+    numero = case_id.split(":")[-1]
+    rows = [
+        {
+            "case_key": case_id,
+            "cnpj": "",
+            "razao_social": f"Contrato {numero}",
+            "destino": "SEMSA",
+            "eixo": "contrato_municipal",
+            "documento_chave": f"processo_integral_contrato_{numero}",
+            "categoria_documental": "PROCESSO_CONTRATO",
+            "descricao_documento": f"Processo integral do contrato {numero}, com despacho, termo, anexos e fiscais.",
+            "status_documento": "PENDENTE",
+            "protocolo": "",
+            "recebido_em": "",
+            "file_relpath": "",
+            "notas": "",
+        },
+        {
+            "case_key": case_id,
+            "cnpj": "",
+            "razao_social": f"Contrato {numero}",
+            "destino": "SEMSA",
+            "eixo": "execucao_contrato",
+            "documento_chave": f"notas_fiscais_atestos_{numero}",
+            "categoria_documental": "EXECUCAO_ATESTO",
+            "descricao_documento": f"Notas fiscais, atestos, glosas e comprovantes de pagamento do contrato {numero}.",
+            "status_documento": "PENDENTE",
+            "protocolo": "",
+            "recebido_em": "",
+            "file_relpath": "",
+            "notas": "",
+        },
+        {
+            "case_key": case_id,
+            "cnpj": "",
+            "razao_social": f"Contrato {numero}",
+            "destino": "SEMSA",
+            "eixo": "contrato_municipal",
+            "documento_chave": f"parecer_juridico_{numero}",
+            "categoria_documental": "PARECER_JURIDICO",
+            "descricao_documento": f"Parecer jurídico e manifestação de controle do contrato {numero}.",
+            "status_documento": "PENDENTE",
+            "protocolo": "",
+            "recebido_em": "",
+            "file_relpath": "",
+            "notas": "",
+        },
+        {
+            "case_key": case_id,
+            "cnpj": "",
+            "razao_social": f"Contrato {numero}",
+            "destino": "CPL_RIO_BRANCO",
+            "eixo": "licitacao_municipal",
+            "documento_chave": f"habilitacao_fornecedor_{numero}",
+            "categoria_documental": "HABILITACAO_EMPRESA",
+            "descricao_documento": f"Documentos de habilitação do fornecedor vinculado ao contrato {numero}.",
+            "status_documento": "PENDENTE",
+            "protocolo": "",
+            "recebido_em": "",
+            "file_relpath": "",
+            "notas": "",
+        },
+        {
+            "case_key": case_id,
+            "cnpj": "",
+            "razao_social": f"Contrato {numero}",
+            "destino": "CONTROLADORIA_MUNICIPAL",
+            "eixo": "controle_interno",
+            "documento_chave": f"manifestacao_controle_{numero}",
+            "categoria_documental": "MANIFESTACAO_CONTROLE",
+            "descricao_documento": f"Manifestação do controle interno sobre o contrato {numero} e sua execução.",
+            "status_documento": "PENDENTE",
+            "protocolo": "",
+            "recebido_em": "",
+            "file_relpath": "",
+            "notas": "",
+        },
+    ]
+    if numero == "3895":
+        rows.append(
+            {
+                "case_key": case_id,
+                "cnpj": "37306014000148",
+                "razao_social": "NORTE DISTRIBUIDORA DE PRODUTOS LTDA",
+                "destino": "SEMSA",
+                "eixo": "sancao_fornecedor",
+                "documento_chave": "consulta_ceis_cnep_contratacao_3895",
+                "categoria_documental": "CONSULTA_SANCAO",
+                "descricao_documento": "Comprovação documental da consulta de integridade/sanções efetuada antes da contratação da NORTE.",
+                "status_documento": "PENDENTE",
+                "protocolo": "",
+                "recebido_em": "",
+                "file_relpath": "",
+                "notas": "",
+            }
+        )
+    if numero == "3898":
+        rows.extend(
+            [
+                {
+                    "case_key": case_id,
+                    "cnpj": "",
+                    "razao_social": "Contrato 3898",
+                    "destino": "CPL_RIO_BRANCO",
+                    "eixo": "licitacao_municipal",
+                    "documento_chave": "processo_licitacao_2274334",
+                    "categoria_documental": "PROCESSO_LICITACAO",
+                    "descricao_documento": "Processo integral da licitação 2274334 / PE SRP 141/2023 com propostas e mapas comparativos.",
+                    "status_documento": "PENDENTE",
+                    "protocolo": "",
+                    "recebido_em": "",
+                    "file_relpath": "",
+                    "notas": "",
+                },
+                {
+                    "case_key": case_id,
+                    "cnpj": "",
+                    "razao_social": "Contrato 3898",
+                    "destino": "CPL_RIO_BRANCO",
+                    "eixo": "divergencia_documental",
+                    "documento_chave": "memoria_comparativa_item_3898",
+                    "categoria_documental": "MEMORIA_COMPARATIVA",
+                    "descricao_documento": "Memória comparativa entre item contratado, edital, retificação e proposta vencedora do item divergente.",
+                    "status_documento": "PENDENTE",
+                    "protocolo": "",
+                    "recebido_em": "",
+                    "file_relpath": "",
+                    "notas": "",
+                },
+            ]
+        )
+    return rows
+
+
+def _sesacre_case_rows(case_id: str) -> list[dict[str, Any]]:
+    cnpj = case_id.split(":")[-1]
+    return [
+        {
+            "case_key": case_id,
+            "cnpj": cnpj,
+            "razao_social": "",
+            "destino": "SESACRE",
+            "eixo": "contratacao_estadual",
+            "documento_chave": f"processo_integral_fornecedor_{cnpj}",
+            "categoria_documental": "PROCESSO_CONTRATACAO",
+            "descricao_documento": f"Processo integral de contratação da SESACRE para o fornecedor {cnpj}.",
+            "status_documento": "PENDENTE",
+            "protocolo": "",
+            "recebido_em": "",
+            "file_relpath": "",
+            "notas": "",
+        },
+        {
+            "case_key": case_id,
+            "cnpj": cnpj,
+            "razao_social": "",
+            "destino": "SESACRE",
+            "eixo": "contratacao_estadual",
+            "documento_chave": f"ata_ou_contrato_vigente_{cnpj}",
+            "categoria_documental": "ATA_CONTRATO",
+            "descricao_documento": f"Ata, contrato ou instrumento vigente que embasa a despesa com o fornecedor {cnpj}.",
+            "status_documento": "PENDENTE",
+            "protocolo": "",
+            "recebido_em": "",
+            "file_relpath": "",
+            "notas": "",
+        },
+        {
+            "case_key": case_id,
+            "cnpj": cnpj,
+            "razao_social": "",
+            "destino": "SESACRE",
+            "eixo": "integridade_fornecedor",
+            "documento_chave": f"justificativa_manutencao_contratual_{cnpj}",
+            "categoria_documental": "JUSTIFICATIVA_CONTRATACAO",
+            "descricao_documento": f"Justificativa para manutenção/celebração contratual apesar do cruzamento sancionatório do fornecedor {cnpj}.",
+            "status_documento": "PENDENTE",
+            "protocolo": "",
+            "recebido_em": "",
+            "file_relpath": "",
+            "notas": "",
+        },
+        {
+            "case_key": case_id,
+            "cnpj": cnpj,
+            "razao_social": "",
+            "destino": "SESACRE",
+            "eixo": "integridade_fornecedor",
+            "documento_chave": f"consulta_ceis_cnep_{cnpj}",
+            "categoria_documental": "CONSULTA_SANCAO",
+            "descricao_documento": f"Consulta documental de integridade/sanções do fornecedor {cnpj} no fluxo de contratação.",
+            "status_documento": "PENDENTE",
+            "protocolo": "",
+            "recebido_em": "",
+            "file_relpath": "",
+            "notas": "",
+        },
+        {
+            "case_key": case_id,
+            "cnpj": cnpj,
+            "razao_social": "",
+            "destino": "SESACRE",
+            "eixo": "execucao_estadual",
+            "documento_chave": f"execucao_fiscalizacao_pagamentos_{cnpj}",
+            "categoria_documental": "EXECUCAO_FISCALIZACAO",
+            "descricao_documento": f"Fiscalização, medição, glosas e pagamentos vinculados ao fornecedor {cnpj}.",
+            "status_documento": "PENDENTE",
+            "protocolo": "",
+            "recebido_em": "",
+            "file_relpath": "",
+            "notas": "",
+        },
+        {
+            "case_key": case_id,
+            "cnpj": cnpj,
+            "razao_social": "",
+            "destino": "SESACRE",
+            "eixo": "habilitacao_empresa",
+            "documento_chave": f"habilitacao_empresa_{cnpj}",
+            "categoria_documental": "HABILITACAO_EMPRESA",
+            "descricao_documento": f"Documentos de habilitação e qualificação da empresa {cnpj}.",
+            "status_documento": "PENDENTE",
+            "protocolo": "",
+            "recebido_em": "",
+            "file_relpath": "",
+            "notas": "",
+        },
+    ]
+
+
+def _rb_case_spec(case_id: str) -> dict[str, Any]:
+    numero = case_id.split(":")[-1]
+    case_dir = ENTREGA_DIR / "rb_sus_respostas" / f"contrato_{numero}"
+    return {
+        "case_id": case_id,
+        "index_csv": case_dir / "rb_sus_respostas_index.csv",
+        "upload_dir": case_dir / "anexos",
+        "base_dir": ENTREGA_DIR,
+        "seed_rows": _rb_case_rows(case_id),
+        "readme_path": case_dir / "README.md",
+        "readme_title": f"RB SUS - Caixa do contrato {numero}",
+        "readme_body": [
+            "Pasta de respostas oficiais do caso municipal priorizado.",
+            "",
+            "- Preencha ou atualize `rb_sus_respostas_index.csv`.",
+            "- Anexos recebidos devem ficar em `anexos/`.",
+            "- Depois rerode o workflow do caso pela aba `📂 OPERAÇÕES`.",
+        ],
+        "workflow_commands": [
+            [".venv/bin/python", "scripts/sync_ops_inbox.py", "--case-id", case_id],
+            [".venv/bin/python", "scripts/sync_ops_case_registry.py"],
+            [".venv/bin/python", "scripts/sync_ops_timeline.py"],
+        ],
+    }
+
+
+def _sesacre_case_spec(case_id: str) -> dict[str, Any]:
+    cnpj = case_id.split(":")[-1]
+    case_dir = ENTREGA_DIR / "sesacre_sancoes_respostas" / f"cnpj_{cnpj}"
+    return {
+        "case_id": case_id,
+        "index_csv": case_dir / "sesacre_sancoes_respostas_index.csv",
+        "upload_dir": case_dir / "anexos",
+        "base_dir": ENTREGA_DIR,
+        "seed_rows": _sesacre_case_rows(case_id),
+        "readme_path": case_dir / "README.md",
+        "readme_title": f"SESACRE - Caixa do fornecedor {cnpj}",
+        "readme_body": [
+            "Pasta de respostas oficiais do caso sancionatório estadual.",
+            "",
+            "- Use o índice CSV para marcar o que foi recebido.",
+            "- Anexos recebidos devem ficar em `anexos/`.",
+            "- O workflow deste caso atualiza inbox, registry e timeline.",
+        ],
+        "workflow_commands": [
+            [".venv/bin/python", "scripts/sync_ops_inbox.py", "--case-id", case_id],
+            [".venv/bin/python", "scripts/sync_ops_case_registry.py"],
+            [".venv/bin/python", "scripts/sync_ops_timeline.py"],
+        ],
+    }
+
+
+def _seed_case_inbox(spec: dict[str, Any]) -> None:
+    index_csv = spec["index_csv"]
+    if not index_csv.exists() and spec.get("seed_rows"):
+        _write_index_csv(index_csv, spec["seed_rows"])
+    readme_path = spec.get("readme_path")
+    if readme_path:
+        _write_case_readme(readme_path, spec.get("readme_title", "Caixa Operacional"), spec.get("readme_body", []))
+
+
 def get_case_inbox_spec(case_id: str) -> dict[str, Any] | None:
-    return inbox_specs().get(case_id)
+    if case_id == CEDIMP_CASE_ID:
+        return _cedimp_spec()
+    if case_id.startswith("rb:contrato:"):
+        return _rb_case_spec(case_id)
+    if case_id.startswith("sesacre:sancao:"):
+        return _sesacre_case_spec(case_id)
+    return None
+
+
+def inbox_specs(con: duckdb.DuckDBPyConnection | None = None) -> dict[str, dict[str, Any]]:
+    case_ids = {CEDIMP_CASE_ID}
+    if con is not None:
+        try:
+            tables = set(con.execute("SHOW TABLES").df()["name"].tolist())
+            if "ops_case_registry" in tables:
+                case_ids.update(row[0] for row in con.execute("SELECT case_id FROM ops_case_registry").fetchall())
+        except duckdb.Error:
+            pass
+    specs: dict[str, dict[str, Any]] = {}
+    for case_id in sorted(case_ids):
+        spec = get_case_inbox_spec(case_id)
+        if spec:
+            specs[case_id] = spec
+    return specs
 
 
 def load_case_inbox_index(case_id: str) -> list[dict[str, Any]]:
@@ -95,6 +443,7 @@ def load_case_inbox_index(case_id: str) -> list[dict[str, Any]]:
     if not spec:
         return []
     index_csv = spec["index_csv"]
+    _seed_case_inbox(spec)
     if not index_csv.exists():
         return []
     with index_csv.open("r", encoding="utf-8", newline="") as handle:
@@ -104,7 +453,7 @@ def load_case_inbox_index(case_id: str) -> list[dict[str, Any]]:
 def sync_ops_inbox(con: duckdb.DuckDBPyConnection, case_id: str | None = None) -> dict[str, Any]:
     ensure_ops_runtime(con)
     ensure_ops_inbox(con)
-    specs = inbox_specs()
+    specs = inbox_specs(con)
     target_case_ids = [case_id] if case_id else list(specs)
     rows_written = 0
 
@@ -150,7 +499,8 @@ def sync_ops_inbox(con: duckdb.DuckDBPyConnection, case_id: str | None = None) -
             )
             rows_written += 1
 
-    return {"case_id": case_id, "rows_written": rows_written}
+    search_stats = sync_ops_search_index(con)
+    return {"case_id": case_id, "rows_written": rows_written, "indexed_docs": int(search_stats.get("indexed_docs", 0))}
 
 
 def upload_case_inbox_document(

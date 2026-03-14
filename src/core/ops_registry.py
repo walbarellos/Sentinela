@@ -9,6 +9,7 @@ from typing import Any
 import duckdb
 
 from src.core.ops_timeline import ensure_ops_timeline
+from src.core.ops_search import ensure_ops_search_index, sync_ops_search_index
 
 ROOT = Path(__file__).resolve().parents[2]
 PATCH_DIR = (
@@ -216,9 +217,9 @@ def build_rb_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, Any]]
             f"Contrato {numero}, processo {item['numero_processo']}, {item['secretaria']}, valor {item['valor_referencia_brl']:.2f}."
         )
         next_step = (
-            "Representacao preliminar com foco em cruzamento sancionatorio e cadeia documental do contrato."
+            "Noticia de fato ou pedido de apuracao com foco em cruzamento sancionatorio e cadeia documental do contrato."
             if sancionado
-            else "Representacao preliminar com foco em item fora do edital e das propostas da licitacao-mae."
+            else "Noticia de fato ou pedido de apuracao com foco em item fora do edital e das propostas da licitacao-mae."
         )
         cases.append(
             {
@@ -254,7 +255,7 @@ def build_rb_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, Any]]
         denuncia_name = f"docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/denuncia_preliminar_{numero}.txt"
         artifacts.extend(
             [
-                make_artifact(case_id, f"denuncia_preliminar_{numero}", "nota", denuncia_name),
+                make_artifact(case_id, f"relato_apuracao_{numero}", "nota", denuncia_name),
                 make_artifact(case_id, "dossie_rb_sus", "dossie", "docs/Claude-march/patch_claude/claude_update/patch/dossie_rb_sus_prioritarios.md"),
             ]
         )
@@ -270,7 +271,10 @@ def build_rb_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, Any]]
                 [
                     make_artifact(case_id, "contrato_detail", "evidencia", "docs/Claude-march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3898/contrato_3898_detail.html"),
                     make_artifact(case_id, "licitacao_detail", "evidencia", "docs/Claude-march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3898/licitacao_2274334_detail.html"),
+                    make_artifact(case_id, "cpl_publicacao_1554_html", "evidencia", "docs/Claude-march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3898/cpl_publicacao_1554.html"),
                     make_artifact(case_id, "cpl_publicacao_1554_pdf", "evidencia", "docs/Claude-march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3898/cpl_publicacao_1554_3.pdf"),
+                    make_artifact(case_id, "cpl_publicacao_1640_html", "evidencia", "docs/Claude-march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3898/cpl_publicacao_1640.html"),
+                    make_artifact(case_id, "cpl_publicacao_1640_pdf", "evidencia", "docs/Claude-march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3898/cpl_publicacao_1640_3.pdf"),
                 ]
             )
 
@@ -332,7 +336,7 @@ def build_sesacre_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, 
                     f"{item['nome_sancionado']} com {item['n_sancoes_ativas']} sancao(oes) ativa(s), "
                     f"{item['n_contratos_ac']} contrato(s) e R$ {float(item['valor_contratado_ac'] or 0):,.2f} no recorte SESACRE."
                 ),
-                "proximo_passo": "Usar o dossie estadual e a representacao preliminar top10 para apuracao externa focada em sancoes ativas.",
+                "proximo_passo": "Usar o dossie estadual e uma noticia de fato tecnica para apuracao externa focada em sancoes ativas.",
                 "bundle_path": None,
                 "bundle_sha256": None,
                 "artifact_count": 2,
@@ -342,7 +346,7 @@ def build_sesacre_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, 
         artifacts.extend(
             [
                 make_artifact(case_id, "dossie_sesacre_top10", "dossie", dossie),
-                make_artifact(case_id, "representacao_top10", "nota", repr_path),
+                make_artifact(case_id, "noticia_fato_top10", "nota", repr_path),
             ]
         )
     return cases, artifacts
@@ -439,6 +443,74 @@ def sync_ops_case_registry(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
         ORDER BY case_id, kind, label
         """
     )
-    ensure_ops_timeline(con)
+    from src.core.ops_burden import ensure_ops_burden, sync_ops_burden
+    from src.core.ops_checklist import ensure_ops_checklist, sync_ops_checklist
+    from src.core.ops_contradiction import ensure_ops_contradiction, sync_ops_contradiction
+    from src.core.ops_export import (
+        build_generated_export_artifacts,
+        ensure_ops_export_gate,
+        sync_ops_export_gate,
+    )
+    from src.core.ops_guard import ensure_ops_guard, sync_ops_language_guard
+    from src.core.ops_semantic import ensure_ops_semantic, sync_ops_semantic_analysis
 
-    return {"cases": len(all_cases), "artifacts": len(all_artifacts)}
+    ensure_ops_burden(con)
+    ensure_ops_checklist(con)
+    ensure_ops_contradiction(con)
+    ensure_ops_export_gate(con)
+    ensure_ops_guard(con)
+    ensure_ops_semantic(con)
+    burden_stats = sync_ops_burden(con)
+    semantic_stats = sync_ops_semantic_analysis(con)
+    contradiction_stats = sync_ops_contradiction(con)
+    checklist_stats = sync_ops_checklist(con)
+    generated_artifacts = build_generated_export_artifacts(con)
+    for artifact in generated_artifacts:
+        con.execute(
+            """
+            INSERT INTO ops_case_artifact (
+                artifact_id, case_id, label, kind, path, exists, sha256, size_bytes, metadata_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                artifact["artifact_id"],
+                artifact["case_id"],
+                artifact["label"],
+                artifact["kind"],
+                artifact["path"],
+                artifact["exists"],
+                artifact["sha256"],
+                artifact["size_bytes"],
+                artifact["metadata_json"],
+            ],
+        )
+    con.execute(
+        """
+        UPDATE ops_case_registry r
+        SET artifact_count = a.total
+        FROM (
+            SELECT case_id, COUNT(*) AS total
+            FROM ops_case_artifact
+            GROUP BY case_id
+        ) a
+        WHERE r.case_id = a.case_id
+        """
+    )
+    ensure_ops_timeline(con)
+    ensure_ops_search_index(con)
+    search_stats = sync_ops_search_index(con)
+    guard_stats = sync_ops_language_guard(con)
+    export_stats = sync_ops_export_gate(con)
+
+    return {
+        "cases": len(all_cases),
+        "artifacts": len(all_artifacts) + len(generated_artifacts),
+        "indexed_docs": int(search_stats.get("indexed_docs", 0)),
+        "burden_rows": int(burden_stats.get("rows_written", 0)),
+        "semantic_rows": int(semantic_stats.get("rows_written", 0)),
+        "contradiction_rows": int(contradiction_stats.get("rows_written", 0)),
+        "checklist_rows": int(checklist_stats.get("rows_written", 0)),
+        "language_guard_rows": int(guard_stats.get("rows_written", 0)),
+        "export_gate_rows": int(export_stats.get("rows_written", 0)),
+        "generated_export_rows": len(generated_artifacts),
+    }

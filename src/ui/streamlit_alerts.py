@@ -16,13 +16,13 @@ LEGAL_MAP_ALERTAS = {
 }
 
 
-def gerar_texto_denuncia(alerta: dict) -> str:
+def gerar_texto_relato(alerta: dict) -> str:
     tipo = alerta.get("detector_id", "GERAL")
     legal_ref, descricao_legal = LEGAL_MAP_ALERTAS.get(tipo, ("", "Irregularidade identificada no sistema Sentinela"))
     return f"""
-DENÚNCIA — SISTEMA SENTINELA // CONTROLE SOCIAL
+RELATO PARA APURACAO PRELIMINAR — SISTEMA SENTINELA // CONTROLE SOCIAL
 
-FATO DENUNCIADO:
+FATO OBJETIVO OBSERVADO:
   Entidade: {alerta.get('entity_name', 'N/D')}
   Tipo: {tipo} — {alerta.get('description', 'N/D')}
 
@@ -34,8 +34,12 @@ FUNDAMENTO LEGAL SUGERIDO:
   {descricao_legal}
 
 PEDIDO:
-  Solicita-se a apuração dos fatos e a instauração de procedimentos
-  administrativos/fiscais cabíveis para verificar a regularidade da situação.
+  Solicita-se a apuracao dos fatos, a verificacao documental e, se for o caso,
+  a instauracao dos procedimentos administrativos/fiscais cabiveis para avaliar a regularidade da situacao.
+
+LIMITE DA CONCLUSAO:
+  Este texto nao imputa culpa, fraude, crime ou dolo. Ele organiza um fato objetivo
+  para noticia de fato, auditoria ou apuracao pelos orgaos competentes.
 
 FONTE DOS DADOS:
   Portal de Transparência de Rio Branco (https://transparencia.riobranco.ac.gov.br)
@@ -75,13 +79,13 @@ def render_alerts_page(db: duckdb.DuckDBPyConnection) -> None:
                 st.progress(score / 100, text=f"Risco Analítico: {score}%")
             with col_action:
                 st.write("")
-                if st.button("📋 Denúncia", key=f"den_{row['d_id']}"):
-                    st.session_state[f"den_txt_{row['d_id']}"] = gerar_texto_denuncia(row.to_dict())
+                if st.button("📋 Relato", key=f"den_{row['d_id']}"):
+                    st.session_state[f"den_txt_{row['d_id']}"] = gerar_texto_relato(row.to_dict())
 
             key_txt = f"den_txt_{row['d_id']}"
             if key_txt in st.session_state:
-                with st.expander("📄 Texto da Denúncia Gerado", expanded=True):
-                    st.text_area("Copie para o portal de denúncia:", value=st.session_state[key_txt], height=250)
+                with st.expander("📄 Texto do Relato Gerado", expanded=True):
+                    st.text_area("Copie para noticia de fato, auditoria ou protocolo oficial:", value=st.session_state[key_txt], height=280)
                     col_c1, col_c2 = st.columns(2)
                     col_c1.markdown("[🌐 Abrir FalaBR](https://falabr.cgu.gov.br)")
                     if col_c2.button("🗑️ Limpar", key=f"clr_{row['d_id']}"):

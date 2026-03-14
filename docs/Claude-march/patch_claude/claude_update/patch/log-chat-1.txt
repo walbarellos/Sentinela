@@ -353,6 +353,76 @@
 - Leitura operacional:
   a bancada do caso agora tem historia, prova e comparacao
   o proximo ciclo correto e generalizar inbox/timeline para outros casos e melhorar diff por semantica, nao por reestruturacao crua
+
+[2026-03-14 01:08:00 -05] inbox operacional escalada para RB_SUS e SESACRE com fila de pendencias
+- Objetivo:
+  sair do modo `caso unico` e transformar a caixa operacional em camada reutilizavel para o municipio e o estado sem script artesanal por dossie
+- O que mudou:
+  `src/core/ops_inbox.py` passou a gerar `spec` dinamico por familia de caso
+  seed automatico de `README.md` e indice CSV por caso
+  caixas novas materializadas para:
+    `rb:contrato:3895`
+    `rb:contrato:3898`
+    `10` casos `sesacre:sancao:*`
+  a UI ganhou fila de pendencias documentais por caso na aba `Inbox`
+- Inspiracao operacional incorporada:
+  padrao `Oversight.gov` de recomendacoes abertas virou fila de documentos pendentes
+  padrao `USAspending` de drill-down por sujeito/orgao foi mantido na selecao do caso
+  padrao `EDGAR` de documento primeiro foi mantido no preview/timeline/diff
+- Validacao executada:
+  `.venv/bin/python scripts/sync_ops_inbox.py` -> `rows_written = 85`
+  distribuicao:
+    `RB_SUS = 13 docs`
+    `SESACRE = 60 docs`
+    `CEDIMP = 12 docs`
+  workflows genericos validados:
+    `rb:contrato:3895` -> `success 3`
+    `sesacre:sancao:07847837000110` -> `success 3`
+  estado no banco:
+    `ops_case_inbox_document = 85`
+    `cases_with_inbox = 13`
+    `v_ops_case_timeline_event = 138`
+  `streamlit run app.py --server.headless true --server.port 8772` -> `HTTP 200`
+- Leitura operacional:
+  o produto ja escala de forma util para o municipio de Rio Branco
+  o proximo ciclo correto e busca full-text e diff semantico, nao mais multiplicacao de scripts manuais
+
+[2026-03-14 01:18:00 -05] indice textual local e aba de busca operacional entregues
+- Objetivo:
+  reduzir o tempo para achar trecho probatorio dentro dos artefatos locais sem abrir arquivo por arquivo
+- Novas pecas:
+  `src/core/ops_search.py`
+  `src/ui/ops_search.py`
+  `scripts/sync_ops_search_index.py`
+- O que foi implementado:
+  tabela `ops_artifact_text_index`
+  view `v_ops_artifact_text_index`
+  indexacao de:
+    artefatos do caso (`ops_case_artifact`)
+    anexos locais recebidos na inbox (`ops_case_inbox_document`)
+  suporte atual de extracao textual:
+    `md`
+    `txt`
+    `json`
+    `csv`
+    `html`
+    `pdf` com `.txt` espelho
+  nova aba `Busca` no painel operacional
+  reindexacao manual via botao `🔎 Reindexar Texto`
+- Inspiracao EUA incorporada com criterio:
+  `EDGAR` -> busca por documento e anexo com leitura local primeiro
+  `USAspending` -> filtros fortes continuam antes do drill-down
+  `Oversight` -> a busca foi acoplada a casos e diligencias, nao solta como vitrine
+- Validacao executada:
+  `.venv/bin/python scripts/sync_ops_search_index.py` -> `indexed_docs = 31 / candidates = 34`
+  busca de amostra `NORTE` retornou:
+    `rb:contrato:3895 / denuncia_preliminar_3895`
+    `rb:contrato:3895 / dossie_rb_sus`
+    `rb:contrato:3898 / dossie_rb_sus`
+  `streamlit run app.py --server.headless true --server.port 8773` -> `HTTP 200`
+- Leitura operacional:
+  o painel agora ja suporta localizar, abrir e comparar evidencia sem sair da mesa operacional
+  o proximo ciclo correto e `timeline por fase + diff semantico`, nao mais ampliar layout sem ganho real
   isso nao prova sozinho impedimento legal, acumulo ilicito ou nepotismo
   isso prova coexistencia documental em fonte primaria de saude entre:
     historico funcional estatutario/servidor proprio
@@ -1391,3 +1461,257 @@ leitura:
   e a base de desenvolvimento ficou menos fragil
   ainda ha espaco para modularizar outras paginas,
   mas a trilha correta agora esta estabelecida
+
+[2026-03-14 01:42:00 -0500] fase operacional - onus probatorio, timeline por fase, diff semantico e busca refinada
+
+arquivos principais:
+  src/core/ops_legal.py
+  src/core/ops_burden.py
+  src/core/ops_semantic.py
+  src/core/ops_registry.py
+  src/core/ops_timeline.py
+  src/core/ops_search.py
+  src/ui/ops_burden.py
+  src/ui/ops_timeline.py
+  src/ui/ops_semantic.py
+  src/ui/ops_data.py
+  src/ui/ops_sections.py
+  src/ui/ops_search.py
+  scripts/sync_ops_burden.py
+  scripts/sync_ops_semantic.py
+  docs/Claude-march/patch_claude/claude_update/patch/RF_RNF_ONUS_TIMELINE_DIFF_BUSCA.md
+  docs/Claude-march/patch_claude/claude_update/patch/FASE_AUTOMACAO_OPERACIONAL_20260314.md
+
+resultado entregue:
+  `ops_case_burden_item` materializado com `66` linhas
+  `ops_case_semantic_issue` materializado com `4` linhas
+  timeline operacional agora tem:
+    `phase_key`
+    `phase_label`
+    `phase_order`
+  a bancada de caso agora exibe:
+    `Resumo`
+    `Ônus`
+    `Evidências`
+    `Timeline`
+    `Diff`
+  a busca full-text agora filtra por:
+    `família`
+    `tipo`
+    `origem`
+    `evento`
+    `órgão`
+    `case_id`
+  snippets agora usam janela densa e destaque de termo
+
+validacao executada:
+  python -m py_compile app.py src/core/ops_legal.py src/core/ops_burden.py src/core/ops_semantic.py src/core/ops_registry.py src/core/ops_timeline.py src/core/ops_search.py src/ui/ops_burden.py src/ui/ops_timeline.py src/ui/ops_semantic.py src/ui/ops_data.py src/ui/ops_sections.py src/ui/ops_search.py scripts/sync_ops_burden.py scripts/sync_ops_semantic.py
+  .venv/bin/python scripts/sync_ops_case_registry.py
+  .venv/bin/python -> leitura de:
+    `ops_case_burden_item`
+    `ops_case_semantic_issue`
+    `v_ops_case_timeline_event`
+    `v_ops_artifact_text_index`
+  streamlit run app.py --server.headless true --server.port 8774
+  curl -I http://localhost:8774 -> `200`
+
+resultado real:
+  `ops_case_registry` = `13`
+  `ops_case_artifact` = `37`
+  `ops_case_burden_item` = `66`
+  `ops_case_semantic_issue` = `4`
+  `v_ops_case_timeline_event` = `141`
+  `ops_artifact_text_index` = `33`
+
+caso `rb:contrato:3898`:
+  onus probatorio:
+    `3` itens `COMPROVADO_DOCUMENTAL`
+    `3` itens `PENDENTE_DOCUMENTO`
+  diff semantico:
+    `numero_processo` = `COERENTE`
+    `objeto` = `COERENTE`
+    `item_x_edital` = `DIVERGENTE`
+    `item_x_propostas` = `DIVERGENTE`
+
+caso `cedimp:saude_societario:13325100000130`:
+  onus probatorio:
+    `2` itens `COMPROVADO_DOCUMENTAL`
+    `1` item `PENDENTE_DOCUMENTO`
+    `1` item `PENDENTE_ENQUADRAMENTO`
+    `1` item `SEM_BASE_ATUAL`
+
+leitura:
+  o painel deixou de ser apenas fluxo de arquivo
+  e passou a mostrar:
+    o que esta provado
+    o que ainda depende de documento
+    onde ha contradicao objetiva
+    qual ancora normativa sustenta a diligencia
+
+[2026-03-14 02:06:00 -0500] fase operacional - saida nao-acusatoria, contradicoes e checklist
+
+arquivos principais:
+  src/core/ops_guard.py
+  src/core/ops_contradiction.py
+  src/core/ops_checklist.py
+  src/core/ops_registry.py
+  src/ui/ops_checklist.py
+  src/ui/ops_sections.py
+  src/ui/ops_shared.py
+  src/ui/streamlit_alerts.py
+  scripts/sync_ops_guard.py
+  scripts/sync_ops_contradiction.py
+  scripts/sync_ops_checklist.py
+  docs/Claude-march/patch_claude/claude_update/patch/PROTOCOLO_SAIDA_NAO_ACUSATORIA.md
+
+resultado entregue:
+  `ops_case_contradiction` materializado
+  `ops_case_checklist` materializado
+  `ops_case_language_guard` materializado
+  a bancada de caso agora mostra:
+    checklist probatorio
+    contradicoes objetivas
+    gate de linguagem externa
+  o gerador textual da aba de alertas deixou de emitir `DENÚNCIA`
+  e passou a emitir `RELATO PARA APURACAO PRELIMINAR`
+  labels de saida visiveis no painel foram suavizados:
+    `APTO_REPRESENTACAO` -> `APTO_A_NOTICIA_DE_FATO`
+    `APTO_REPRESENTACAO_PRELIMINAR` -> `APTO_A_NOTICIA_DE_FATO`
+
+artefatos saneados:
+  entrega_denuncia_atual/denuncia_preliminar_3895.txt
+  entrega_denuncia_atual/denuncia_preliminar_3898.txt
+  sesacre_prioritarios/representacao_preliminar_sesacre_top10.txt
+  entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_GATE_DOSSIE.md
+  entrega_denuncia_atual/nota_operacional_cedimp.txt
+  dossie_rb_sus_prioritarios.md
+
+validacao executada:
+  python -m py_compile src/core/ops_guard.py src/core/ops_contradiction.py src/core/ops_checklist.py src/core/ops_registry.py src/core/ops_burden.py src/ui/ops_checklist.py src/ui/ops_sections.py src/ui/ops_shared.py src/ui/streamlit_alerts.py src/ui/streamlit_ops.py scripts/sync_ops_guard.py scripts/sync_ops_contradiction.py scripts/sync_ops_checklist.py scripts/sync_ops_case_registry.py
+  .venv/bin/python scripts/sync_ops_case_registry.py
+  streamlit run app.py --server.headless true --server.port 8775
+  curl -I http://localhost:8775 -> `200`
+
+resultado real:
+  `contradiction_rows` = `2`
+  `checklist_rows` = `66`
+  `language_guard_rows` = `0`
+
+leitura:
+  o sistema agora nao so organiza prova
+  como tambem vigia o proprio tom da saida externa
+  a regra operacional ficou:
+    relatar
+    documentar
+    pedir apuracao
+    nunca imputar culpa automaticamente
+
+[2026-03-14 02:18:00 -0500] fase operacional - exportacao segura on-demand
+
+arquivos principais:
+  src/core/ops_export.py
+  src/core/ops_registry.py
+  src/ui/ops_export.py
+  src/ui/ops_sections.py
+  src/ui/streamlit_ops.py
+  src/ui/ops_data.py
+  scripts/sync_ops_export_gate.py
+  scripts/validate_ops_output_guard.py
+
+resultado entregue:
+  `ops_case_export_gate` materializado
+  aba `Exportação` adicionada na bancada do caso
+  modos suportados:
+    `NOTA_INTERNA`
+    `PEDIDO_DOCUMENTAL`
+    `NOTICIA_FATO`
+  o painel agora:
+    mostra os modos permitidos por caso
+    bloqueia modo externo quando o caso nao atingiu maturidade suficiente
+    gera texto neutro on-demand
+    permite baixar `.txt` sem reaproveitar texto legado acusatorio
+
+validacao executada:
+  python -m py_compile src/core/ops_export.py src/ui/ops_export.py src/ui/ops_sections.py src/ui/streamlit_ops.py src/ui/ops_data.py scripts/sync_ops_export_gate.py
+  .venv/bin/python scripts/sync_ops_case_registry.py
+  .venv/bin/python scripts/validate_ops_output_guard.py
+  streamlit run app.py --server.headless true --server.port 8776
+  curl -I http://localhost:8776 -> `200`
+
+resultado real:
+  `export_gate_rows` = `39`
+  caso bloqueado para `NOTICIA_FATO`:
+    `cedimp:saude_societario:13325100000130`
+    motivo: depende de documentos funcionais e enquadramento humano
+  `language_guard_rows` = `0`
+
+leitura:
+  o painel agora nao depende mais de rascunho legado para saida externa
+  a saida nasce do banco operacional atual
+  com:
+    modo permitido
+    limite da conclusao
+    contradicoes
+    base documental minima
+
+[2026-03-14 02:21:00 -0500] fase operacional - congelamento da exportacao segura
+
+arquivos principais:
+  src/core/ops_export.py
+  src/core/ops_registry.py
+  src/core/ops_timeline.py
+  src/ui/ops_data.py
+  src/ui/ops_export.py
+  src/ui/ops_sections.py
+  scripts/freeze_ops_case_export.py
+  scripts/sync_ops_case_registry.py
+  scripts/validate_ops_output_guard.py
+
+resultado entregue:
+  a exportacao segura agora pode ser congelada como artefato controlado do caso
+  com:
+    arquivo `.txt` persistido em `entrega_denuncia_atual/ops_exports/...`
+    `sha256`
+    `size_bytes`
+    `actor`
+    `created_at`
+  nova tabela:
+    `ops_case_generated_export`
+  novos artefatos aparecem automaticamente em:
+    `v_ops_case_artifact`
+    timeline do caso
+    preview do painel
+    busca textual local
+  o painel agora mostra:
+    exportacoes congeladas por caso
+    botao `Congelar exportacao controlada`
+    contagem global de `Exports congelados`
+
+validacao executada:
+  python -m py_compile src/core/ops_export.py src/core/ops_registry.py src/core/ops_timeline.py src/ui/ops_data.py src/ui/ops_export.py src/ui/ops_sections.py scripts/freeze_ops_case_export.py scripts/validate_ops_output_guard.py scripts/sync_ops_case_registry.py
+  .venv/bin/python scripts/sync_ops_case_registry.py
+  .venv/bin/python scripts/freeze_ops_case_export.py --case-id rb:contrato:3898 --mode NOTICIA_FATO
+  .venv/bin/python scripts/freeze_ops_case_export.py --case-id cedimp:saude_societario:13325100000130 --mode PEDIDO_DOCUMENTAL
+  .venv/bin/python scripts/validate_ops_output_guard.py
+  streamlit run app.py --server.headless true --server.port 8778
+  curl -I http://localhost:8778 -> `200`
+
+resultado real:
+  `generated_export_rows` = `2`
+  `v_ops_case_artifact kind=generated_export` = `2`
+  `timeline_events` = `145`
+  `artifacts` = `39`
+  `indexed_docs` = `35`
+  exports congelados:
+    `rb:contrato:3898` / `NOTICIA_FATO`
+    `cedimp:saude_societario:13325100000130` / `PEDIDO_DOCUMENTAL`
+
+leitura:
+  agora a peca segura pode deixar de ser transitoria
+  e virar evidencia operacional versionada do proprio caso
+  sem perder:
+    gate de linguagem
+    cadeia de custodia
+    preview local
+    timeline
+    busca

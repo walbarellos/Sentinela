@@ -1,6 +1,6 @@
 # Trace Vinculo Societario em Saude - Gate Operacional
 
-Camada de decisao conservadora para dizer se o caso esta pronto para ofício documental, analise interna ou representacao preliminar.
+Camada de decisao conservadora para dizer se o caso esta pronto para oficio documental, analise interna ou noticia de fato.
 
 ## Regra
 
@@ -29,5 +29,5 @@ Camada de decisao conservadora para dizer se o caso esta pronto para ofício doc
 - recomendacoes:
   - Protocolar pedidos objetivos para SEMSA/RH e SESACRE.
   - Anexar respostas oficiais na caixa local do caso com hash.
-  - Nao escalar para representacao preliminar sem documento funcional recebido.
+  - Nao escalar para noticia de fato sem documento funcional recebido.
 - limite: Esta camada decide fluxo operacional, nao ilegalidade. Ela nao autoriza afirmar nepotismo, fraude penal ou acumulacao ilicita sem fechamento juridico-funcional.

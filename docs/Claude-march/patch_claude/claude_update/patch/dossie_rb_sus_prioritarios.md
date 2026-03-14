@@ -15,7 +15,7 @@ Este dossie consolida os dois casos municipais prioritarios do recorte SUS em Ri
 - Valor de referencia: R$ 82.950,00
 - Fornecedor: **NORTE DISTRIBUIDORA DE PRODUTOS LTDA**
 - CNPJ: `37306014000148`
-- Fila final: `denuncia_imediata`
+- Fila final: `apuracao_prioritaria`
 - Prioridade final: `100`
 - Link do contrato: https://transparencia.riobranco.ac.gov.br/contrato/ver/1916838/
 
@@ -23,7 +23,7 @@ Este dossie consolida os dois casos municipais prioritarios do recorte SUS em Ri
 
 - O fornecedor aparece no banco com `5` sancao(oes) ativa(s).
 - Fontes de sancao materializadas: `CEIS`.
-- O contrato esta vinculado a `SEMSA` e ja consta como caso de denuncia imediata na triagem final.
+- O contrato esta vinculado a `SEMSA` e ja consta como caso de apuracao prioritaria na triagem final.
 
 ### Sancoes materializadas
 
@@ -75,7 +75,7 @@ Este dossie consolida os dois casos municipais prioritarios do recorte SUS em Ri
 
 ## Leitura operacional
 
-- `3895` ja esta pronto para representacao como contratacao municipal com fornecedor sancionado.
+- `3895` ja esta pronto para noticia de fato ou pedido de apuracao como contratacao municipal com fornecedor sancionado.
 - `3898` nao fecha fornecedor por fonte aberta, mas fecha uma inconsistencia documental forte: item fora do edital e fora das propostas publicas da licitacao mae.
 - Os dois casos permanecem juntos na fila prioritaria municipal, com prioridades `100` e `95`.
 
