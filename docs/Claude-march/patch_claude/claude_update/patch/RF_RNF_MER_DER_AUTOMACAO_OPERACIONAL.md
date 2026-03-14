@@ -9,6 +9,9 @@
   - detalhe do caso
   - artefatos do caso
   - resumo operacional por estagio/familia
+  - caixa de respostas oficiais por caso
+  - timeline documental por caso
+  - diff textual entre artefatos suportados do mesmo caso
 - O sistema deve separar pelo menos estas familias:
   - `rb_sus_contrato`
   - `sesacre_sancao`
@@ -16,6 +19,8 @@
 - O sistema deve trazer `estagio_operacional`, `uso_externo`, `prioridade`, `valor`, `resumo_curto` e `proximo_passo`.
 - O sistema deve registrar artefatos locais com `path`, `sha256`, `exists` e `size_bytes`.
 - O sistema deve ser idempotente: o sync do registry pode ser rerodado sem duplicar casos.
+- O sistema deve permitir anexar resposta oficial sem shell quando a caixa do caso estiver configurada.
+- O sistema deve permitir rerodar workflow conhecido do caso sem shell, com run log no banco.
 
 ## RNF
 
@@ -26,6 +31,8 @@
 - O sync do registry deve ser rapido o suficiente para rodar no startup da API.
 - A visualizacao de artefatos deve priorizar leitura local no proprio painel (`md`, `txt`, `json`, `csv`, `html`, `pdf`) antes de exigir download manual.
 - O painel deve favorecer triagem e cadeia de evidencia, nao score cosmetico.
+- Nao sobrescrever documento-chave da caixa sem manter integridade do indice e do arquivo local.
+- Nao produzir diff opaco de binario; diff so deve existir quando houver texto extraivel ou espelho textual confiavel.
 
 ## MER
 
@@ -35,10 +42,16 @@
   - 1 linha por caso operacional
 - `ops_case_artifact`
   - N linhas por caso, uma por artefato local
+- `ops_case_inbox_document`
+  - N linhas por caso, uma por documento esperado/recebido na caixa operacional
+- `v_ops_case_timeline_event`
+  - linha cronologica derivada de caso, artefato, inbox e workflow do caso
 
 ### Relacoes
 
 - `ops_case_registry (1) -> (N) ops_case_artifact`
+- `ops_case_registry (1) -> (N) ops_case_inbox_document`
+- `ops_case_registry (1) -> (N) v_ops_case_timeline_event`
 
 ### Fontes de alimentacao v1
 
@@ -50,8 +63,10 @@
 
 - `ops_pipeline_run`
 - `ops_source_cache`
+- `ops_case_inbox_document`
 - `ops_case_comment`
 - `ops_case_assignment`
+- `v_ops_case_timeline_event`
 
 ## DER
 
@@ -99,9 +114,42 @@
 - `metadata_json`
 - `updated_at`
 
+### ops_case_inbox_document
+
+- `inbox_doc_id` PK
+- `case_id` FK logico
+- `destino`
+- `eixo`
+- `documento_chave`
+- `categoria_documental`
+- `descricao_documento`
+- `status_documento`
+- `protocolo`
+- `recebido_em`
+- `file_path`
+- `file_exists`
+- `file_sha256`
+- `size_bytes`
+- `notas`
+- `source_index_path`
+- `updated_at`
+
+### v_ops_case_timeline_event
+
+- `case_id`
+- `event_at`
+- `event_type`
+- `event_group`
+- `title`
+- `detail`
+- `source_ref`
+- `path_ref`
+- `payload_json`
+
 ## Proxima Fase
 
 - expandir `ops_pipeline_run` com retries, scheduler e serializacao de writers
 - expandir `ops_source_cache` com conditional request e invalidacao por TTL/etag/hash
-- evoluir a aba `📂 OPERAÇÕES` do Streamlit para um centro de casos com visualizador documental e trilha de diligencias
+- generalizar `ops_case_inbox_document` para outros casos alem de `CEDIMP`
+- evoluir a aba `📂 OPERAÇÕES` com diff semantico e timeline com agrupamento por fase
 - manter `/ops/summary`, `/ops/cases` e `/ops/cases/{id}/artifacts` como contrato estavel para API e possivel frontend futuro

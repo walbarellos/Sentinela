@@ -33,16 +33,28 @@ A trilha correta do produto e:
   - anexo acessivel
   - timeline de evidencia
 
+## Concluido nesta fase
+
+1. `ops_pipeline_run` implementado
+2. `ops_source_cache` implementado
+3. integracao concluida no Streamlit existente
+4. execucoes recentes e fontes monitoradas exibidas na aba `📂 OPERAÇÕES`
+5. `app.py` desmontado em modulos de UI
+6. status da sidebar passou a refletir estado real do banco operacional
+7. `ops_case_inbox_document` implementado
+8. inbox operacional entregue para o caso `CEDIMP`
+9. rerun de workflow do `CEDIMP` entregue sem shell
+10. timeline documental por caso implementada
+11. diff textual de artefatos suportados implementado
+
 ## TODO imediato
 
-1. implementar `ops_pipeline_run`
-2. implementar `ops_source_cache`
-3. integrar ambos ao Streamlit existente
-4. exibir execucoes recentes e fontes monitoradas na aba `📂 OPERAÇÕES`
-5. depois seguir para:
-   - inbox operacional
-   - timeline documental
-   - diff documental
+1. implementar `inbox operacional`
+2. generalizar timeline e inbox para outros casos
+3. melhorar diff documental por tipo de artefato
+4. ligar rerun de maturidade/gate ao fluxo de resposta oficial
+5. continuar quebrando modulos grandes somente quando houver ganho real de manutencao
+6. generalizar a caixa operacional para outros casos alem de `CEDIMP`
 
 ## Regra de produto
 
@@ -61,8 +73,20 @@ A trilha correta do produto e:
 
 ## Proxima implementacao em curso
 
-- modulo `src/core/ops_runtime.py`
-- script `scripts/sync_ops_case_registry.py` com log de execucao
-- script `scripts/sync_ops_source_cache.py`
-- modulo `src/ui/streamlit_ops.py`
-- integracao do resumo operacional ao Streamlit sem manter a logica no `app.py`
+- `src/ui/streamlit_ops.py` reduzido a orquestrador
+- novos modulos:
+  - `src/ui/ops_shared.py`
+  - `src/ui/ops_data.py`
+  - `src/ui/ops_preview.py`
+  - `src/ui/ops_sections.py`
+- inbox operacional:
+  - `src/core/ops_inbox.py`
+  - `src/ui/ops_inbox.py`
+  - `scripts/sync_ops_inbox.py`
+- timeline e diff:
+  - `src/core/ops_timeline.py`
+  - `scripts/sync_ops_timeline.py`
+  - `src/ui/ops_diff.py`
+- proximos modulos de produto:
+  - timeline agrupada por fase
+  - diff documental semantico

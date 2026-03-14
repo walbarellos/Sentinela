@@ -238,6 +238,121 @@
     `MARCOS PAULO PARENTE ARAUJO` / CNS `700105928933618`
     `131` competencias com concomitancia documental entre linha `ESTATUTARIO / SERVIDOR PROPRIO` e linha da `CEDIMP`
 - Leitura probatoria:
+
+[2026-03-14 00:39:00 -05] refatoracao real do painel Streamlit para reduzir monolitos e redundancia
+- Objetivo:
+  tornar a UI operacional mais simples de evoluir sem continuar inflando `app.py` ou concentrando logica de dados/render em um unico arquivo
+- Resultado de arquitetura:
+  `app.py` caiu para 41 linhas e virou apenas bootstrap + roteamento de paginas
+  paginas quebradas em modulos dedicados:
+    `src/ui/streamlit_home.py`
+    `src/ui/streamlit_alerts.py`
+    `src/ui/streamlit_federal.py`
+    `src/ui/streamlit_people.py`
+    `src/ui/streamlit_sidebar.py`
+    `src/ui/streamlit_theme.py`
+  a aba operacional foi quebrada mais uma vez:
+    `src/ui/streamlit_ops.py` = 49 linhas
+    `src/ui/ops_shared.py`
+    `src/ui/ops_data.py`
+    `src/ui/ops_preview.py`
+    `src/ui/ops_sections.py`
+- Ajuste funcional relevante:
+  a sidebar deixou de mostrar status estetico fixo e passou a refletir estado real do banco operacional
+  a aba `📂 OPERAÇÕES` manteve os mesmos fluxos principais:
+    visao geral
+    bancada de casos
+    runtime
+- Validacao executada:
+  `python -m py_compile` dos modulos novos e do `app.py`
+  `streamlit run app.py --server.headless true --server.port 8768`
+  `curl -I http://localhost:8768` -> `HTTP 200`
+  contadores no banco:
+    `ops_case_registry = 13`
+    `ops_case_artifact = 34`
+    `v_ops_source_cache_latest = 7`
+    `ops_source_cache (historico) = 14`
+- Leitura operacional:
+  a modularizacao foi concluida sem quebrar o painel
+  o proximo ciclo correto agora e `inbox operacional`, nao mais refatoracao estrutural grande
+
+[2026-03-14 00:47:00 -05] inbox operacional entregue com rerun sem shell para o caso CEDIMP
+- Objetivo:
+  fechar o loop entre pedido oficial, recebimento de documento e rerun da trilha do caso dentro do proprio painel operacional
+- Novas pecas:
+  `src/core/ops_inbox.py`
+  `src/ui/ops_inbox.py`
+  `scripts/sync_ops_inbox.py`
+- O que foi implementado:
+  tabela `ops_case_inbox_document`
+  view `v_ops_case_inbox_document`
+  sincronizacao do indice CSV oficial da caixa `cedimp_respostas_index.csv`
+  upload guiado para `cedimp_respostas/anexos/...`
+  persistencia de `status_documento`, `protocolo`, `recebido_em`, `sha256`, `size_bytes` e caminho local
+  botao de rerun do workflow do caso `CEDIMP` sem shell
+- Correcao estrutural relevante:
+  `app.py` deixou de abrir DuckDB no fluxo `📂 OPERAÇÕES`
+  a conexao do workflow tambem passou a soltar o banco durante os subprocessos para evitar lock contra os scripts do caso
+- Validacao executada:
+  `python -m py_compile app.py src/core/ops_inbox.py src/ui/ops_inbox.py src/ui/streamlit_ops.py scripts/sync_ops_inbox.py`
+  `.venv/bin/python scripts/sync_ops_inbox.py --case-id cedimp:saude_societario:13325100000130` -> `rows_written = 12`
+  `.venv/bin/python -c "from src.core.ops_inbox import run_case_workflow; ..."` -> `success 5`
+  etapas validadas:
+    `sync_vinculo_societario_saude_respostas.py`
+    `sync_vinculo_societario_saude_maturidade.py`
+    `export_vinculo_societario_saude_respostas.py`
+    `validate_cedimp_quality.py`
+    `sync_ops_case_registry.py`
+  `streamlit run app.py --server.headless true --server.port 8770` -> `HTTP 200`
+  estado no banco apos a entrega:
+    `ops_case_registry = 13`
+    `ops_case_artifact = 34`
+    `ops_case_inbox_document = 12`
+    `v_ops_source_cache_latest = 7`
+    `ops_case_workflow:*` ultimo status = `success`
+- Leitura operacional:
+  o painel agora ja suporta um caso completo em modo vivo
+  o proximo ciclo correto e generalizar a inbox para outros casos e adicionar timeline/diff documental
+
+[2026-03-14 00:54:00 -05] timeline documental e diff por caso entregues na bancada operacional
+- Objetivo:
+  transformar a aba operacional em mesa de investigacao de verdade, com historico do caso e comparacao direta entre artefatos suportados
+- Novas pecas:
+  `src/core/ops_timeline.py`
+  `scripts/sync_ops_timeline.py`
+  `src/ui/ops_diff.py`
+- O que foi implementado:
+  view `v_ops_case_timeline_event` derivada de:
+    `ops_case_registry`
+    `ops_case_artifact`
+    `ops_case_inbox_document`
+    `ops_pipeline_run` do workflow do caso
+  bancada do caso em 4 abas:
+    `Resumo`
+    `Evidencias`
+    `Timeline`
+    `Diff`
+  diff textual para:
+    `md`
+    `txt`
+    `json`
+    `csv`
+    `html`
+    `pdf` com `.txt` espelho
+- Correcao relevante:
+  a validacao da timeline precisou ser rerodada em serie, nao em paralelo, porque o DuckDB estava disputando lock entre sync e leitura
+- Validacao executada:
+  `python -m py_compile` dos modulos novos
+  `.venv/bin/python scripts/sync_ops_timeline.py` -> `timeline_events = 63`
+  amostra do caso `CEDIMP`:
+    eventos de `WORKFLOW_RUN`
+    indexacao de artefatos
+    refresh de caso
+    documentos da inbox
+  `streamlit run app.py --server.headless true --server.port 8771` -> `HTTP 200`
+- Leitura operacional:
+  a bancada do caso agora tem historia, prova e comparacao
+  o proximo ciclo correto e generalizar inbox/timeline para outros casos e melhorar diff por semantica, nao por reestruturacao crua
   isso nao prova sozinho impedimento legal, acumulo ilicito ou nepotismo
   isso prova coexistencia documental em fonte primaria de saude entre:
     historico funcional estatutario/servidor proprio

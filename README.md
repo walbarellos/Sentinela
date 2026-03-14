@@ -97,12 +97,16 @@ O Streamlit agora também pode operar como fila de casos probatórios:
 - `ops_case_artifact`: artefatos locais com `path`, `sha256` e tamanho
 - `ops_pipeline_run`: trilha de execuções dos syncs operacionais
 - `ops_source_cache`: catálogo/cache de fontes públicas com `ttl`, `etag`, `last_modified` e snapshot local quando disponível
-- aba `📂 OPERAÇÕES`: resumo, filtros, detalhe do caso e visualização local de artefatos
+- `ops_case_inbox_document`: caixa operacional de respostas oficiais por caso
+- `v_ops_case_timeline_event`: timeline documental por caso
+- aba `📂 OPERAÇÕES`: resumo, filtros, detalhe do caso, inbox, timeline, diff e visualização local de artefatos
 
 Para rematerializar essa camada:
 ```bash
 .venv/bin/python scripts/sync_ops_case_registry.py
 .venv/bin/python scripts/sync_ops_source_cache.py
+.venv/bin/python scripts/sync_ops_inbox.py
+.venv/bin/python scripts/sync_ops_timeline.py
 ```
 
 ---

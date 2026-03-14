@@ -8,6 +8,7 @@ from typing import Any
 
 import duckdb
 
+from src.core.ops_timeline import ensure_ops_timeline
 
 ROOT = Path(__file__).resolve().parents[2]
 PATCH_DIR = (
@@ -438,5 +439,6 @@ def sync_ops_case_registry(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
         ORDER BY case_id, kind, label
         """
     )
+    ensure_ops_timeline(con)
 
     return {"cases": len(all_cases), "artifacts": len(all_artifacts)}

@@ -19,6 +19,7 @@ Nao deve funcionar como vitrine vazia de graficos.
 ## RF
 
 - O Streamlit deve ter uma aba operacional dedicada a casos reais.
+- O Streamlit deve ter uma area de inbox operacional para anexar respostas oficiais sem shell quando o caso tiver caixa configurada.
 - O usuario deve conseguir filtrar por:
   - familia
   - estagio operacional
@@ -32,6 +33,8 @@ Nao deve funcionar como vitrine vazia de graficos.
   - proximo passo
   - bundle
   - artefatos
+  - timeline documental
+  - diff de artefatos suportados
 - O usuario deve conseguir visualizar localmente:
   - `md`
   - `txt`
@@ -41,6 +44,9 @@ Nao deve funcionar como vitrine vazia de graficos.
   - `pdf`
 - O painel deve mostrar hash e caminho do artefato.
 - O painel deve permitir refresh manual do registry sem shell.
+- O painel deve permitir sincronizar a caixa e rerodar workflow conhecido do caso sem shell.
+- O painel deve mostrar timeline sem exigir leitura de log bruto.
+- O painel so deve oferecer diff quando houver texto extraivel.
 
 ## RNF
 
@@ -58,15 +64,17 @@ Nao deve funcionar como vitrine vazia de graficos.
   - trilha de evidencia
 - `ops_pipeline_run` (futuro)
   - status de execucao
-- `ops_source_cache` (futuro)
+- `ops_source_cache`
   - ttl / etag / hash de fontes remotas
+- `ops_case_inbox_document`
+  - diligencias e respostas oficiais por caso
+- `v_ops_case_timeline_event`
+  - linha do tempo operacional e documental do caso
 
 ## Proxima etapa de UX
 
-- adicionar visualizador em duas colunas:
-  - fila
-  - inspetor documental
 - adicionar timeline do caso
 - adicionar checklists de diligencia
 - adicionar busca full-text nos artefatos locais
-- adicionar diff entre documentos de um mesmo caso
+- melhorar o diff entre documentos de um mesmo caso com recortes e filtros por tipo
+- adicionar historico visual do workflow do caso ao lado da inbox
