@@ -22,6 +22,10 @@ Status atual:
   `234` competencias `>=60h`
   `28` competencias `>=80h`
   pico documental de `100h`
+- a matriz juridico-funcional ja ficou pronta:
+  normas oficiais mapeadas
+  `1` socio-administradora em coincidencia exata com cargo publico municipal
+  perguntas de apuracao consolidadas para compatibilidade de horarios, alcance do art. 107, X, e eventual procedimento do art. 124
 - o sistema classificou isso corretamente como:
   `HIPOTESE_INVESTIGATIVA / EXPLORATORIO / REVISAO_INTERNA` para a camada societaria basica
   `HIPOTESE_INVESTIGATIVA / INDICIARIO / REVISAO_INTERNA` para o follow-up de saude
@@ -34,6 +38,7 @@ Entrega esperada:
 - usar os `CNS` oficiais ja capturados para reduzir a dependencia do CPF mascarado do QSA
 - confrontar a metrica ja calculada por competencia com a regra juridica aplicavel, sem transformar `>=60h` ou `>=80h` em veredito automatico
 - checar regime, lotacao, jornada e compatibilidade funcional dos dois medicos a luz da norma aplicavel
+- decidir se o caso sobe para representacao preliminar focada em conflito de interesse/compatibilidade funcional ou se permanece como apuracao interna qualificada
 - se houver base suficiente, elevar de `sobreposicao societaria exata` para `potencial conflito de interesse`; se nao houver, manter como triagem interna e nao como representacao
 
 ## Passo 1. Fechar os blocos AGRO fora do eixo principal da SEJUSP
@@ -169,3 +174,4 @@ O `073/2023` do `IAPEN` e o `170/2023` da `SEJUSP` deixaram de ser pendencias: a
 No eixo de vinculo societario/saude, o melhor proximo passo deixou de ser raspagem basica e passou a ser compatibilidade juridico-funcional: CPF completo, jornada, acumulacao licita e vinculo profissional no ecossistema CNES.
 Com a ficha individual oficial do `CNES` ja amarrada, o proximo ciclo correto e transformar a concomitancia historica em metrica documental de carga por competencia e depois confrontar isso com a regra juridica aplicavel.
 Essa parte de metrica documental ja foi implementada. O ciclo seguinte agora e juridico-funcional: regime, norma, jornada e eventual compatibilidade real.
+O salto tecnico que faltava para nota alta ja entrou: hoje o sistema nao apenas encontra o caso, ele o entrega em formato de dossie probatorio, metrica documental e matriz de confronto normativo.

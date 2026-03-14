@@ -300,6 +300,46 @@
 - Leitura probatoria:
   o sistema agora nao so prova a coexistencia documental em fonte primaria, mas tambem mede a carga concomitante documentada
   isso ainda nao basta para afirmar acumulacao ilicita ou impedimento; o passo seguinte e confrontar regime, jornada e norma aplicavel
+
+[2026-03-13 21:07:55 -05] matriz juridico-funcional do caso CEDIMP criada com normas oficiais
+- Objetivo:
+  transformar o caso de saude em material utilizavel por controle externo, sem empurrar conclusao juridica automatica
+- Fontes normativas oficiais usadas:
+  Constituicao Federal, art. 37, XVI, c e XVII
+  Lei Municipal 1.794/2009 de Rio Branco, arts. 107, X; 108, §2; 123 e 124
+- Scripts novos:
+  scripts/sync_vinculo_societario_saude_juridico.py
+  scripts/export_vinculo_societario_saude_juridico.py
+- Documento novo:
+  docs/Claude-march/patch_claude/claude_update/patch/RF_RNF_VINCULO_SOCIETARIO_SAUDE.md
+- Resultado materializado:
+  vinculo_societario_saude_juridico = `1` caso
+  caso = `CEDIMP` / `13.325.100/0001-30`
+  `1` socio-administradora (`MAIRA SANTIAGO PIRES PARENTE`) com coincidencia exata em base publica municipal
+  matriz com perguntas de apuracao para:
+    compatibilidade de horarios
+    alcance do art. 107, X, da Lei 1.794/2009
+    eventual procedimento por acumulacao ilegal
+- Artefatos gerados:
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_JURIDICO_DOSSIE.md
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_JURIDICO_MANIFEST.json
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_vinculo_societario_saude_juridico.csv
+- Hashes:
+  dossier juridico = `9f403253de5e95d6aca288981416c5a8bbe3bd83df63054876f326923271e2bf`
+  csv juridico = `63954427010a65ee0006481954d0c06289f7d5fa8d0073533296ad68cbb0959c`
+  manifest juridico = `683702faa3aef028318f2867053cbdc6ed35a41161d83ae1b32ecfe5fabc78bf`
+- Validacao executada:
+  python -m py_compile scripts/sync_vinculo_societario_saude_juridico.py scripts/export_vinculo_societario_saude_juridico.py
+  .venv/bin/python scripts/sync_vinculo_societario_saude_juridico.py
+  .venv/bin/python scripts/export_vinculo_societario_saude_juridico.py
+- Leitura operacional:
+  o sistema agora entrega o caso em quatro camadas:
+    sobreposicao societaria
+    coincidencia profissional no CNES
+    historico concomitante no CNES
+    metrica documental de carga
+  e acrescenta uma quinta camada separada:
+    matriz juridico-funcional com normas oficiais e perguntas de apuracao
   top 10 SESACRE = 1/10 com detalhe financeiro
 - Artefatos reemitidos:
   relatorio_final_acre_rio_branco_sus.md

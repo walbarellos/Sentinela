@@ -1,6 +1,6 @@
 # Indice Prioritario - Acre / Rio Branco / SUS
 
-Atualizado em `2026-03-13 20:39 -05`.
+Atualizado em `2026-03-13 21:08 -05`.
 
 Este arquivo aponta para os artefatos probatorios principais ja gerados no projeto para o recorte atual.
 
@@ -47,6 +47,11 @@ Top 10 materializado:
 
 ## 3. Log de progresso
 
+- Dossie juridico-funcional em saude: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_JURIDICO_DOSSIE.md`
+- Manifesto juridico-funcional em saude: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_JURIDICO_MANIFEST.json`
+- CSV juridico-funcional em saude: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_vinculo_societario_saude_juridico.csv`
+- RF/RNF do modulo de saude: `docs/Claude-march/patch_claude/claude_update/patch/RF_RNF_VINCULO_SOCIETARIO_SAUDE.md`
+
 - Pacote AGRO / follow-up: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_AGRO_UNIDADES_FOLLOWUP.md`
 - Manifesto AGRO / follow-up: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_AGRO_UNIDADES_FOLLOWUP_MANIFEST.json`
 - CSV resumo AGRO / follow-up: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_agro_unidades_resumo.csv`
@@ -62,6 +67,8 @@ Top 10 materializado:
 
 - Municipal: pacote pronto para representacao com 2 casos prioritarios.
 - Estadual: pacote pronto com top 10 sancionados ativos da SESACRE.
+- Saude / CEDIMP:
+  4 camadas documentais prontas (`sobreposicao`, `CNES profissional`, `historico concomitante`, `carga concomitante`) e 1 camada juridico-funcional separada com normas oficiais e perguntas de apuracao.
 - NORTE / AGRO:
   `SEJUSP` com linha do tempo local e auditoria `portal x DOE` ja materializadas.
   `170/2023` agora fechado com `DJE/TJAC 24/10/2023`, `ARP 304/2022`, `PE SRP 74/2022`, valor `R$ 532.000,00` e DOE `08/12/2023` no processo SEI `0819.012803.00093/2023-03`.

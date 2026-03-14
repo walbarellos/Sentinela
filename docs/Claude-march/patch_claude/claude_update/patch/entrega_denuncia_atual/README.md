@@ -82,6 +82,7 @@ Sim, ja existem elementos concretos para representacao preliminar.
   `28` competencias `>=80h`
   pico documental de `100h` no proprio historico oficial do `CNES`
   isso gerou um quarto insight factual: `VINCULO_EXATO_CNES_CARGA_CONCOMITANTE_SAUDE`, ainda tratado como fato documental para apuracao, e nao como juizo automatico de ilegalidade
+  a camada seguinte agora virou matriz juridico-funcional separada, com normas oficiais, perguntas de apuracao e destaque para `1` socio-administradora em coincidencia exata com cargo publico municipal
   o sistema continua conservador: essa camada prova coexistencia documental em fonte primaria de saude, nao prova sozinha acumulo ilicito, impedimento legal ou nepotismo
 
 ## O que esta nesta pasta
@@ -139,6 +140,9 @@ Sim, ja existem elementos concretos para representacao preliminar.
 - `TRACE_VINCULO_SOCIETARIO_SAUDE_DOSSIE.md`
 - `TRACE_VINCULO_SOCIETARIO_SAUDE_MANIFEST.json`
 - `trace_vinculo_societario_saude_followup.csv`
+- `TRACE_VINCULO_SOCIETARIO_SAUDE_JURIDICO_DOSSIE.md`
+- `TRACE_VINCULO_SOCIETARIO_SAUDE_JURIDICO_MANIFEST.json`
+- `trace_vinculo_societario_saude_juridico.csv`
 - `RF_RNF_VINCULO_SOCIETARIO_SAUDE.md`
 - `trace_agro_unidades/`
 - `trace_agro_unidades/073_2023_iapen_1.pdf`
@@ -186,6 +190,7 @@ O software hoje ja prova:
   isso eleva a trilha de saude para fato documental corroborado sobre coincidencia funcional, mas ainda nao fecha ilicitude
   a ficha individual oficial desses profissionais agora materializa `131` competencias com concomitancia entre historico `ESTATUTARIO / SERVIDOR PROPRIO` e historico da `CEDIMP`, elevando a trilha para um terceiro fato documental, ainda sem concluir ilegalidade por si so
   a camada seguinte ja ficou quantificada em metrica documental: `262` competencias concomitantes no total, `234` com `>=60h`, `28` com `>=80h` e pico documental de `100h`, sempre como triagem tecnica e nao como veredito juridico automatico
+  a matriz juridico-funcional agora organiza esse mesmo caso contra as normas oficiais da `Constituicao Federal` e da `Lei Municipal 1.794/2009`, com perguntas de apuracao sobre compatibilidade de horarios, alcance do art. 107, X, e eventual procedimento disciplinar
 
 O software ainda nao prova sozinho:
 - nepotismo da `NORTE`
