@@ -597,3 +597,28 @@ validacao executada:
 - `.venv/bin/python -m src.core.cross_reference_engine --detector doacao_contrato --allow-internal`
 - `.venv/bin/python -m src.core.cross_reference_engine --detector fracionamento --allow-internal`
 - `.venv/bin/python -m src.core.cross_reference_engine --detector outlier_salarial --allow-internal`
+
+## Quarentena do acervo alerts (2026-03-14)
+
+escopo:
+- saneiar o acervo historico da tabela `alerts`;
+- impedir que linhas antigas com `APTO_APURACAO` sobrevivam no banco;
+- fazer a UI ler uma view sanitizada, e nao a tabela bruta.
+
+resultado:
+- `scripts/sync_legacy_alerts_quarantine.py`
+  - rebaixa `uso_externo` para `REVISAO_INTERNA`
+  - marca `status = QUARENTENA`
+  - cria `v_alerts_legacy_quarantine`
+- `src/ui/streamlit_alerts.py`
+  - passou a ler a view sanitizada
+  - exibe `detector_status` e metricas de quarentena
+
+validacao executada:
+- `python -m py_compile scripts/sync_legacy_alerts_quarantine.py src/ui/streamlit_alerts.py`
+- `.venv/bin/python scripts/sync_legacy_alerts_quarantine.py`
+- `streamlit run app.py --server.headless true --server.port 8776`
+- checagem final:
+  - `alerts_external_rows=0`
+  - `alerts_quarantined_rows=1809`
+  - `v_alerts_legacy_quarantine -> APOSENTADO=1809`

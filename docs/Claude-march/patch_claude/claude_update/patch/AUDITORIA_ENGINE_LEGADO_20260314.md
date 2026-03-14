@@ -69,6 +69,11 @@ Conclusao operacional:
 - ele permanece no repositório apenas por compatibilidade histórica e auditoria técnica;
 - a trilha viva do produto é `ops_*`.
 
+Saneamento do acervo historico:
+- a tabela `alerts` foi integralmente rebaixada para `REVISAO_INTERNA`;
+- o status historico ativo passou a `QUARENTENA`;
+- a UI de quarentena passou a ler `v_alerts_legacy_quarantine`, e nao a tabela bruta.
+
 Motivo adicional para aposentar `fracionamento` no legado:
 - recorte real de `obras` sem candidatos compactos;
 - recortes municipal e estadual atuais sem blocos pequenos e compactos que justificassem promover o detector sem processo integral e cotejo de objeto.

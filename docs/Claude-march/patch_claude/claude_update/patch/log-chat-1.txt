@@ -2109,3 +2109,34 @@ validacao:
 - `.venv/bin/python -m src.core.cross_reference_engine --detector doacao_contrato --allow-internal`
 - `.venv/bin/python -m src.core.cross_reference_engine --detector fracionamento --allow-internal`
 - `.venv/bin/python -m src.core.cross_reference_engine --detector outlier_salarial --allow-internal`
+
+quarentena do acervo alerts:
+- criado `scripts/sync_legacy_alerts_quarantine.py`
+- criada view `v_alerts_legacy_quarantine`
+- `src/ui/streamlit_alerts.py` agora le a view sanitizada
+- todas as `1809` linhas da tabela `alerts` ficaram com:
+  - `uso_externo = REVISAO_INTERNA`
+  - `status = QUARENTENA`
+- distribuicao atual da view:
+  - `APOSENTADO = 1809`
+
+validacao:
+- `python -m py_compile scripts/sync_legacy_alerts_quarantine.py src/ui/streamlit_alerts.py`
+- `.venv/bin/python scripts/sync_legacy_alerts_quarantine.py`
+- `streamlit run app.py --server.headless true --server.port 8776`
+
+handoff final em docs:
+- criada a pasta `docs/HANDOFF_CODEX_20260314/`
+- conteudo:
+  - estado atual
+  - o que foi feito
+  - o que falta
+  - arquitetura ativa
+  - regras e limites
+  - legado congelado
+  - comandos essenciais
+  - mapa de arquivos
+  - casos ativos
+  - dificuldades e riscos
+  - validacao e metricas
+  - `manifest_handoff_20260314.json`
