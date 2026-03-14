@@ -23,6 +23,12 @@ class InsightOut(BaseModel):
     uf: Optional[str] = None
     area_tematica: Optional[str] = None
     sus: bool = False
+    classe_achado: Optional[str] = None
+    grau_probatorio: Optional[str] = None
+    fonte_primaria: Optional[str] = None
+    uso_externo: Optional[str] = None
+    inferencia_permitida: Optional[str] = None
+    limite_conclusao: Optional[str] = None
     created_at: datetime
 
 class EvidenceOut(BaseModel):
@@ -68,4 +74,6 @@ class InsightFacetsOut(BaseModel):
     orgaos: List[FacetBucketOut] = []
     municipios: List[FacetBucketOut] = []
     areas_tematicas: List[FacetBucketOut] = []
+    classes_achado: List[FacetBucketOut] = []
+    usos_externos: List[FacetBucketOut] = []
     sus: Dict[str, int] = {}

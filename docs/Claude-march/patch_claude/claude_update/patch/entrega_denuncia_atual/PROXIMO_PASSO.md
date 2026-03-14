@@ -2,6 +2,30 @@
 
 Com base no que ja temos, o proximo passo mais forte nao e genérico. E um trilho dedicado para `NORTE`.
 
+## Passo 0. Fechar a revisao conservadora de vinculo societario
+
+Status atual:
+- a camada `vinculo_politico_societario` ja avaliou `37` empresas com `QSA + contratos`
+- apareceu `1` caso com sobreposicao exata:
+  `CEDIMP` (`13.325.100/0001-30`)
+  `R$ 6.604.510,00` no contrato `779/2023` da `SESACRE`
+  `2` socios aparecendo nominalmente como servidores concursados da `SEMSA`
+- o follow-up de saude agora confirmou mais um fato:
+  os mesmos `2` nomes aparecem no modulo oficial de profissionais do `CNES` da propria `CEDIMP`
+  ambos com `CBO 225320 - MEDICO EM RADIOLOGIA E DIAGNOSTICO POR IMAGEM`
+  ambos com `20h` ambulatoriais no estabelecimento privado
+- o sistema classificou isso corretamente como:
+  `HIPOTESE_INVESTIGATIVA / EXPLORATORIO / REVISAO_INTERNA` para a camada societaria basica
+  `HIPOTESE_INVESTIGATIVA / INDICIARIO / REVISAO_INTERNA` para o follow-up de saude
+  `FATO_DOCUMENTAL / DOCUMENTAL_CORROBORADO / APTO_APURACAO` para a coincidencia nominal na ficha oficial de profissionais do CNES
+
+Entrega esperada:
+- confirmar se existe incompatibilidade juridica real ou apenas acumulacao licita
+- buscar fonte externa primaria para desambiguar CPF mascarado do QSA
+- checar regime, lotacao, carga horaria e compatibilidade funcional dos dois medicos
+- checar se os `CNS` do modulo de profissionais permitem amarrar melhor a identidade sem depender de CPF mascarado
+- se houver base suficiente, elevar de `sobreposicao societaria exata` para `potencial conflito de interesse`; se nao houver, manter como triagem interna e nao como representacao
+
 ## Passo 1. Fechar os blocos AGRO fora do eixo principal da SEJUSP
 
 Status atual:
@@ -132,3 +156,4 @@ Hoje ainda nao temos prova suficiente para afirmar, so com o banco atual, nepoti
 
 O melhor proximo passo agora e aprofundar os blocos `AGRO / DETRAN` e `AGRO / ISE`, porque o `170/2023` da `SEJUSP/PMAC` saiu da fila de pendencia.
 O `073/2023` do `IAPEN` e o `170/2023` da `SEJUSP` deixaram de ser pendencias: ambos agora estao amarrados a fonte primaria suficiente para trilha probatoria.
+No eixo de vinculo societario/saude, o melhor proximo passo deixou de ser raspagem basica e passou a ser compatibilidade juridico-funcional: CPF completo, jornada, acumulacao licita e vinculo profissional no ecossistema CNES.

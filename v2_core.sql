@@ -59,6 +59,12 @@ CREATE TABLE IF NOT EXISTS insight (
   uf TEXT,
   area_tematica TEXT,
   sus BOOLEAN DEFAULT FALSE,
+  classe_achado TEXT,
+  grau_probatorio TEXT,
+  fonte_primaria TEXT,
+  uso_externo TEXT,
+  inferencia_permitida TEXT,
+  limite_conclusao TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -41,6 +41,7 @@ DOC_FILES = [
 ]
 
 PORTAL_CONTRATOS_URL = "https://transparencia.ac.gov.br/contratos"
+PORTAL_LICITACOES_URL = "https://transparencia.ac.gov.br/licitacoes"
 PORTAL_HEADERS = {"User-Agent": "Sentinela/3.0"}
 
 DDL_CONTRATOS = """
@@ -477,6 +478,57 @@ def fetch_portal_contract_card(ano: int, numero_contrato: str, cnpjcpf: str) -> 
     return selected
 
 
+def fetch_portal_licitacao_detail(id_licitacao: int, candidate_years: tuple[int, ...]) -> dict | None:
+    session = requests.Session()
+    session.headers.update(PORTAL_HEADERS)
+    response = session.get(PORTAL_LICITACOES_URL, timeout=30)
+    response.raise_for_status()
+
+    token_match = re.search(
+        r'<meta name="csrf-token" content="([^"]+)"',
+        response.text,
+        re.IGNORECASE,
+    )
+    if not token_match:
+        return None
+    token = token_match.group(1)
+    headers = {
+        "X-CSRF-TOKEN": token,
+        "X-Requested-With": "XMLHttpRequest",
+        "Referer": PORTAL_LICITACOES_URL,
+        "Accept": "application/json, text/javascript, */*; q=0.01",
+        **PORTAL_HEADERS,
+    }
+
+    for year in candidate_years:
+        detail_response = session.post(
+            "https://transparencia.ac.gov.br/licitacoes/detalhamento-card",
+            data={
+                "_token": token,
+                "ano": str(year),
+                "id_licitacao": str(id_licitacao),
+                "busca": "",
+                "busca_card": "",
+                "filtro": "",
+                "fonte": "",
+                "periodo": "",
+                "inicio": "",
+                "fim": "",
+                "mes": "",
+                "modalidade": "",
+                "natureza": "",
+                "status": "",
+            },
+            headers=headers,
+            timeout=30,
+        )
+        detail_response.raise_for_status()
+        items = detail_response.json()
+        if items:
+            return {"ano_referencia": year, "items": items}
+    return None
+
+
 def main() -> int:
     con = duckdb.connect(str(DB_PATH))
     con.execute(DDL_CONTRATOS)
@@ -694,6 +746,75 @@ def main() -> int:
                 }
             )
 
+    pmac_020 = None
+    pmac_129 = None
+    pmac_licitacao = None
+    try:
+        pmac_020 = fetch_portal_contract_card(2023, "020/2023", TARGET_CNPJ)
+        pmac_129 = fetch_portal_contract_card(2023, "129/2023", TARGET_CNPJ)
+    except Exception:
+        pmac_020 = None
+        pmac_129 = None
+
+    lic_020 = parse_int(pmac_020.get("id_licitacao")) if pmac_020 else None
+    lic_129 = parse_int(pmac_129.get("id_licitacao")) if pmac_129 else None
+    if lic_020 and lic_129 and lic_020 == lic_129:
+        try:
+            pmac_licitacao = fetch_portal_licitacao_detail(lic_020, candidate_years=(2022, 2023))
+        except Exception:
+            pmac_licitacao = None
+
+    if pmac_020 and pmac_129 and pmac_licitacao:
+        items = pmac_licitacao["items"]
+        first = items[0]
+        numero_licitacao = str(first.get("numero_licitacao") or "").strip()
+        ano_referencia = int(pmac_licitacao["ano_referencia"])
+        publicacoes = sorted(
+            {
+                normalize_space(
+                    f"{item.get('forma_publicacao') or ''} {item.get('data_publicacao') or ''} {item.get('detalhe_publicacao') or ''}"
+                )
+                for item in items
+                if normalize_space(
+                    f"{item.get('forma_publicacao') or ''} {item.get('data_publicacao') or ''} {item.get('detalhe_publicacao') or ''}"
+                )
+            }
+        )
+        excerpt = normalize_space(
+            f"id_licitacao={lic_020} | numero_licitacao={numero_licitacao}/{ano_referencia} | "
+            f"processo={first.get('numero_processo_administrativo')} | entidade={first.get('entidade')} | "
+            f"data_abertura={first.get('data_abertura')} | status={first.get('status_licitacao_atual')} | "
+            f"publicacoes={'; '.join(publicacoes)}"
+        )
+        docs.append(
+            {
+                "doc_key": "agro_pmac_pe393_2022_portal_licitacao",
+                "cluster_key": "DETRAN_FROTA",
+                "relation_kind": "licitacao_comparativa_pmac",
+                "tipo_documento": "portal_licitacao",
+                "numero_contrato": None,
+                "numero_adesao": None,
+                "processo": str(first.get("numero_processo_administrativo") or ""),
+                "licitacao": f"PE {numero_licitacao}/{ano_referencia}" if numero_licitacao else None,
+                "ata_registro_precos": None,
+                "quantidade": None,
+                "valor_unitario_brl": None,
+                "valor_total_brl": None,
+                "data_assinatura": str(first.get("data_abertura") or ""),
+                "signatarios": None,
+                "source_url": PORTAL_LICITACOES_URL,
+                "local_pdf": None,
+                "local_txt": None,
+                "objeto_resumo": (
+                    "Portal de licitações resolve os contratos PMAC 020/2023 e 129/2023 para o "
+                    f"id_licitacao {lic_020}, correspondente ao PE {numero_licitacao}/{ano_referencia}, "
+                    "processo 0044.012021.00019/2022-95, com o mesmo objeto-base de viaturas "
+                    "caracterizadas tipo caminhonete 4x4 usado na comparação com o DETRAN 022/2023."
+                ),
+                "excerpt": excerpt,
+            }
+        )
+
     docs_by_key = {doc["doc_key"]: doc for doc in docs}
 
     con.execute("DELETE FROM trace_agro_unidades_followup")
@@ -871,6 +992,57 @@ def main() -> int:
             )
         )
 
+    doc_pe393 = docs_by_key.get("agro_pmac_pe393_2022_portal_licitacao")
+    if doc_022 and doc_pe393 and pmac_020 and pmac_129:
+        pmac_020_valor = float(pmac_020.get("valor_global_contrato") or 0)
+        pmac_129_valor = float(pmac_129.get("valor_global_contrato") or 0)
+        detran_unitario = float(doc_022.get("valor_unitario_brl") or 0)
+        same_unit = abs(pmac_129_valor - detran_unitario) < 0.01
+        multiple_020 = (pmac_020_valor / pmac_129_valor) if pmac_129_valor else None
+        multiple_020_int = round(multiple_020) if multiple_020 is not None else None
+        multiple_020_ok = multiple_020 is not None and abs(multiple_020 - multiple_020_int) < 1e-6
+        status = "COMPATIVEL_PRECO_OBJETO" if same_unit else "INCONCLUSIVO"
+        observacao = (
+            "O portal de contratos resolve os contratos **020/2023** e **129/2023** da **AGRO NORTE** "
+            "na **PMAC** para o mesmo `id_licitacao = 25588`, que o portal de licitações abre como "
+            f"**{doc_pe393['licitacao']}**, processo **{doc_pe393['processo']}**, com o mesmo objeto-base "
+            "de viaturas 4x4. O **129/2023** tem valor exato de "
+            f"**R$ {br_money(pmac_129_valor)}**, igual ao valor unitário publicado no DOE do **DETRAN 022/2023**; "
+            f"o **020/2023** soma **R$ {br_money(pmac_020_valor)}**"
+            + (
+                f", equivalente a **{multiple_020_int}x** esse mesmo unitário."
+                if multiple_020_ok and multiple_020_int is not None
+                else "."
+            )
+            + " Isso cria compatibilidade material forte de preço/objeto entre o bloco DETRAN e o "
+            "PE 393/2022 da PMAC, mas ainda sem ato formal de adesão/ARP do DETRAN publicado no pacote."
+        )
+        audit_rows.append(
+            (
+                row_hash("trace_agro_unidades_audit", "DETRAN", "022/2023", "PRECO_PMAC_393"),
+                "DETRAN_FROTA",
+                "022/2023",
+                "PRECO_UNITARIO_X_PE393_PMAC",
+                status,
+                detran_unitario,
+                pmac_129_valor,
+                None,
+                None,
+                observacao,
+                json.dumps(
+                    {
+                        "detran_doc_key": doc_022["doc_key"],
+                        "licitacao_doc_key": doc_pe393["doc_key"],
+                        "pmac_020_id_licitacao": pmac_020.get("id_licitacao"),
+                        "pmac_129_id_licitacao": pmac_129.get("id_licitacao"),
+                        "pmac_020_portal_id_contrato": pmac_020.get("portal_id_contrato"),
+                        "pmac_129_portal_id_contrato": pmac_129.get("portal_id_contrato"),
+                    },
+                    ensure_ascii=False,
+                ),
+            )
+        )
+
     doc_072 = docs_by_key.get("agro_ise_072_2024_doe")
     contrato_072 = contract_map.get("072/2024")
     if doc_072 and contrato_072:
@@ -1010,6 +1182,7 @@ def main() -> int:
         DELETE FROM insight
         WHERE kind IN (
             'TRACE_AGRO_DETRAN_FROTA_CADEIA',
+            'TRACE_AGRO_DETRAN_022_COMPATIVEL_PE393_PMAC',
             'TRACE_AGRO_EXECUCAO_PENAL_FROTA',
             'TRACE_AGRO_ISE_PORTAL_VALOR_DIVERGENTE',
             'TRACE_AGRO_FUNPEN_038_CONTRATO_EXATO',
@@ -1030,6 +1203,11 @@ def main() -> int:
             f"em **{len(contratos)}** contratos. O pacote inclui a aquisição principal **022/2023** "
             f"(**R$ {br_money(2296950.0)}**) com `origem = C` e sem `id_licitacao` exposto no portal, "
             f"mas o DOE oficial de 20/04/2023 já materializa **6 viaturas** a **R$ {br_money(382825.0)}** por unidade. "
+            f"O portal estadual também resolve os contratos **020/2023** e **129/2023** da **PMAC** para o "
+            f"`id_licitacao = 25588`, correspondente ao **PE 393/2022** (processo "
+            f"**0044.012021.00019/2022-95**), com o mesmo objeto-base de viaturas 4x4; o **129/2023** "
+            f"repete exatamente o unitário **R$ {br_money(382825.0)}**, e o **020/2023** aparece por "
+            f"**R$ {br_money(1148475.0)}**, ou seja, **3x** esse preço. "
             f"seguida por contratos de revisão/manutenção no mesmo fornecedor "
             f"(**001/2023**, **071/2023**, **007/2024** e **086/2024**) que somam "
             f"**R$ {br_money(detran['manutencao_brl'])}**. O contrato **071/2023** já referencia "
@@ -1058,6 +1236,7 @@ def main() -> int:
                         {"fonte": "estado_ac_contratos", "cnpj": TARGET_CNPJ, "cluster": "DETRAN_FROTA"},
                         {"fonte": "v_trace_norte_rede_sem_licitacao", "contrato": "022/2023"},
                         {"fonte": "trace_agro_unidades_docs", "doc_key": "agro_detran_022_2023_doe"},
+                        {"fonte": "trace_agro_unidades_docs", "doc_key": "agro_pmac_pe393_2022_portal_licitacao"},
                     ],
                     ensure_ascii=False,
                 ),
@@ -1147,6 +1326,55 @@ def main() -> int:
                 False,
                 float(exec_penal["total_brl"]),
                 2024,
+                "portal_transparencia_acre",
+            ],
+        )
+
+    for (
+        _row_id,
+        cluster_key,
+        numero_contrato,
+        audit_kind,
+        status,
+        portal_valor_brl,
+        doc_valor_brl,
+        portal_qtd,
+        doc_qtd,
+        observacao,
+        evidence_json,
+    ) in audit_rows:
+        if audit_kind != "PRECO_UNITARIO_X_PE393_PMAC" or status != "COMPATIVEL_PRECO_OBJETO":
+            continue
+        con.execute(
+            """
+            INSERT INTO insight (
+                id, kind, severity, confidence, exposure_brl, title, description_md,
+                pattern, sources, tags, sample_n, unit_total, esfera, ente, orgao,
+                municipio, uf, area_tematica, sus, valor_referencia, ano_referencia, fonte
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                "TRACE_AGRO:DETRAN_FROTA:022/2023:pe393",
+                "TRACE_AGRO_DETRAN_022_COMPATIVEL_PE393_PMAC",
+                "HIGH",
+                90,
+                2296950.0,
+                "DETRAN 022/2023 converge materialmente com o PE 393/2022 da PMAC",
+                observacao,
+                "AGRO -> DETRAN -> PE393_2022_PMAC_COMPATIBILIDADE_PRECO_OBJETO",
+                evidence_json,
+                json.dumps(["trace_agro", "detran", "022_2023", "pe393_2022", TARGET_CNPJ], ensure_ascii=False),
+                1,
+                2296950.0,
+                "estadual",
+                "AC",
+                "SEJUSP",
+                None,
+                "AC",
+                "seguranca_publica",
+                False,
+                2296950.0,
+                2023,
                 "portal_transparencia_acre",
             ],
         )

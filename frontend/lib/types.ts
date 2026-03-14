@@ -19,6 +19,12 @@ export type Insight = {
   uf?: string;
   area_tematica?: string;
   sus?: boolean;
+  classe_achado?: string;
+  grau_probatorio?: string;
+  fonte_primaria?: string;
+  uso_externo?: string;
+  inferencia_permitida?: string;
+  limite_conclusao?: string;
   created_at: string;
 };
 
@@ -41,5 +47,7 @@ export type InsightFacets = {
   orgaos: FacetBucket[];
   municipios: FacetBucket[];
   areas_tematicas: FacetBucket[];
+  classes_achado: FacetBucket[];
+  usos_externos: FacetBucket[];
   sus: Record<string, number>;
 };

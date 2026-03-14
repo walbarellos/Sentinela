@@ -11,6 +11,7 @@ import requests
 from src.core.insight_classification import (
     build_insight_extra_text,
     classify_insight_record,
+    classify_probative_record,
     ensure_insight_classification_columns,
 )
 from .schemas import InsightFacetsOut, InsightOut, SummaryOut, EntityOut, EventOut
@@ -34,6 +35,14 @@ CLASSIFICATION_FIELDS = [
     "uf",
     "area_tematica",
     "sus",
+]
+PROBATIVE_FIELDS = [
+    "classe_achado",
+    "grau_probatorio",
+    "fonte_primaria",
+    "uso_externo",
+    "inferencia_permitida",
+    "limite_conclusao",
 ]
 
 @app.get("/proxy")
@@ -92,6 +101,15 @@ def merge_classification(existing: Dict[str, Any], computed: Dict[str, Any]) -> 
     return merged
 
 
+def merge_probative(existing: Dict[str, Any], computed: Dict[str, Any]) -> Dict[str, Any]:
+    merged = {}
+    for field in PROBATIVE_FIELDS:
+        current = existing.get(field)
+        candidate = computed.get(field)
+        merged[field] = candidate if candidate not in (None, "") else current
+    return merged
+
+
 def has_canonical_classification(row: Dict[str, Any]) -> bool:
     return bool(row.get("esfera") and row.get("ente") and row.get("uf"))
 
@@ -107,6 +125,9 @@ def hydrate_insight_records(
     for field in CLASSIFICATION_FIELDS:
         if field not in hydrated_df.columns:
             hydrated_df[field] = False if field == "sus" else None
+    for field in PROBATIVE_FIELDS:
+        if field not in hydrated_df.columns:
+            hydrated_df[field] = None
 
     extra_text_by_id = build_insight_extra_text(con, hydrated_df["id"].astype(str).tolist())
     records: list[dict[str, Any]] = []
@@ -122,6 +143,15 @@ def hydrate_insight_records(
                 extra_text=extra_text_by_id.get(row["id"], ""),
             )
             row.update(merge_classification(row, computed))
+        row.update(
+            merge_probative(
+                row,
+                classify_probative_record(
+                    row,
+                    extra_text=extra_text_by_id.get(row["id"], ""),
+                ),
+            )
+        )
         for key in ["title", "description_md", "ente", "orgao", "municipio", "uf", "area_tematica"]:
             row[key] = fix_mojibake(row.get(key))
         records.append(row)
@@ -143,6 +173,8 @@ def filter_insight_records(
     uf: Optional[str] = None,
     area_tematica: Optional[str] = None,
     sus: Optional[bool] = None,
+    classe_achado: Optional[str] = None,
+    uso_externo: Optional[str] = None,
 ) -> list[dict[str, Any]]:
     filtered = records
 
@@ -160,6 +192,10 @@ def filter_insight_records(
         filtered = [row for row in filtered if matches_filter(row.get("area_tematica"), area_tematica)]
     if sus is not None:
         filtered = [row for row in filtered if bool(row.get("sus")) is sus]
+    if classe_achado:
+        filtered = [row for row in filtered if matches_filter(row.get("classe_achado"), classe_achado)]
+    if uso_externo:
+        filtered = [row for row in filtered if matches_filter(row.get("uso_externo"), uso_externo)]
 
     return filtered
 
@@ -205,8 +241,10 @@ def sync_insight_classification() -> None:
         ensure_insight_classification_columns(con)
         df = con.execute(
             """
-            SELECT id, title, description_md, pattern, sources, tags,
-                   esfera, ente, orgao, municipio, uf, area_tematica, sus
+            SELECT id, kind, title, description_md, pattern, sources, tags,
+                   esfera, ente, orgao, municipio, uf, area_tematica, sus,
+                   classe_achado, grau_probatorio, fonte_primaria,
+                   uso_externo, inferencia_permitida, limite_conclusao
             FROM insight
             """
         ).df()
@@ -236,6 +274,13 @@ def sync_insight_classification() -> None:
                         extra_text=extra_text_by_id.get(row["id"], ""),
                     ),
                 )
+            probative = merge_probative(
+                row,
+                classify_probative_record(
+                    row,
+                    extra_text=extra_text_by_id.get(row["id"], ""),
+                ),
+            )
             updates.append(
                 [
                     classification["esfera"],
@@ -245,6 +290,12 @@ def sync_insight_classification() -> None:
                     classification["uf"],
                     classification["area_tematica"],
                     classification["sus"],
+                    probative["classe_achado"],
+                    probative["grau_probatorio"],
+                    probative["fonte_primaria"],
+                    probative["uso_externo"],
+                    probative["inferencia_permitida"],
+                    probative["limite_conclusao"],
                     row["id"],
                 ]
             )
@@ -253,7 +304,9 @@ def sync_insight_classification() -> None:
             """
             UPDATE insight
             SET esfera = ?, ente = ?, orgao = ?, municipio = ?,
-                uf = ?, area_tematica = ?, sus = ?
+                uf = ?, area_tematica = ?, sus = ?,
+                classe_achado = ?, grau_probatorio = ?, fonte_primaria = ?,
+                uso_externo = ?, inferencia_permitida = ?, limite_conclusao = ?
             WHERE id = ?
             """,
             updates,
@@ -305,6 +358,8 @@ def list_insights(
     uf: Optional[str] = None,
     area_tematica: Optional[str] = None,
     sus: Optional[bool] = None,
+    classe_achado: Optional[str] = None,
+    uso_externo: Optional[str] = None,
     limit: int = Query(50, ge=1, le=200)
 ):
     con = get_con()
@@ -323,6 +378,8 @@ def list_insights(
         uf=uf,
         area_tematica=area_tematica,
         sus=sus,
+        classe_achado=classe_achado,
+        uso_externo=uso_externo,
     )
     return filtered[:limit]
 
@@ -339,6 +396,8 @@ def insight_facets(
     uf: Optional[str] = None,
     area_tematica: Optional[str] = None,
     sus: Optional[bool] = None,
+    classe_achado: Optional[str] = None,
+    uso_externo: Optional[str] = None,
 ):
     con = get_con()
     try:
@@ -356,6 +415,8 @@ def insight_facets(
         uf=uf,
         area_tematica=area_tematica,
         sus=sus,
+        classe_achado=classe_achado,
+        uso_externo=uso_externo,
     )
     return {
         "esferas": to_buckets([row.get("esfera") for row in filtered]),
@@ -363,6 +424,8 @@ def insight_facets(
         "orgaos": to_buckets([row.get("orgao") for row in filtered]),
         "municipios": to_buckets([row.get("municipio") for row in filtered]),
         "areas_tematicas": to_buckets([row.get("area_tematica") for row in filtered]),
+        "classes_achado": to_buckets([row.get("classe_achado") for row in filtered]),
+        "usos_externos": to_buckets([row.get("uso_externo") for row in filtered]),
         "sus": {
             "true": sum(1 for row in filtered if row.get("sus")),
             "false": sum(1 for row in filtered if not row.get("sus")),

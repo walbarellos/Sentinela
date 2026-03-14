@@ -18,6 +18,15 @@ CLASSIFICATION_COLUMNS = [
     ("sus", "BOOLEAN"),
 ]
 
+PROBATIVE_COLUMNS = [
+    ("classe_achado", "VARCHAR"),
+    ("grau_probatorio", "VARCHAR"),
+    ("fonte_primaria", "VARCHAR"),
+    ("uso_externo", "VARCHAR"),
+    ("inferencia_permitida", "VARCHAR"),
+    ("limite_conclusao", "VARCHAR"),
+]
+
 MUNICIPAL_ENTE = "Prefeitura de Rio Branco"
 STATE_ENTE = "Governo do Estado do Acre"
 FEDERAL_ENTE = "Uniao"
@@ -65,7 +74,7 @@ def ensure_insight_classification_columns(con: duckdb.DuckDBPyConnection) -> Non
         }
     except duckdb.Error:
         return
-    for column, sql_type in CLASSIFICATION_COLUMNS:
+    for column, sql_type in CLASSIFICATION_COLUMNS + PROBATIVE_COLUMNS:
         if column in existing:
             continue
         con.execute(f"ALTER TABLE insight ADD COLUMN {column} {sql_type}")
@@ -80,6 +89,17 @@ def classification_defaults() -> dict[str, Any]:
         "uf": None,
         "area_tematica": None,
         "sus": False,
+    }
+
+
+def probative_defaults() -> dict[str, Any]:
+    return {
+        "classe_achado": None,
+        "grau_probatorio": None,
+        "fonte_primaria": None,
+        "uso_externo": None,
+        "inferencia_permitida": None,
+        "limite_conclusao": None,
     }
 
 
@@ -185,6 +205,65 @@ def classify_insight_record(
     return result
 
 
+def classify_probative_record(
+    record: Mapping[str, Any],
+    *,
+    extra_text: str = "",
+) -> dict[str, Any]:
+    text = f" {_compose_text(record, extra_text=extra_text)} "
+    kind = f" {_normalize(_json_to_text(record.get('kind')))} "
+    source_groups = _detect_source_groups(record, text)
+    fonte_primaria = _detect_primary_source(text, source_groups)
+    primary_doc_hit = _has_primary_document_hit(text, fonte_primaria)
+    corroborated_hit = len(source_groups) >= 2
+
+    if _contains_any(kind, ("INCONSIST", "DIVERG", "VENCEDOR DIVERGENTE", "OBJETO DIVERGENTE")):
+        classe = "DIVERGENCIA_DOCUMENTAL"
+        grau = "DOCUMENTAL_CORROBORADO" if primary_doc_hit and corroborated_hit else "DOCUMENTAL_PRIMARIO" if primary_doc_hit else "INDICIARIO"
+        uso = "APTO_REPRESENTACAO" if grau == "DOCUMENTAL_CORROBORADO" else "APTO_APURACAO"
+        inferencia = "Ha divergencia documental objetiva entre ato formal, portal publico ou publicacoes oficiais."
+        limite = "Nao prova dolo, fraude penal ou direcionamento por si so; exige analise juridica e contexto administrativo."
+    elif _contains_any(kind, ("SANCAO", "CEIS", "CNEP", "CEPIM", "CEAF")) or _contains_any(text, (" CEIS ", " CNEP ", " CEPIM ", " CEAF ", " SANCAO ")):
+        classe = "CRUZAMENTO_SANCIONATORIO"
+        grau = "DOCUMENTAL_CORROBORADO" if corroborated_hit else "DOCUMENTAL_PRIMARIO"
+        uso = "APTO_APURACAO"
+        inferencia = "Ha fornecedor, entidade ou CNPJ com registro sancionatorio ou impeditivo a ser confrontado com a contratacao."
+        limite = "Nao basta para afirmar irregularidade sem verificar vigencia, alcance juridico, fundamento da sancao e aderencia ao caso concreto."
+    elif _contains_any(kind, ("CONTRATO EXATO", "ORIGEM ADESAO", "ORIGEM FORMAL", "VINCULO EXATO")) or _contains_any(text, (" CONTRATO EXATO ", " TERMO DE ADESAO ", " EXTRATO DO CONTRATO ", " ORIGEM FORMAL ", " HOMOLOGACAO ", " PORTARIA ")):
+        classe = "FATO_DOCUMENTAL"
+        grau = "DOCUMENTAL_CORROBORADO" if corroborated_hit else "DOCUMENTAL_PRIMARIO"
+        uso = "APTO_APURACAO"
+        inferencia = "Ha vinculo formal documentado entre contrato, processo, licitacao, adesao ou publicacao oficial."
+        limite = "O achado nao comprova favorecimento, superfaturamento, nepotismo ou fraude por si so."
+    elif _contains_any(kind, ("CADEIA", "RASTRO", "SEM ID LICITACAO", "COMPATIVEL", "PORTAL CIAP")):
+        classe = "RASTRO_CONTRATUAL"
+        grau = "INDICIARIO" if primary_doc_hit or corroborated_hit else "EXPLORATORIO"
+        uso = "APTO_APURACAO" if grau == "INDICIARIO" else "REVISAO_INTERNA"
+        inferencia = "Ha rastro contratual ou compatibilidade material relevante que orienta apuracao dirigida."
+        limite = "O rastro nao fecha sozinho a origem juridica nem prova ilicitude; ainda pode haver explicacao administrativa valida."
+    elif _contains_any(kind, ("QSA", "REDE", "LEAD", "MATCH", "EXPOSICAO", "PENDENCIA")):
+        classe = "HIPOTESE_INVESTIGATIVA"
+        grau = "INDICIARIO" if corroborated_hit else "EXPLORATORIO"
+        uso = "REVISAO_INTERNA"
+        inferencia = "Ha pista societaria, relacional ou contratual que merece checagem manual."
+        limite = "Nao pode ser usada isoladamente para afirmar nepotismo, vinculacao politica, fraude ou beneficio indevido."
+    else:
+        classe = "FATO_DOCUMENTAL" if primary_doc_hit else "HIPOTESE_INVESTIGATIVA"
+        grau = "DOCUMENTAL_PRIMARIO" if primary_doc_hit else "EXPLORATORIO"
+        uso = "APTO_APURACAO" if primary_doc_hit else "REVISAO_INTERNA"
+        inferencia = "Ha fato objetivo documentado." if primary_doc_hit else "Ha achado preliminar para triagem."
+        limite = "Sem corroboracao adicional, o sistema nao deve elevar este achado para conclusao acusatoria."
+
+    return {
+        "classe_achado": classe,
+        "grau_probatorio": grau,
+        "fonte_primaria": fonte_primaria,
+        "uso_externo": uso,
+        "inferencia_permitida": inferencia,
+        "limite_conclusao": limite,
+    }
+
+
 def build_insight_extra_text(
     con: duckdb.DuckDBPyConnection,
     insight_ids: list[str],
@@ -228,6 +307,10 @@ def build_insight_extra_text(
     }
 
 
+def has_probative_classification(record: Mapping[str, Any]) -> bool:
+    return bool(record.get("classe_achado") and record.get("grau_probatorio") and record.get("uso_externo"))
+
+
 def _compose_text(record: Mapping[str, Any], *, extra_text: str = "") -> str:
     chunks = [
         _json_to_text(record.get("title")),
@@ -265,6 +348,86 @@ def _json_to_text(value: Any) -> str:
 
 def _contains_any(text: str, patterns: tuple[str, ...]) -> bool:
     return any(pattern in text for pattern in patterns)
+
+
+def _has_primary_document_hit(text: str, fonte_primaria: str | None) -> bool:
+    if fonte_primaria in {"DOE_AC", "DJE_TJAC", "PNCP", "CGU", "TSE"}:
+        return True
+    return _contains_any(
+        text,
+        (
+            " DIARIO OFICIAL ",
+            " DOE ",
+            " DJE ",
+            " TJAC ",
+            " EXTRATO DO CONTRATO ",
+            " TERMO DE ADESAO ",
+            " PORTARIA ",
+            " HOMOLOGACAO ",
+            " EDITAL ",
+            " RETIFICACAO ",
+            " PNCP ",
+            " CEIS ",
+            " CNEP ",
+        ),
+    )
+
+
+def _detect_primary_source(text: str, source_groups: set[str]) -> str | None:
+    priority = [
+        "DJE_TJAC",
+        "DOE_AC",
+        "CGU",
+        "PNCP",
+        "TSE",
+        "PORTAL_RIO_BRANCO",
+        "PORTAL_ACRE",
+        "CNPJ_QSA",
+        "DATASUS_CNES",
+    ]
+    for group in priority:
+        if group in source_groups:
+            return group
+    if " TJAC " in text or " DJE " in text:
+        return "DJE_TJAC"
+    if " DIARIO OFICIAL " in text or " DOE " in text or " DIARIO.AC.GOV.BR " in text:
+        return "DOE_AC"
+    if " CEIS " in text or " CNEP " in text or " CGU " in text:
+        return "CGU"
+    if " PNCP " in text:
+        return "PNCP"
+    if " RIO BRANCO " in text or " CPL " in text:
+        return "PORTAL_RIO_BRANCO"
+    if " ESTADO DO ACRE " in text or " TRANSPARENCIA AC " in text:
+        return "PORTAL_ACRE"
+    return None
+
+
+def _detect_source_groups(record: Mapping[str, Any], text: str) -> set[str]:
+    groups: set[str] = set()
+    source_text = _normalize(_json_to_text(record.get("sources")))
+    tag_text = _normalize(_json_to_text(record.get("tags")))
+    combined = f"{text} {source_text} {tag_text}"
+
+    if _contains_any(combined, (" TJAC ", " DJE ", " TJAC JUS BR ")):
+        groups.add("DJE_TJAC")
+    if _contains_any(combined, (" DIARIO OFICIAL ", " DOE ", " DIARIO AC GOV BR ", " CPL_PUBLICACAO ", " PUBLICACAO CPL ")):
+        groups.add("DOE_AC")
+    if _contains_any(combined, (" PORTAL TRANSPARENCIA RIO BRANCO ", " RIO BRANCO ", " CPL ", " RB_CONTRATO ", " RB_SUS ")):
+        groups.add("PORTAL_RIO_BRANCO")
+    if _contains_any(combined, (" PORTAL TRANSPARENCIA ACRE ", " PORTAL_TRANSPARENCIA_ACRE ", " ESTADO_AC_", " GOVERNO DO ESTADO DO ACRE ", " TRANSPARENCIA AC ")):
+        groups.add("PORTAL_ACRE")
+    if _contains_any(combined, (" CEIS ", " CNEP ", " CEPIM ", " CEAF ", " CGU ")):
+        groups.add("CGU")
+    if _contains_any(combined, (" PNCP ", " COMPRASNET ")):
+        groups.add("PNCP")
+    if _contains_any(combined, (" QSA ", " CNPJ ", " BRASILAPI ", " RECEITA ")):
+        groups.add("CNPJ_QSA")
+    if _contains_any(combined, (" TSE ", " CANDIDATURA ", " DOACAO ELEITORAL ")):
+        groups.add("TSE")
+    if _contains_any(combined, (" CNES ", " DATASUS ", " SIH ", " SIM ", " SINAN ")):
+        groups.add("DATASUS_CNES")
+    return groups
 
 
 def _normalize(text: str) -> str:

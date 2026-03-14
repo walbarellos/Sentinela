@@ -5,6 +5,7 @@ import pandas as pd
 from datetime import datetime
 from src.core.insight_classification import (
     classify_insight_record,
+    classify_probative_record,
     ensure_insight_classification_columns,
 )
 
@@ -80,6 +81,16 @@ def insert_insight(con, ins):
             "tags": ins.get("tags", []),
         }
     )
+    probative = classify_probative_record(
+        {
+            "kind": ins.get("kind", "salario"),
+            "title": ins["titulo"],
+            "description_md": ins["descricao"],
+            "pattern": ins.get("pattern"),
+            "sources": ins.get("fontes", []),
+            "tags": ins.get("tags", []),
+        }
+    )
     con.execute(
         """
         INSERT OR REPLACE INTO insight (
@@ -102,8 +113,14 @@ def insert_insight(con, ins):
             uf,
             area_tematica,
             sus,
+            classe_achado,
+            grau_probatorio,
+            fonte_primaria,
+            uso_externo,
+            inferencia_permitida,
+            limite_conclusao,
             created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())
         """,
         [
             ins["id"],
@@ -125,6 +142,12 @@ def insert_insight(con, ins):
             classification["uf"],
             classification["area_tematica"],
             classification["sus"],
+            probative["classe_achado"],
+            probative["grau_probatorio"],
+            probative["fonte_primaria"],
+            probative["uso_externo"],
+            probative["inferencia_permitida"],
+            probative["limite_conclusao"],
         ]
     )
 

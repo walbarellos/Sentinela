@@ -59,6 +59,20 @@ Sim, ja existem elementos concretos para representacao preliminar.
 - `67` fornecedores com sancao ativa
 - `R$ 101.329.947,27` em contratos agregados no recorte atual
 - top `10` estadual ja empacotado com dossie, representacao preliminar e extratos CSV
+- camada conservadora de vinculo politico/societario agora materializada:
+  `37` empresas com QSA + contratos publicos avaliadas
+  `1` caso com match objetivo exato em base publica
+  caso atual: `CEDIMP` (`13.325.100/0001-30`) com `R$ 6.604.510,00` em `1` contrato da `SESACRE`, e `2` socios aparecendo de forma exata como servidores concursados da `SEMSA`
+  este achado ficou classificado como `HIPOTESE_INVESTIGATIVA / EXPLORATORIO / REVISAO_INTERNA`, nao como denuncia pronta
+- follow-up de saude ja fechado para esse caso:
+  `CNES` oficial `6861849`
+  estabelecimento `SADT ISOLADO`, gestao `ESTADUAL`, em `RIO BRANCO`
+  CNAE `Servicos de tomografia`
+  contrato `779/2023` da `SESACRE`
+  `2` socios com cargo medico de `20h` na `SEMSA`
+  `8` classificacoes CNES de diagnostico por imagem, incluindo `RADIOLOGIA`, `TOMOGRAFIA COMPUTADORIZADA` e `ULTRASONOGRAFIA`
+  o modulo de profissionais do proprio `CNES` lista nominalmente os `2` socios como profissionais ativos do estabelecimento, ambos com `CBO 225320 - MEDICO EM RADIOLOGIA E DIAGNOSTICO POR IMAGEM` e `20h` ambulatoriais
+  isso gerou um segundo insight factual: `FATO_DOCUMENTAL / DOCUMENTAL_CORROBORADO / APTO_APURACAO`
 
 ## O que esta nesta pasta
 
@@ -107,6 +121,14 @@ Sim, ja existem elementos concretos para representacao preliminar.
 - `trace_agro_unidades_followup.csv`
 - `trace_agro_unidades_docs.csv`
 - `trace_agro_unidades_audit.csv`
+- `TRACE_VINCULO_SOCIETARIO_DOSSIE.md`
+- `TRACE_VINCULO_SOCIETARIO_MANIFEST.json`
+- `trace_vinculo_societario_resumo.csv`
+- `trace_vinculo_societario_matches.csv`
+- `trace_vinculo_societario_contratos.csv`
+- `TRACE_VINCULO_SOCIETARIO_SAUDE_DOSSIE.md`
+- `TRACE_VINCULO_SOCIETARIO_SAUDE_MANIFEST.json`
+- `trace_vinculo_societario_saude_followup.csv`
 - `trace_agro_unidades/`
 - `trace_agro_unidades/073_2023_iapen_1.pdf`
 - `trace_agro_unidades/073_2023_iapen_1.txt`
@@ -142,10 +164,20 @@ O software hoje ja prova:
 - `038/2023` do `FUNPENACRE` ja tem contrato exato fechado no DOE, consistente com o `Termo de Adesao 5/2023/IAPEN`, no mesmo processo `4005.014135.00006/2023-90`
 - `073/2023` do `IAPEN` ja tem contrato exato fechado no DOE de `04/08/2023`, com termo de adesao `26/2023/IAPEN`, processo `4005.014141.00047/2023-70`, `PE SRP 258/2022`, `ARP 010/2022-SEPA` e card estadual convergente para a `CIAP / Convenio 905916/2020 MJ/DEPEN`
 - divergencia nominal objetiva no `072/2024`: portal estadual com `R$ 2.484.000,00` e DOE oficial com `R$ 2.480.000,00`, mantendo `10` unidades no extrato
+- um caso objetivo de sobreposicao societaria exata entre contrato estadual e base municipal de servidores:
+  `CEDIMP` (`13.325.100/0001-30`) em contrato `779/2023` da `SESACRE`, com `2` socios aparecendo nominalmente como servidores concursados da `SEMSA`
+  o sistema trata este achado apenas como triagem conservadora, sem afirmar nepotismo, conflito ilegal ou favorecimento
+- follow-up oficial do mesmo caso em fonte primaria de saude:
+  `CNES 6861849`, ficha oficial aberta do Ministerio da Saude
+  estabelecimento `UNIDADE DE APOIO DIAGNOSE E TERAPIA (SADT ISOLADO)`, gestao `ESTADUAL`
+  `8` classificacoes oficiais de diagnostico por imagem no `CNES`
+  o modulo oficial de profissionais do mesmo `CNES` lista `MAIRA SANTIAGO PIRES PARENTE` e `MARCOS PAULO PARENTE ARAUJO` como profissionais ativos do estabelecimento, ambos com `CBO 225320`
+  isso eleva a trilha de saude para fato documental corroborado sobre coincidencia funcional, mas ainda nao fecha ilicitude
 
 O software ainda nao prova sozinho:
 - nepotismo da `NORTE`
 - fraude licitatoria especifica da `NORTE`
 - substituicao de servidores efetivos por empregados dessa empresa
+- impedimento legal do caso `CEDIMP` sem CPF completo, carga horaria, regime e compatibilidade funcional
 
-Essas tres linhas seguem como hipoteses investigativas fortes, mas ainda precisam de prova adicional especifica.
+Essas linhas seguem como hipoteses investigativas fortes, mas ainda precisam de prova adicional especifica.

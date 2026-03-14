@@ -660,3 +660,108 @@
   arvore local com evidencias continuou acessivel fora do indice
 - Observacao:
   sera necessario force-push do branch master limpo para alinhar o remoto
+
+[2026-03-13 21:49:53 -0500] camada_probatoria_backend
+- Objetivo:
+  endurecer o sistema contra falso positivo e separar fato, divergencia, cruzamento e hipotese
+- Arquivos atualizados:
+  src/core/insight_classification.py
+  backend/app/main.py
+  backend/app/schemas.py
+  scripts/sync_v2.py
+  v2_core.sql
+  frontend/lib/types.ts
+  docs/Claude-march/patch_claude/claude_update/patch/PROTOCOLO_PROBATORIO.md
+- Regra incorporada:
+  cada insight agora recebe classe_achado, grau_probatorio, fonte_primaria, uso_externo, inferencia_permitida e limite_conclusao
+- Validacao:
+  py_compile dos arquivos Python alterados passou
+  sync_insight_classification() executou com sucesso no DuckDB principal
+  filtros por classe_achado e uso_externo funcionaram no backend
+- Estado observado no banco:
+  CRUZAMENTO_SANCIONATORIO / DOCUMENTAL_CORROBORADO / APTO_APURACAO = 765
+  DIVERGENCIA_DOCUMENTAL / DOCUMENTAL_PRIMARIO / APTO_APURACAO = 4
+  FATO_DOCUMENTAL / DOCUMENTAL_PRIMARIO ou CORROBORADO / APTO_APURACAO = 6
+  RASTRO_CONTRATUAL / INDICIARIO ou EXPLORATORIO = 15
+  HIPOTESE_INVESTIGATIVA / INDICIARIO ou EXPLORATORIO = 293
+- Exemplos conferidos:
+  RB_CONTRATO_LICITACAO_INCONSISTENTE -> DIVERGENCIA_DOCUMENTAL
+  RB_CONTRATO_SANCIONADO -> CRUZAMENTO_SANCIONATORIO
+  TRACE_NORTE_SEJUSP_170_ORIGEM_ADESAO_TJAC -> FATO_DOCUMENTAL
+  TRACE_AGRO_DETRAN_FROTA_CADEIA -> RASTRO_CONTRATUAL
+
+[2026-03-13 22:08:11 -0500] vinculo_politico_societario_conservador
+- Objetivo:
+  criar uma camada estritamente objetiva para sobreposicao entre QSA, contratos publicos e bases politicas/servidores, sem chamar nepotismo automaticamente
+- Scripts novos:
+  scripts/sync_vinculo_politico_societario.py
+  scripts/export_vinculo_politico_societario.py
+- Correcao importante de rigor:
+  o alvo inicial estava inflando exposicao e numero de contratos pelo numero de socios no JOIN com empresa_socios
+  o join foi trocado para CNPJs distintos e a exposicao do caso positivo caiu de R$ 13,2 mi para R$ 6,6 mi, com 1 contrato real
+- Resultado no banco:
+  vinculo_politico_societario_targets = 37
+  vinculo_politico_societario_matches = 4
+  vinculo_politico_societario_resumo = 37
+  insights RISCO_VINCULO_SOCIETARIO_* = 1
+- Caso objetivo materializado:
+  CEDIMP / 13.325.100/0001-30 / contrato 779/2023 / SESACRE / R$ 6.604.510,00
+  2 socios com match nominal exato em 2 bases municipais de servidor:
+  MAIRA SANTIAGO PIRES PARENTE -> medica ultrasonografista / SEMSA / concursada
+  MARCOS PAULO PARENTE ARAUJO -> medico radiologia / SEMSA / concursado
+- Classificacao probatoria:
+  HIPOTESE_INVESTIGATIVA / EXPLORATORIO / REVISAO_INTERNA
+- Leitura de rigor:
+  isto prova apenas sobreposicao societaria exata com base publica
+  nao prova nepotismo, impedimento legal ou favorecimento sem CPF completo, compatibilidade de carga horaria e regime juridico
+- Artefatos leves gerados:
+  entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_DOSSIE.md
+  entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_MANIFEST.json
+  entrega_denuncia_atual/trace_vinculo_societario_resumo.csv
+  entrega_denuncia_atual/trace_vinculo_societario_matches.csv
+  entrega_denuncia_atual/trace_vinculo_societario_contratos.csv
+
+[2026-03-13 22:21:03 -0500] vinculo_societario_saude_followup
+- Objetivo:
+  fechar um follow-up oficial de saude para o caso positivo da CEDIMP, usando fonte primaria do Ministerio da Saude
+- Scripts novos:
+  scripts/sync_vinculo_societario_saude_followup.py
+  scripts/export_vinculo_societario_saude_followup.py
+- Fonte primaria validada:
+  CNES oficial -> estabelecimento 6861849
+  https://cnes2.datasus.gov.br/Exibe_Ficha_Estabelecimento.asp?VCo_Unidade=1200406861849&VEstado=12&VCodMunicipio=120040
+- Resultado materializado:
+  vinculo_societario_saude_followup = 1
+  insight QSA_VINCULO_SOCIETARIO_SAUDE_EXATO = 1
+  classificacao do insight = HIPOTESE_INVESTIGATIVA / INDICIARIO / REVISAO_INTERNA
+- Caso fechado:
+  CEDIMP / 13.325.100/0001-30 / contrato 779/2023 / SESACRE / R$ 6.604.510,00
+  CNES 6861849 / SADT ISOLADO / gestao ESTADUAL / Rio Branco
+  2 socios com match exato em base municipal:
+  MAIRA SANTIAGO PIRES PARENTE / medica ultrasonografista / 20h / SEMSA
+  MARCOS PAULO PARENTE ARAUJO / medico radiologia / 20h / SEMSA
+  8 classificacoes oficiais no CNES, incluindo RADIOLOGIA, TOMOGRAFIA COMPUTADORIZADA e ULTRASONOGRAFIA
+- Leitura de rigor:
+  isso reforca objetivamente a correlacao entre atividade privada, contrato estadual e funcao publica municipal
+  ainda nao prova impedimento legal, conflito ilicito, nepotismo ou acumulo irregular
+- Artefatos leves gerados:
+  entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_DOSSIE.md
+  entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_MANIFEST.json
+  entrega_denuncia_atual/trace_vinculo_societario_saude_followup.csv
+
+[2026-03-13 22:29:18 -0500] cnes_profissionais_cedimp
+- Objetivo:
+  verificar se os socios publicos da CEDIMP tambem aparecem no modulo oficial de profissionais do CNES
+- Fonte primaria validada:
+  https://cnes2.datasus.gov.br/Mod_Profissional.asp?VCo_Unidade=1200406861849
+- Resultado:
+  os 2 nomes aparecem como profissionais ativos do estabelecimento
+  MAIRA SANTIAGO PIRES PARENTE -> CBO 225320 / MEDICO EM RADIOLOGIA E DIAGNOSTICO POR IMAGEM / 20h amb / vinculo empregaticio / celetista
+  MARCOS PAULO PARENTE ARAUJO -> CBO 225320 / MEDICO EM RADIOLOGIA E DIAGNOSTICO POR IMAGEM / 20h amb / autonomo / pessoa fisica
+- Efeito no banco:
+  vinculo_societario_saude_followup.n_cnes_profissionais_match = 2
+  insight novo = VINCULO_EXATO_CNES_PROFISSIONAL_SAUDE
+  classificacao = FATO_DOCUMENTAL / DOCUMENTAL_CORROBORADO / APTO_APURACAO
+- Leitura de rigor:
+  isso prova coincidencia documental nominal entre estabelecimento privado, ficha oficial de profissionais do CNES, contrato estadual e base municipal de servidores
+  ainda nao prova impedimento legal ou conflito ilicito sem amarracao juridica adicional
