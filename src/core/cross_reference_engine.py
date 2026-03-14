@@ -152,6 +152,7 @@ RETIRED_DEFAULT = {
     "fim_de_semana",
     "empresa_suspensa",
     "nepotismo_sobrenome",
+    "doacao_contrato",
 }
 
 LEGACY_INTERNAL_USAGE = "REVISAO_INTERNA"
@@ -162,7 +163,7 @@ DETECTOR_STATUS = {
     "viagem_bloco": "APOSENTADO",
     "concentracao_mercado": "APOSENTADO",
     "empresa_suspensa": "COBERTO_OPS",
-    "doacao_contrato": "LAB_INTERNO",
+    "doacao_contrato": "APOSENTADO",
     "fim_de_semana": "APOSENTADO",
     "nepotismo_sobrenome": "APOSENTADO",
 }

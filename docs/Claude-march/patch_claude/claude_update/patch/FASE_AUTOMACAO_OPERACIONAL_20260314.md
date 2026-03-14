@@ -568,3 +568,24 @@ validacao executada:
 - `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
 - `.venv/bin/python scripts/validate_cross_reference_engine.py`
 - `.venv/bin/python -m src.core.cross_reference_engine --detector nepotismo_sobrenome --allow-internal`
+
+## Fechamento do mapa do legado (2026-03-14)
+
+escopo:
+- decidir o destino final de `doacao_contrato`;
+- consolidar o mapa de sobrevivencia do `cross_reference_engine.py`.
+
+resultado:
+- `doacao_contrato`
+  - movido para `RETIRED_DEFAULT`
+  - status `APOSENTADO`
+- mapa final do legado:
+  - `CANDIDATO_OPS`: `fracionamento`
+  - `LAB_INTERNO`: `outlier_salarial`
+  - `COBERTO_OPS`: `empresa_suspensa`
+  - `APOSENTADO`: `viagem_bloco`, `concentracao_mercado`, `fim_de_semana`, `nepotismo_sobrenome`, `doacao_contrato`
+
+validacao executada:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector doacao_contrato --allow-internal`

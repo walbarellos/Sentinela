@@ -23,9 +23,9 @@ Lista atual:
 
 Regra:
 - `fracionamento` fica em `CANDIDATO_OPS` e so roda com `--allow-internal`
-- `outlier_salarial` e `doacao_contrato` ficam em `LAB_INTERNO` e so rodam com `--allow-internal`
+- `outlier_salarial` fica em `LAB_INTERNO` e so roda com `--allow-internal`
 - `empresa_suspensa` fica em `COBERTO_OPS` e nao roda mais no legado
-- `viagem_bloco`, `concentracao_mercado`, `fim_de_semana` e `nepotismo_sobrenome` ficam em `APOSENTADO` e nao rodam mais nem com `--allow-internal`
+- `viagem_bloco`, `concentracao_mercado`, `fim_de_semana`, `nepotismo_sobrenome` e `doacao_contrato` ficam em `APOSENTADO` e nao rodam mais nem com `--allow-internal`
 - qualquer `Alert` legado fica com `uso_externo = REVISAO_INTERNA`
 
 ## Motivo
@@ -55,6 +55,7 @@ Detectores aposentados:
 - `concentracao_mercado`
 - `fim_de_semana`
 - `nepotismo_sobrenome`
+- `doacao_contrato`
 
 Detector endurecido mas mantido em laboratorio:
 - `outlier_salarial`
@@ -71,3 +72,9 @@ Detector candidato a reescrita futura em `ops`:
   - mínimo de `4` contratos
   - janela máxima de `90` dias
   - saída apenas interna até existir cotejo de objeto, modalidade e processo integral
+
+Mapa final de sobrevivencia do legado:
+- `CANDIDATO_OPS`: `fracionamento`
+- `LAB_INTERNO`: `outlier_salarial`
+- `COBERTO_OPS`: `empresa_suspensa`
+- `APOSENTADO`: `viagem_bloco`, `concentracao_mercado`, `fim_de_semana`, `nepotismo_sobrenome`, `doacao_contrato`
