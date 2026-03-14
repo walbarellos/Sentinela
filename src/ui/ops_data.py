@@ -161,6 +161,14 @@ def load_ops_dashboard_data():
         generated_export_count = 0
         if "ops_case_generated_export" in tables:
             generated_export_count = int(con.execute("SELECT COUNT(*) FROM ops_case_generated_export").fetchone()[0] or 0)
+        generated_export_diff_count = 0
+        if "ops_case_generated_export_diff" in tables:
+            generated_export_diff_count = int(con.execute("SELECT COUNT(*) FROM ops_case_generated_export_diff").fetchone()[0] or 0)
+        rule_validation_fail_count = 0
+        if "ops_rule_validation" in tables:
+            rule_validation_fail_count = int(
+                con.execute("SELECT COUNT(*) FROM ops_rule_validation WHERE status = 'FAIL'").fetchone()[0] or 0
+            )
         cases_df = con.execute(
             """
             SELECT
@@ -206,6 +214,8 @@ def load_ops_dashboard_data():
         "language_guard": language_guard_count,
         "export_gate": export_gate_count,
         "generated_export": generated_export_count,
+        "generated_export_diff": generated_export_diff_count,
+        "rule_validation_fail": rule_validation_fail_count,
         "by_stage": by_stage_df.to_dict("records"),
         "by_family": by_family_df.to_dict("records"),
     }
@@ -466,6 +476,35 @@ def load_ops_case_generated_exports(case_id: str) -> pd.DataFrame:
             FROM v_ops_case_generated_export
             WHERE case_id = ?
             ORDER BY created_at DESC, export_mode
+            """,
+            [case_id],
+        ).df()
+    finally:
+        con.close()
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def load_ops_case_generated_export_diffs(case_id: str) -> pd.DataFrame:
+    con = duckdb.connect(str(DB_PATH), read_only=True)
+    try:
+        tables = set(con.execute("SHOW TABLES").df()["name"].tolist())
+        if "ops_case_generated_export_diff" not in tables:
+            return pd.DataFrame()
+        return con.execute(
+            """
+            SELECT
+                export_mode,
+                older_export_id,
+                newer_export_id,
+                changed,
+                added_lines,
+                removed_lines,
+                summary,
+                diff_text,
+                updated_at
+            FROM v_ops_case_generated_export_diff
+            WHERE case_id = ?
+            ORDER BY updated_at DESC, export_mode
             """,
             [case_id],
         ).df()

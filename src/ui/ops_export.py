@@ -5,7 +5,11 @@ import pandas as pd
 import streamlit as st
 
 from src.core.ops_export import build_case_external_text
-from src.ui.ops_data import freeze_ops_case_export_now, load_ops_case_generated_exports
+from src.ui.ops_data import (
+    freeze_ops_case_export_now,
+    load_ops_case_generated_export_diffs,
+    load_ops_case_generated_exports,
+)
 from src.ui.ops_shared import DB_PATH
 
 
@@ -28,11 +32,25 @@ def render_export_tab(case_id: str, gate_df: pd.DataFrame) -> None:
 
     st.dataframe(gate_df, use_container_width=True, hide_index=True)
     frozen_df = load_ops_case_generated_exports(case_id)
+    diff_df = load_ops_case_generated_export_diffs(case_id)
     if frozen_df.empty:
         st.caption("Nenhuma exportacao controlada foi congelada para este caso ainda.")
     else:
         st.markdown("##### Exportacoes congeladas")
         st.dataframe(frozen_df, use_container_width=True, hide_index=True)
+    if not diff_df.empty:
+        st.markdown("##### Diferencas entre versoes congeladas")
+        st.dataframe(
+            diff_df.drop(columns=["diff_text"]),
+            use_container_width=True,
+            hide_index=True,
+        )
+        selected_diff_idx = st.selectbox(
+            "Abrir diff congelado",
+            range(len(diff_df)),
+            format_func=lambda idx: f"{diff_df.iloc[int(idx)]['export_mode']} :: {diff_df.iloc[int(idx)]['summary']}",
+        )
+        st.code(str(diff_df.iloc[int(selected_diff_idx)]["diff_text"] or ""), language="diff")
 
     allowed_df = gate_df[gate_df["allowed"] == True].copy()  # noqa: E712
     if allowed_df.empty:

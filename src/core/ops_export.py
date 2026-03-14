@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 from datetime import datetime
+from difflib import unified_diff
 from pathlib import Path
 from typing import Any
 
@@ -65,12 +66,37 @@ FROM ops_case_generated_export
 ORDER BY created_at DESC, case_id, export_mode
 """
 
+GENERATED_EXPORT_DIFF_DDL = """
+CREATE TABLE IF NOT EXISTS ops_case_generated_export_diff (
+    diff_id VARCHAR PRIMARY KEY,
+    case_id VARCHAR NOT NULL,
+    export_mode VARCHAR NOT NULL,
+    older_export_id VARCHAR NOT NULL,
+    newer_export_id VARCHAR NOT NULL,
+    changed BOOLEAN NOT NULL,
+    added_lines INTEGER DEFAULT 0,
+    removed_lines INTEGER DEFAULT 0,
+    summary VARCHAR,
+    diff_text VARCHAR,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+"""
+
+GENERATED_EXPORT_DIFF_VIEW = """
+CREATE OR REPLACE VIEW v_ops_case_generated_export_diff AS
+SELECT *
+FROM ops_case_generated_export_diff
+ORDER BY case_id, export_mode, updated_at DESC
+"""
+
 
 def ensure_ops_export_gate(con: duckdb.DuckDBPyConnection) -> None:
     con.execute(EXPORT_GATE_DDL)
     con.execute(EXPORT_GATE_VIEW)
     con.execute(GENERATED_EXPORT_DDL)
     con.execute(GENERATED_EXPORT_VIEW)
+    con.execute(GENERATED_EXPORT_DIFF_DDL)
+    con.execute(GENERATED_EXPORT_DIFF_VIEW)
 
 
 def _safe_disclaimer() -> str:
@@ -131,6 +157,76 @@ def build_generated_export_artifacts(con: duckdb.DuckDBPyConnection) -> list[dic
             }
         )
     return artifacts
+
+
+def sync_ops_generated_export_diff(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
+    ensure_ops_export_gate(con)
+    con.execute("DELETE FROM ops_case_generated_export_diff")
+    rows = con.execute(
+        """
+        SELECT export_id, case_id, export_mode, path, created_at
+        FROM ops_case_generated_export
+        ORDER BY case_id, export_mode, created_at
+        """
+    ).fetchall()
+    grouped: dict[tuple[str, str], list[tuple[Any, ...]]] = {}
+    for row in rows:
+        grouped.setdefault((str(row[1]), str(row[2])), []).append(row)
+
+    written = 0
+    for (case_id, export_mode), exports in grouped.items():
+        if len(exports) < 2:
+            continue
+        for older, newer in zip(exports[:-1], exports[1:]):
+            older_id, _, _, older_path, _ = older
+            newer_id, _, _, newer_path, _ = newer
+            older_file = Path(older_path)
+            newer_file = Path(newer_path)
+            older_abs = older_file if older_file.is_absolute() else ROOT / older_file
+            newer_abs = newer_file if newer_file.is_absolute() else ROOT / newer_file
+            older_text = older_abs.read_text(encoding="utf-8", errors="replace") if older_abs.exists() else ""
+            newer_text = newer_abs.read_text(encoding="utf-8", errors="replace") if newer_abs.exists() else ""
+            older_lines = older_text.splitlines()
+            newer_lines = newer_text.splitlines()
+            diff_lines = list(
+                unified_diff(
+                    older_lines,
+                    newer_lines,
+                    fromfile=str(older_file),
+                    tofile=str(newer_file),
+                    lineterm="",
+                )
+            )
+            added_lines = sum(1 for line in diff_lines if line.startswith("+") and not line.startswith("+++"))
+            removed_lines = sum(1 for line in diff_lines if line.startswith("-") and not line.startswith("---"))
+            changed = bool(added_lines or removed_lines)
+            summary = (
+                f"{added_lines} linha(s) adicionadas e {removed_lines} removidas entre versoes congeladas."
+                if changed
+                else "Nenhuma mudanca textual entre as versoes congeladas."
+            )
+            con.execute(
+                """
+                INSERT INTO ops_case_generated_export_diff (
+                    diff_id, case_id, export_mode, older_export_id, newer_export_id,
+                    changed, added_lines, removed_lines, summary, diff_text, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                """,
+                [
+                    f"{case_id}:{export_mode}:{older_id}:{newer_id}",
+                    case_id,
+                    export_mode,
+                    older_id,
+                    newer_id,
+                    changed,
+                    added_lines,
+                    removed_lines,
+                    summary,
+                    "\n".join(diff_lines)[:200000],
+                ],
+            )
+            written += 1
+    return {"rows_written": written, "groups": len(grouped)}
 
 
 def sync_ops_export_gate(con: duckdb.DuckDBPyConnection) -> dict[str, int]:

@@ -42,6 +42,8 @@ RISK_PATTERNS = [
 ]
 
 SAFE_CONTEXT = (
+    "nao imputa",
+    "não imputa",
     "nao afirma",
     "não afirma",
     "nao prova",

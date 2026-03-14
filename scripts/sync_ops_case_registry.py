@@ -44,6 +44,10 @@ def main() -> int:
         print(f"language_guard_rows={stats.get('language_guard_rows', 0)}")
         print(f"export_gate_rows={stats.get('export_gate_rows', 0)}")
         print(f"generated_export_rows={stats.get('generated_export_rows', 0)}")
+        print(f"generated_export_diff_rows={stats.get('generated_export_diff_rows', 0)}")
+        print(f"rule_rows={stats.get('rule_rows', 0)}")
+        print(f"rule_validation_rows={stats.get('rule_validation_rows', 0)}")
+        print(f"rule_validation_fail_rows={stats.get('rule_validation_fail_rows', 0)}")
         print(f"indexed_docs={stats.get('indexed_docs', 0)}")
         return 0
     except Exception as exc:

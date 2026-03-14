@@ -122,7 +122,9 @@ Para rematerializar essa camada:
 .venv/bin/python scripts/sync_ops_checklist.py
 .venv/bin/python scripts/sync_ops_guard.py
 .venv/bin/python scripts/sync_ops_export_gate.py
+.venv/bin/python scripts/sync_ops_rulebook.py
 .venv/bin/python scripts/validate_ops_output_guard.py
+.venv/bin/python scripts/validate_ops_rulebook.py
 ```
 
 Para congelar uma saída segura como artefato versionado do caso:

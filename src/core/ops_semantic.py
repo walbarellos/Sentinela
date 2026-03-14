@@ -77,6 +77,30 @@ def _normalize_text(value: str | None) -> str:
     return value
 
 
+def _token_set(value: str | None) -> set[str]:
+    normalized = _normalize_text(value)
+    return {token for token in re.findall(r"[a-z0-9]{4,}", normalized) if token not in {"para", "com", "empresa"}}
+
+
+def _texts_compatible(left: str | None, right: str | None) -> bool:
+    left_norm = _normalize_text(left)
+    right_norm = _normalize_text(right)
+    if not left_norm or not right_norm:
+        return False
+    if left_norm == right_norm:
+        return True
+    if left_norm in right_norm or right_norm in left_norm:
+        return True
+
+    left_tokens = _token_set(left)
+    right_tokens = _token_set(right)
+    if not left_tokens or not right_tokens:
+        return False
+    intersection = left_tokens & right_tokens
+    min_size = min(len(left_tokens), len(right_tokens))
+    return min_size > 0 and (len(intersection) / min_size) >= 0.8
+
+
 def _extract_label_table(soup: BeautifulSoup) -> dict[str, str]:
     payload: dict[str, str] = {}
     for row in soup.select("table tr"):
@@ -251,7 +275,7 @@ def _build_rb_semantic(case_id: str, artifacts: dict[str, str]) -> list[dict[str
         )
     )
 
-    object_ok = _normalize_text(contract.get("objeto")) == _normalize_text(edital.get("objeto") or retificacao.get("objeto") or licitacao.get("objeto"))
+    object_ok = _texts_compatible(contract.get("objeto"), edital.get("objeto") or retificacao.get("objeto") or licitacao.get("objeto"))
     issues.append(
         _issue(
             case_id=case_id,

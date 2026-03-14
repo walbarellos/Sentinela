@@ -48,6 +48,20 @@ LEGAL_ANCHORS: dict[str, LegalAnchor] = {
         url="https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2011/lei/l12527.htm",
         note="Usada para caixa de respostas, diligencias documentais e cobranca de processo integral.",
     ),
+    "CNMP_RES174_2017": LegalAnchor(
+        anchor_id="CNMP_RES174_2017",
+        label="Resolucao CNMP 174/2017 - noticia de fato e procedimento administrativo",
+        scope="tratamento ministerial de noticia de fato",
+        url="https://www.cnmp.mp.br/portal/todas-as-noticias/10513-resolucao-disciplina-a-instauracao-e-tramitacao-da-noticia-de-fato-e-do-procedimento-administrativo",
+        note="Ancora para saida em formato de noticia de fato ou apuracao preliminar, sem acusacao automatica.",
+    ),
+    "PF_IN255_ART9_2023": LegalAnchor(
+        anchor_id="PF_IN255_ART9_2023",
+        label="IN PF 255/2023 - art. 9o",
+        scope="analise de noticias de fato pela Policia Federal",
+        url="https://www.gov.br/mj/pt-br/acesso-a-informacao/acoes-e-programas/recupera/instrucao_normativa___in_34963175_in_255_2023___regulamenta_as_atividades_de_policia_judiciaria_da_pf.pdf",
+        note="Exige plausibilidade, tipicidade, atribuicao e justa causa; usado como limite de triagem, nao como fundamento penal.",
+    ),
     "L14133_PLANEJAMENTO": LegalAnchor(
         anchor_id="L14133_PLANEJAMENTO",
         label="Lei 14.133/2021 - planejamento, edital e vinculacao ao instrumento convocatorio",

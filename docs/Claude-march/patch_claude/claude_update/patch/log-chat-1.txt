@@ -1715,3 +1715,69 @@ leitura:
     preview local
     timeline
     busca
+
+[2026-03-14 02:38:00 -0500] fase operacional - legitimidade das regras e diff entre versoes congeladas
+
+arquivos principais:
+  src/core/ops_legal.py
+  src/core/ops_semantic.py
+  src/core/ops_export.py
+  src/core/ops_rulebook.py
+  src/core/ops_registry.py
+  src/ui/ops_data.py
+  src/ui/ops_export.py
+  src/ui/ops_sections.py
+  scripts/sync_ops_rulebook.py
+  scripts/validate_ops_rulebook.py
+  AUDITORIA_LEGITIMIDADE_REGRAS_20260314.md
+
+resultado entregue:
+  rulebook materializado com:
+    `5` regras centrais
+    base legal
+    benchmark internacional
+    uso permitido
+    risco de falso positivo
+  validador de legitimidade implementado
+  comparacao de objeto em `ops_semantic` ficou conservadora
+  diff entre versoes congeladas de exportacao entrou na arquitetura:
+    `ops_case_generated_export_diff`
+    view `v_ops_case_generated_export_diff`
+  painel operacional mostra:
+    falhas de regra
+    diffs de exportacao congelada quando existirem
+
+validacao executada:
+  python -m py_compile src/core/ops_legal.py src/core/ops_semantic.py src/core/ops_rulebook.py src/core/ops_export.py src/core/ops_registry.py src/ui/ops_data.py src/ui/ops_export.py src/ui/ops_sections.py scripts/sync_ops_rulebook.py scripts/validate_ops_rulebook.py scripts/sync_ops_case_registry.py
+  .venv/bin/python scripts/sync_ops_case_registry.py
+  .venv/bin/python scripts/validate_ops_rulebook.py
+  .venv/bin/python scripts/validate_ops_output_guard.py
+  streamlit run app.py --server.headless true --server.port 8779
+  curl -I http://localhost:8779 -> `200`
+
+resultado real:
+  `rule_rows` = `5`
+  `rule_validation_rows` = `6`
+  `rule_validation_fail_rows` = `0`
+  `generated_export_diff_rows` = `0`
+  `language_guard_rows` = `0`
+  `export_gate_rows` = `39`
+  `generated_export_rows` = `2`
+
+achado importante desta fase:
+  o primeiro validador acusou falso positivo nas exportacoes congeladas
+  porque o proprio disclaimer continha `fraude consumada` e `crime` em contexto negativo
+  isso foi corrigido adicionando contexto seguro `nao imputa`
+  e rerodando a auditoria ate zerar os FAILs
+
+leitura:
+  o produto hoje e legitimo para:
+    noticia de fato
+    pedido documental
+    apuracao preliminar
+    triagem probatoria
+  e nao e legitimo para:
+    acusacao penal automatica
+    nepotismo automatico
+    fraude consumada automatica
+    pedalada fiscal automatica

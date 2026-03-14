@@ -70,7 +70,8 @@ A trilha correta do produto e:
 6. generalizar a caixa operacional para outros casos alem de `CEDIMP`
 7. reduzir retrabalho em exports legados para que bundles reemitidos ja nascam com linguagem neutra
 8. concluido: exportacao on-demand agora pode ser congelada como artefato controlado do caso
-9. ligar diff semantico a exportacoes congeladas quando houver duas versoes homologas da mesma peca
+9. concluido: infraestrutura de diff entre versoes congeladas da mesma peca
+10. concluido: auditoria de legitimidade das regras com rulebook e validador
 
 ## Regra de produto
 
@@ -139,8 +140,13 @@ A trilha correta do produto e:
   - `scripts/freeze_ops_case_export.py`
   - `ops_case_generated_export`
   - `src/core/ops_export.py`
+- governanca de regras:
+  - `src/core/ops_rulebook.py`
+  - `scripts/sync_ops_rulebook.py`
+  - `scripts/validate_ops_rulebook.py`
+  - `AUDITORIA_LEGITIMIDADE_REGRAS_20260314.md`
 - proximos modulos de produto:
   - motor de contradicoes
   - checklist probatorio por caso
   - diff semantico com proposta congelada quando existir
-  - comparacao entre versoes congeladas da mesma saida controlada
+  - calibracao empirica de falso positivo/falso negativo por familia

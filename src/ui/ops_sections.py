@@ -71,11 +71,13 @@ def render_overview_tab(summary: dict[str, Any], runs_df: pd.DataFrame, sources_
     burden2.metric("Ônus pend. doc", summary.get("burden_pending_doc", 0))
     burden3.metric("Ônus pend. jurid.", summary.get("burden_pending_legal", 0))
     burden4.metric("Ônus sem base", summary.get("burden_no_basis", 0))
-    extra1, extra2, extra3, extra4 = st.columns(4)
+    extra1, extra2, extra3, extra4, extra5, extra6 = st.columns(6)
     extra1.metric("Contradições", summary.get("contradictions", 0))
     extra2.metric("Guard linguagem", summary.get("language_guard", 0))
     extra3.metric("Gates export", summary.get("export_gate", 0))
     extra4.metric("Exports congelados", summary.get("generated_export", 0))
+    extra5.metric("Falhas de regra", summary.get("rule_validation_fail", 0))
+    extra6.metric("Diffs congelados", summary.get("generated_export_diff", 0))
 
     block1, block2 = st.columns([1, 1])
     with block1:
