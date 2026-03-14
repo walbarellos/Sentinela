@@ -54,6 +54,10 @@ def main() -> int:
         print(f"calibration_result_rows={stats.get('calibration_result_rows', 0)}")
         print(f"calibration_fail_rows={stats.get('calibration_fail_rows', 0)}")
         print(f"calibration_warn_rows={stats.get('calibration_warn_rows', 0)}")
+        print(f"sentinel_rows={stats.get('sentinel_rows', 0)}")
+        print(f"sentinel_result_rows={stats.get('sentinel_result_rows', 0)}")
+        print(f"sentinel_fail_rows={stats.get('sentinel_fail_rows', 0)}")
+        print(f"sentinel_warn_rows={stats.get('sentinel_warn_rows', 0)}")
         print(f"indexed_docs={stats.get('indexed_docs', 0)}")
         return 0
     except Exception as exc:

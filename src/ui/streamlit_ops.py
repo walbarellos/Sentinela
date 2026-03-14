@@ -27,7 +27,8 @@ def render_ops_page() -> None:
                     f"{stats.get('contradiction_rows', 0)} contradições / {stats.get('checklist_rows', 0)} checklist / "
                     f"{stats.get('language_guard_rows', 0)} flags de linguagem / "
                     f"{stats.get('export_gate_rows', 0)} gates de exportação / "
-                    f"{stats.get('calibration_fail_rows', 0)} falhas de calibração."
+                    f"{stats.get('calibration_fail_rows', 0)} falhas de calibração / "
+                    f"{stats.get('sentinel_fail_rows', 0)} falhas sentinela."
                 )
                 st.rerun()
             except Exception as exc:

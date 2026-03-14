@@ -373,3 +373,54 @@ validacao executada:
 - `.venv/bin/python scripts/validate_ops_rulebook.py`
 - `streamlit run app.py --server.headless true --server.port 8785`
 - `curl -I http://localhost:8785 -> 200`
+
+## Suite sentinela por regra (2026-03-14)
+
+escopo:
+- travar regressao nas regras mais sensiveis do backend;
+- validar comportamento por regra, nao apenas por caso;
+- manter linguagem e cercas conservadoras no motor operacional.
+
+resultado:
+- `src/core/ops_sentinel.py`
+- `scripts/sync_ops_sentinel.py`
+- `scripts/validate_ops_sentinel.py`
+- relatorio em `SUITE_SENTINELA_REGRAS_20260314.md`
+
+sentinelas:
+- `RB_TEMPORAL_FALSE_POSITIVE`
+- `RB_3898_SEMANTIC_TRIAD`
+- `SAUDE_NO_NEPOTISM_LABEL`
+- `SAUDE_NOTICIA_FATO_BLOCKED`
+- `SESACRE_NO_OVERCLAIM_LANGUAGE`
+
+estado:
+- `sentinel_rows = 5`
+- `sentinel_result_rows = 5`
+- `sentinel_fail_rows = 0`
+- `sentinel_warn_rows = 0`
+
+validacao executada:
+- `python -m py_compile src/core/ops_sentinel.py src/core/ops_registry.py src/ui/ops_data.py src/ui/ops_sections.py src/ui/streamlit_ops.py scripts/sync_ops_sentinel.py scripts/validate_ops_sentinel.py scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/validate_ops_sentinel.py`
+- `streamlit run app.py --server.headless true --server.port 8787`
+- `curl -I http://localhost:8787 -> 200`
+
+## Contencao do engine legado (2026-03-14)
+
+escopo:
+- alinhar `cross_reference_engine.py` ao padrao atual de rigor;
+- impedir que o legado volte a produzir qualquer saida com cara de uso externo;
+- manter o legado apenas como triagem interna.
+
+resultado:
+- `src/core/cross_reference_engine.py`
+  - `uso_externo` agora e sempre `REVISAO_INTERNA`
+- `scripts/validate_cross_reference_engine.py`
+  - trava configuracao minima do legado
+
+validacao executada:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- smoke direto de `Alert(...).uso_externo -> REVISAO_INTERNA`

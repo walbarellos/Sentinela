@@ -456,6 +456,7 @@ def sync_ops_case_registry(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
     from src.core.ops_guard import ensure_ops_guard, sync_ops_language_guard
     from src.core.ops_runbook import ensure_ops_runbook, sync_ops_runbook
     from src.core.ops_rulebook import ensure_ops_rulebook, sync_ops_rulebook
+    from src.core.ops_sentinel import ensure_ops_sentinel, sync_ops_sentinel
     from src.core.ops_semantic import ensure_ops_semantic, sync_ops_semantic_analysis
 
     ensure_ops_burden(con)
@@ -466,6 +467,7 @@ def sync_ops_case_registry(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
     ensure_ops_guard(con)
     ensure_ops_runbook(con)
     ensure_ops_rulebook(con)
+    ensure_ops_sentinel(con)
     ensure_ops_semantic(con)
     burden_stats = sync_ops_burden(con)
     semantic_stats = sync_ops_semantic_analysis(con)
@@ -512,6 +514,7 @@ def sync_ops_case_registry(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
     export_diff_stats = sync_ops_generated_export_diff(con)
     rulebook_stats = sync_ops_rulebook(con)
     calibration_stats = sync_ops_calibration(con)
+    sentinel_stats = sync_ops_sentinel(con)
 
     return {
         "cases": len(all_cases),
@@ -534,4 +537,8 @@ def sync_ops_case_registry(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
         "calibration_result_rows": int(calibration_stats.get("result_rows", 0)),
         "calibration_fail_rows": int(calibration_stats.get("fail_rows", 0)),
         "calibration_warn_rows": int(calibration_stats.get("warn_rows", 0)),
+        "sentinel_rows": int(sentinel_stats.get("sentinel_rows", 0)),
+        "sentinel_result_rows": int(sentinel_stats.get("result_rows", 0)),
+        "sentinel_fail_rows": int(sentinel_stats.get("fail_rows", 0)),
+        "sentinel_warn_rows": int(sentinel_stats.get("warn_rows", 0)),
     }

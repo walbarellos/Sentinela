@@ -138,6 +138,8 @@ INTERNAL_ONLY_DEFAULT = {
     "nepotismo_sobrenome",
 }
 
+LEGACY_INTERNAL_USAGE = "REVISAO_INTERNA"
+
 
 @dataclass
 class Alert:
@@ -158,6 +160,10 @@ class Alert:
     dossie_id: str = ""
 
     def __post_init__(self) -> None:
+        # O engine legado nao participa mais do fluxo externo do produto.
+        # Mesmo quando um detector produz um rastro forte, a saida fica
+        # restrita a triagem interna ate passar pela camada operacional.
+        self.uso_externo = LEGACY_INTERNAL_USAGE
         if not self.dossie_id:
             digest = hashlib.sha1(
                 f"{self.detector_id}|{self.entity_type}|{self.entity_name}|{self.description}".encode("utf-8")

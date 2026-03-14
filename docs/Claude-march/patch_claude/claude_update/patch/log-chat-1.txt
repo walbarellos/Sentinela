@@ -1982,3 +1982,38 @@ validacao:
 - `.venv/bin/python scripts/validate_ops_rulebook.py`
 - `streamlit run app.py --server.headless true --server.port 8785`
 - `curl -I http://localhost:8785 -> 200`
+
+suite sentinela por regra:
+- camada nova em `src/core/ops_sentinel.py`
+- scripts novos:
+  - `scripts/sync_ops_sentinel.py`
+  - `scripts/validate_ops_sentinel.py`
+- sentinelas ativos:
+  - `RB_TEMPORAL_FALSE_POSITIVE`
+  - `RB_3898_SEMANTIC_TRIAD`
+  - `SAUDE_NO_NEPOTISM_LABEL`
+  - `SAUDE_NOTICIA_FATO_BLOCKED`
+  - `SESACRE_NO_OVERCLAIM_LANGUAGE`
+
+estado:
+- `sentinel_rows = 5`
+- `sentinel_result_rows = 5`
+- `sentinel_fail_rows = 0`
+- `sentinel_warn_rows = 0`
+
+validacao:
+- `python -m py_compile src/core/ops_sentinel.py src/core/ops_registry.py src/ui/ops_data.py src/ui/ops_sections.py src/ui/streamlit_ops.py scripts/sync_ops_sentinel.py scripts/validate_ops_sentinel.py scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/validate_ops_sentinel.py`
+- `streamlit run app.py --server.headless true --server.port 8787`
+- `curl -I http://localhost:8787 -> 200`
+
+contencao do legado:
+- `src/core/cross_reference_engine.py` agora fixa `uso_externo = REVISAO_INTERNA` para qualquer alerta legado
+- validador novo:
+  - `scripts/validate_cross_reference_engine.py`
+
+validacao:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- smoke: `Alert(...).uso_externo = REVISAO_INTERNA`

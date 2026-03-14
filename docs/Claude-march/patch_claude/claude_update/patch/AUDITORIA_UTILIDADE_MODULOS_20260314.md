@@ -68,6 +68,12 @@ Regra de admissao:
 - automacao extra de runbook.
 - mais tabs se o conteudo for derivado de algo que ja existe.
 
+## Legado fora da trilha ops
+
+- `src/core/cross_reference_engine.py` permanece apenas como triagem interna.
+- regra nova: nenhuma saida do engine legado pode carregar `uso_externo` diferente de `REVISAO_INTERNA`.
+- o validador correspondente ficou em `scripts/validate_cross_reference_engine.py`.
+
 ## Proximo criterio de desenvolvimento
 
 Antes de qualquer feature nova, responder:
