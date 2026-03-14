@@ -14,7 +14,17 @@ from src.core.insight_classification import (
     classify_probative_record,
     ensure_insight_classification_columns,
 )
-from .schemas import InsightFacetsOut, InsightOut, SummaryOut, EntityOut, EventOut
+from src.core.ops_registry import ensure_ops_registry, sync_ops_case_registry
+from .schemas import (
+    InsightFacetsOut,
+    InsightOut,
+    SummaryOut,
+    EntityOut,
+    EventOut,
+    OpsCaseOut,
+    OpsArtifactOut,
+    OpsSummaryOut,
+)
 
 app = FastAPI(title="Sentinela API", version="2.0")
 log = logging.getLogger("sentinela.api")
@@ -315,12 +325,25 @@ def sync_insight_classification() -> None:
         con.close()
 
 
+def sync_operational_registry() -> None:
+    con = get_rw_con()
+    try:
+        ensure_ops_registry(con)
+        sync_ops_case_registry(con)
+    finally:
+        con.close()
+
+
 @app.on_event("startup")
 def startup():
     try:
         sync_insight_classification()
     except Exception as exc:
         log.warning("Falha ao sincronizar classificacao de insights: %s", exc)
+    try:
+        sync_operational_registry()
+    except Exception as exc:
+        log.warning("Falha ao sincronizar registry operacional: %s", exc)
 
 @app.get("/health")
 def health():
@@ -431,6 +454,88 @@ def insight_facets(
             "false": sum(1 for row in filtered if not row.get("sus")),
         },
     }
+
+
+@app.get("/ops/summary", response_model=OpsSummaryOut)
+def ops_summary():
+    con = get_con()
+    try:
+        total_cases = con.execute("SELECT COUNT(*) FROM ops_case_registry").fetchone()[0]
+        external_ready = con.execute("SELECT COUNT(*) FROM ops_case_registry WHERE uso_externo IN ('APTO_APURACAO', 'PEDIDO_DOCUMENTAL', 'REPRESENTACAO_PRELIMINAR')").fetchone()[0]
+        document_request_ready = con.execute("SELECT COUNT(*) FROM ops_case_registry WHERE estagio_operacional = 'APTO_OFICIO_DOCUMENTAL'").fetchone()[0]
+        by_stage = dict(con.execute("SELECT estagio_operacional, COUNT(*) FROM ops_case_registry GROUP BY 1").fetchall())
+        by_family = dict(con.execute("SELECT family, COUNT(*) FROM ops_case_registry GROUP BY 1").fetchall())
+        last_updated = con.execute("SELECT MAX(updated_at) FROM ops_case_registry").fetchone()[0]
+    finally:
+        con.close()
+    return {
+        "total_cases": total_cases,
+        "external_ready": external_ready,
+        "document_request_ready": document_request_ready,
+        "by_stage": by_stage,
+        "by_family": by_family,
+        "last_updated": last_updated,
+    }
+
+
+@app.get("/ops/cases", response_model=List[OpsCaseOut])
+def ops_cases(
+    family: Optional[str] = None,
+    estagio_operacional: Optional[str] = None,
+    uso_externo: Optional[str] = None,
+    orgao: Optional[str] = None,
+    q: Optional[str] = None,
+    limit: int = Query(100, ge=1, le=300),
+):
+    con = get_con()
+    try:
+        sql = "SELECT * FROM v_ops_case_registry WHERE 1=1"
+        params: list[Any] = []
+        if family:
+            sql += " AND family ILIKE ?"
+            params.append(f"%{family}%")
+        if estagio_operacional:
+            sql += " AND estagio_operacional ILIKE ?"
+            params.append(f"%{estagio_operacional}%")
+        if uso_externo:
+            sql += " AND uso_externo ILIKE ?"
+            params.append(f"%{uso_externo}%")
+        if orgao:
+            sql += " AND orgao ILIKE ?"
+            params.append(f"%{orgao}%")
+        if q:
+            sql += " AND (title ILIKE ? OR subject_name ILIKE ? OR resumo_curto ILIKE ?)"
+            params.extend([f"%{q}%", f"%{q}%", f"%{q}%"])
+        sql += " LIMIT ?"
+        params.append(limit)
+        return json.loads(con.execute(sql, params).fetchdf().to_json(orient="records", force_ascii=False))
+    finally:
+        con.close()
+
+
+@app.get("/ops/cases/{case_id}", response_model=OpsCaseOut)
+def ops_case_detail(case_id: str):
+    con = get_con()
+    try:
+        df = con.execute("SELECT * FROM ops_case_registry WHERE case_id = ?", [case_id]).fetchdf()
+    finally:
+        con.close()
+    if df.empty:
+        raise HTTPException(status_code=404, detail="Case not found")
+    return json.loads(df.to_json(orient="records", force_ascii=False))[0]
+
+
+@app.get("/ops/cases/{case_id}/artifacts", response_model=List[OpsArtifactOut])
+def ops_case_artifacts(case_id: str):
+    con = get_con()
+    try:
+        df = con.execute(
+            "SELECT * FROM v_ops_case_artifact WHERE case_id = ? ORDER BY kind, label",
+            [case_id],
+        ).fetchdf()
+    finally:
+        con.close()
+    return json.loads(df.to_json(orient="records", force_ascii=False))
 
 @app.get("/timeline/{entity_id:path}")
 def get_timeline(entity_id: str):

@@ -56,6 +56,11 @@ streamlit run app.py
 ```
 *Acesse o painel em: `http://localhost:8501`*
 
+Observação:
+- O painel operacional ativo do projeto é o `Streamlit` em `app.py`.
+- Hoje não há aplicação `Dash` separada versionada como interface principal.
+- As camadas novas de casos e artefatos operacionais devem ser integradas nesse painel, não em uma UI paralela.
+
 ---
 
 ## 📡 Ingestão de Dados (Os Motores)
@@ -81,6 +86,23 @@ Captura o histórico de diárias e detecta "Viagens em Bloco" (servidores viajan
 ```bash
 export PYTHONPATH=$PYTHONPATH:.
 python3 src/ingest/riobranco_diarias.py
+```
+
+---
+
+## 📂 Camada Operacional
+
+O Streamlit agora também pode operar como fila de casos probatórios:
+- `ops_case_registry`: registro materializado de casos
+- `ops_case_artifact`: artefatos locais com `path`, `sha256` e tamanho
+- `ops_pipeline_run`: trilha de execuções dos syncs operacionais
+- `ops_source_cache`: catálogo/cache de fontes públicas com `ttl`, `etag`, `last_modified` e snapshot local quando disponível
+- aba `📂 OPERAÇÕES`: resumo, filtros, detalhe do caso e visualização local de artefatos
+
+Para rematerializar essa camada:
+```bash
+.venv/bin/python scripts/sync_ops_case_registry.py
+.venv/bin/python scripts/sync_ops_source_cache.py
 ```
 
 ---

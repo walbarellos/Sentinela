@@ -1,11 +1,11 @@
 import streamlit as st
-import pandas as pd
 import duckdb
 import streamlit.components.v1 as components
 import os
-import json
+from pathlib import Path
 import plotly.graph_objects as go
 import plotly.express as px
+from src.ui.streamlit_ops import render_ops_page
 
 st.set_page_config(page_title="SENTINELA // COMMAND CENTER", layout="wide", initial_sidebar_state="expanded")
 
@@ -55,9 +55,12 @@ Sistema: SENTINELA // Inteligência em Controle Social
 """.strip()
 
 # --- DATABASE ---
+ROOT = Path(__file__).resolve().parent
+DB_PATH = ROOT / "data" / "sentinela_analytics.duckdb"
+
 @st.cache_resource
 def get_db():
-    return duckdb.connect("./data/sentinela_analytics.duckdb", read_only=True)
+    return duckdb.connect(str(DB_PATH), read_only=True)
 
 db = get_db()
 
@@ -135,7 +138,7 @@ with st.sidebar:
     st.title("🛡️ SENTINELA")
     st.caption("INTELLIGENCE UNIT // V5.4")
     st.divider()
-    page = st.radio("NAVEGAÇÃO INTERNA", ["🏠 CENTRO DE COMANDO", "🚩 ALERTAS CRÍTICOS", "🏛️ AUDITORIA FEDERAL (CGU)", "👥 BUSCA AVANÇADA"])
+    page = st.radio("NAVEGAÇÃO INTERNA", ["🏠 CENTRO DE COMANDO", "📂 OPERAÇÕES", "🚩 ALERTAS CRÍTICOS", "🏛️ AUDITORIA FEDERAL (CGU)", "👥 BUSCA AVANÇADA"])
     st.divider()
     st.markdown("### STATUS OPERACIONAL")
     st.success("Sincronização Local: OK")
@@ -241,6 +244,9 @@ if page == "🏠 CENTRO DE COMANDO":
             """, unsafe_allow_html=True)
     except:
         st.info("Dados de contratos (obras) ainda não carregados.")
+
+elif page == "📂 OPERAÇÕES":
+    render_ops_page()
 
 elif page == "🚩 ALERTAS CRÍTICOS":
     st.markdown('<div class="main-header"><h1>Dossiê de Anomalias</h1></div>', unsafe_allow_html=True)

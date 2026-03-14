@@ -6,6 +6,14 @@ Esta pasta reune, em um unico lugar, o que o software ja produziu de forma utili
 
 Sim, ja existem elementos concretos para representacao preliminar.
 
+## Estado do painel
+
+Hoje nao existe UI/painel web real. O que passou a existir nesta fase foi a fundacao operacional para esse painel:
+- `registry` de casos no banco
+- `registry` de artefatos
+- API operacional para listar casos e anexos
+- tipos de cliente prontos em `frontend/lib`
+
 ### 1. Rio Branco / SUS / municipal
 
 - Caso `3895`:
@@ -83,6 +91,24 @@ Sim, ja existem elementos concretos para representacao preliminar.
   pico documental de `100h` no proprio historico oficial do `CNES`
   isso gerou um quarto insight factual: `VINCULO_EXATO_CNES_CARGA_CONCOMITANTE_SAUDE`, ainda tratado como fato documental para apuracao, e nao como juizo automatico de ilegalidade
   a camada seguinte agora virou matriz juridico-funcional separada, com normas oficiais, perguntas de apuracao e destaque para `1` socio-administradora em coincidencia exata com cargo publico municipal
+  a camada seguinte agora virou tambem triagem funcional prioritaria, separada do motor acusatorio:
+  score interno `80`
+  prioridade `ALTA`
+  flags centrais: `socio_administrador_em_base_publica`, `carga_documentada_ge_80h`, `delta_publico_cnes_local_ge_20h`, `multiplos_estabelecimentos_publicos_cnes`
+  isso gerou `1` insight interno em `REVISAO_INTERNA`, adequado para diligencia e nao para acusacao automatica
+  por fim, o caso ja ganhou pacote de diligencias dirigidas:
+  dossie de requisicoes
+  csv de itens por destino
+  modelo de pedido preliminar para `SEMSA/RH`
+  modelo de pedido preliminar para `SESACRE`
+  e ganhou tambem matriz de maturidade probatoria, separando o que hoje esta:
+  `COMPROVADO_DOCUMENTAL`
+  `PENDENTE_DOCUMENTO`
+  `PENDENTE_ENQUADRAMENTO`
+  `SEM_BASE_ATUAL`
+  a partir de agora tambem existe uma camada de respostas oficiais, com indice de documentos esperados, hash local e cobertura por eixo
+  e agora existe tambem um gate operacional conservador, que decide se o caso esta em `TRIAGEM_INTERNA`, `APTO_OFICIO_DOCUMENTAL`, `APTO_ANALISE_JURIDICO_FUNCIONAL` ou `APTO_REPRESENTACAO_PRELIMINAR`
+  e agora esta empacotado em bundle proprio do caso `CEDIMP`, com hash unico e todos os manifests internos
   o sistema continua conservador: essa camada prova coexistencia documental em fonte primaria de saude, nao prova sozinha acumulo ilicito, impedimento legal ou nepotismo
 
 ## O que esta nesta pasta
@@ -143,6 +169,29 @@ Sim, ja existem elementos concretos para representacao preliminar.
 - `TRACE_VINCULO_SOCIETARIO_SAUDE_JURIDICO_DOSSIE.md`
 - `TRACE_VINCULO_SOCIETARIO_SAUDE_JURIDICO_MANIFEST.json`
 - `trace_vinculo_societario_saude_juridico.csv`
+- `TRACE_VINCULO_SOCIETARIO_SAUDE_APURACAO_FUNCIONAL_DOSSIE.md`
+- `TRACE_VINCULO_SOCIETARIO_SAUDE_APURACAO_FUNCIONAL_MANIFEST.json`
+- `trace_vinculo_societario_saude_apuracao_funcional.csv`
+- `TRACE_VINCULO_SOCIETARIO_SAUDE_DILIGENCIAS.md`
+- `TRACE_VINCULO_SOCIETARIO_SAUDE_DILIGENCIAS_MANIFEST.json`
+- `trace_vinculo_societario_saude_diligencias.csv`
+- `pedido_preliminar_semsa_cedimp.txt`
+- `pedido_preliminar_sesacre_cedimp.txt`
+- `TRACE_VINCULO_SOCIETARIO_SAUDE_MATURIDADE_DOSSIE.md`
+- `TRACE_VINCULO_SOCIETARIO_SAUDE_MATURIDADE_MANIFEST.json`
+- `trace_vinculo_societario_saude_maturidade.csv`
+- `TRACE_VINCULO_SOCIETARIO_SAUDE_RESPOSTAS_DOSSIE.md`
+- `TRACE_VINCULO_SOCIETARIO_SAUDE_RESPOSTAS_MANIFEST.json`
+- `trace_vinculo_societario_saude_respostas.csv`
+- `cedimp_respostas/`
+- `cedimp_respostas/README.md`
+- `cedimp_respostas/cedimp_respostas_index.csv`
+- `TRACE_VINCULO_SOCIETARIO_SAUDE_GATE_DOSSIE.md`
+- `TRACE_VINCULO_SOCIETARIO_SAUDE_GATE_MANIFEST.json`
+- `trace_vinculo_societario_saude_gate.csv`
+- `nota_operacional_cedimp.txt`
+- `cedimp_case_bundle_20260313.tar.gz`
+- `CEDIMP_CASE_BUNDLE_MANIFEST.json`
 - `RF_RNF_VINCULO_SOCIETARIO_SAUDE.md`
 - `trace_agro_unidades/`
 - `trace_agro_unidades/073_2023_iapen_1.pdf`
@@ -191,6 +240,10 @@ O software hoje ja prova:
   a ficha individual oficial desses profissionais agora materializa `131` competencias com concomitancia entre historico `ESTATUTARIO / SERVIDOR PROPRIO` e historico da `CEDIMP`, elevando a trilha para um terceiro fato documental, ainda sem concluir ilegalidade por si so
   a camada seguinte ja ficou quantificada em metrica documental: `262` competencias concomitantes no total, `234` com `>=60h`, `28` com `>=80h` e pico documental de `100h`, sempre como triagem tecnica e nao como veredito juridico automatico
   a matriz juridico-funcional agora organiza esse mesmo caso contra as normas oficiais da `Constituicao Federal` e da `Lei Municipal 1.794/2009`, com perguntas de apuracao sobre compatibilidade de horarios, alcance do art. 107, X, e eventual procedimento disciplinar
+  a camada de triagem funcional agora organiza o que deve ser atacado primeiro em diligencia: diferenca `base local x CNES publico`, socio-administradora em base publica e carga documental extrema, mas tudo ainda em `REVISAO_INTERNA`
+  o pacote de diligencias agora traduz essa trilha em pedidos objetivos de documentos para `SEMSA/RH` e `SESACRE`, prontos para aprofundamento probatorio sem formular acusacao pronta
+  a matriz de maturidade agora diz expressamente o que o sistema pode afirmar e o que ele nao pode afirmar hoje: por exemplo, `carga_concomitante_extrema` esta `COMPROVADO_DOCUMENTAL`, enquanto `compatibilidade_horarios` esta `PENDENTE_DOCUMENTO`, e `nepotismo` e `fraude_penal` estao `SEM_BASE_ATUAL`
+  a camada de respostas oficiais agora trava o ciclo seguinte: nada sobe por impressao ou memoria; sobe quando o arquivo entra, ganha hash e passa a contar na cobertura documental do caso
 
 O software ainda nao prova sozinho:
 - nepotismo da `NORTE`

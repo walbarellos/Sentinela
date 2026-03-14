@@ -51,3 +51,55 @@ export type InsightFacets = {
   usos_externos: FacetBucket[];
   sus: Record<string, number>;
 };
+
+export type OpsCase = {
+  case_id: string;
+  family?: string;
+  title: string;
+  subtitle?: string;
+  subject_name?: string;
+  subject_doc?: string;
+  esfera?: string;
+  ente?: string;
+  orgao?: string;
+  municipio?: string;
+  uf?: string;
+  area_tematica?: string;
+  severity?: string;
+  classe_achado?: string;
+  uso_externo?: string;
+  estagio_operacional?: string;
+  status_operacional?: string;
+  prioridade?: number;
+  valor_referencia_brl?: number;
+  source_table?: string;
+  source_row_ref?: string;
+  resumo_curto?: string;
+  proximo_passo?: string;
+  bundle_path?: string;
+  bundle_sha256?: string;
+  artifact_count: number;
+  updated_at: string;
+};
+
+export type OpsArtifact = {
+  artifact_id: string;
+  case_id: string;
+  label?: string;
+  kind?: string;
+  path?: string;
+  exists: boolean;
+  sha256?: string;
+  size_bytes?: number;
+  metadata_json?: unknown;
+  updated_at: string;
+};
+
+export type OpsSummary = {
+  total_cases: number;
+  external_ready: number;
+  document_request_ready: number;
+  by_stage: Record<string, number>;
+  by_family: Record<string, number>;
+  last_updated?: string | null;
+};

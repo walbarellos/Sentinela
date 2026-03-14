@@ -50,6 +50,26 @@ Top 10 materializado:
 - Dossie juridico-funcional em saude: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_JURIDICO_DOSSIE.md`
 - Manifesto juridico-funcional em saude: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_JURIDICO_MANIFEST.json`
 - CSV juridico-funcional em saude: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_vinculo_societario_saude_juridico.csv`
+- Dossie de diligencias em saude: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_DILIGENCIAS.md`
+- Manifesto de diligencias em saude: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_DILIGENCIAS_MANIFEST.json`
+- CSV de diligencias em saude: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_vinculo_societario_saude_diligencias.csv`
+- Pedido preliminar SEMSA/RH: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/pedido_preliminar_semsa_cedimp.txt`
+- Pedido preliminar SESACRE: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/pedido_preliminar_sesacre_cedimp.txt`
+- Dossie de maturidade em saude: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_MATURIDADE_DOSSIE.md`
+- Manifesto de maturidade em saude: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_MATURIDADE_MANIFEST.json`
+- CSV de maturidade em saude: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_vinculo_societario_saude_maturidade.csv`
+- Dossie de respostas oficiais em saude: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_RESPOSTAS_DOSSIE.md`
+- Manifesto de respostas oficiais em saude: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_RESPOSTAS_MANIFEST.json`
+- CSV de respostas oficiais em saude: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_vinculo_societario_saude_respostas.csv`
+- Caixa de recepcao do caso CEDIMP: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/cedimp_respostas/README.md`
+- Indice de documentos esperados do CEDIMP: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/cedimp_respostas/cedimp_respostas_index.csv`
+- Dossie do gate operacional em saude: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_GATE_DOSSIE.md`
+- Manifesto do gate operacional em saude: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_GATE_MANIFEST.json`
+- CSV do gate operacional em saude: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_vinculo_societario_saude_gate.csv`
+- Nota operacional do caso CEDIMP: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/nota_operacional_cedimp.txt`
+- RF/RNF/MER/DER da automacao operacional: `docs/Claude-march/patch_claude/claude_update/patch/RF_RNF_MER_DER_AUTOMACAO_OPERACIONAL.md`
+- Bundle unico do caso CEDIMP: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/cedimp_case_bundle_20260313.tar.gz`
+- Manifesto do bundle CEDIMP: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/CEDIMP_CASE_BUNDLE_MANIFEST.json`
 - RF/RNF do modulo de saude: `docs/Claude-march/patch_claude/claude_update/patch/RF_RNF_VINCULO_SOCIETARIO_SAUDE.md`
 
 - Pacote AGRO / follow-up: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_AGRO_UNIDADES_FOLLOWUP.md`
@@ -68,7 +88,7 @@ Top 10 materializado:
 - Municipal: pacote pronto para representacao com 2 casos prioritarios.
 - Estadual: pacote pronto com top 10 sancionados ativos da SESACRE.
 - Saude / CEDIMP:
-  4 camadas documentais prontas (`sobreposicao`, `CNES profissional`, `historico concomitante`, `carga concomitante`) e 1 camada juridico-funcional separada com normas oficiais e perguntas de apuracao.
+  4 camadas documentais prontas (`sobreposicao`, `CNES profissional`, `historico concomitante`, `carga concomitante`), 1 camada juridico-funcional com normas oficiais, 1 pacote de diligencias dirigidas por orgao e 1 matriz de maturidade que marca explicitamente o que esta comprovado, pendente ou sem base.
 - NORTE / AGRO:
   `SEJUSP` com linha do tempo local e auditoria `portal x DOE` ja materializadas.
   `170/2023` agora fechado com `DJE/TJAC 24/10/2023`, `ARP 304/2022`, `PE SRP 74/2022`, valor `R$ 532.000,00` e DOE `08/12/2023` no processo SEI `0819.012803.00093/2023-03`.

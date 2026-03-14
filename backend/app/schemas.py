@@ -77,3 +77,55 @@ class InsightFacetsOut(BaseModel):
     classes_achado: List[FacetBucketOut] = []
     usos_externos: List[FacetBucketOut] = []
     sus: Dict[str, int] = {}
+
+
+class OpsCaseOut(BaseModel):
+    case_id: str
+    family: Optional[str] = None
+    title: str
+    subtitle: Optional[str] = None
+    subject_name: Optional[str] = None
+    subject_doc: Optional[str] = None
+    esfera: Optional[str] = None
+    ente: Optional[str] = None
+    orgao: Optional[str] = None
+    municipio: Optional[str] = None
+    uf: Optional[str] = None
+    area_tematica: Optional[str] = None
+    severity: Optional[str] = None
+    classe_achado: Optional[str] = None
+    uso_externo: Optional[str] = None
+    estagio_operacional: Optional[str] = None
+    status_operacional: Optional[str] = None
+    prioridade: Optional[int] = None
+    valor_referencia_brl: Optional[float] = None
+    source_table: Optional[str] = None
+    source_row_ref: Optional[str] = None
+    resumo_curto: Optional[str] = None
+    proximo_passo: Optional[str] = None
+    bundle_path: Optional[str] = None
+    bundle_sha256: Optional[str] = None
+    artifact_count: int = 0
+    updated_at: datetime
+
+
+class OpsArtifactOut(BaseModel):
+    artifact_id: str
+    case_id: str
+    label: Optional[str] = None
+    kind: Optional[str] = None
+    path: Optional[str] = None
+    exists: bool = False
+    sha256: Optional[str] = None
+    size_bytes: Optional[int] = None
+    metadata_json: Any = {}
+    updated_at: datetime
+
+
+class OpsSummaryOut(BaseModel):
+    total_cases: int
+    external_ready: int
+    document_request_ready: int
+    by_stage: Dict[str, int] = {}
+    by_family: Dict[str, int] = {}
+    last_updated: Optional[datetime] = None

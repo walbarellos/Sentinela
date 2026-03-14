@@ -340,6 +340,99 @@
     metrica documental de carga
   e acrescenta uma quinta camada separada:
     matriz juridico-funcional com normas oficiais e perguntas de apuracao
+
+[2026-03-13 21:19:08 -05] pacote de diligencias dirigidas do caso CEDIMP gerado
+- Objetivo:
+  transformar a trilha probatoria atual em pedidos objetivos de documentos, sem linguagem acusatoria
+- Script novo:
+  scripts/export_vinculo_societario_saude_diligencias.py
+- Resultado:
+  `16` itens de diligencia organizados por destino
+  destinos:
+    `SEMSA_RH`
+    `SESACRE`
+    `CONTROLE`
+- Artefatos gerados:
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_DILIGENCIAS.md
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_DILIGENCIAS_MANIFEST.json
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_vinculo_societario_saude_diligencias.csv
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/pedido_preliminar_semsa_cedimp.txt
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/pedido_preliminar_sesacre_cedimp.txt
+- Hashes:
+  dossier diligencias = `f4fcb43db6a7e4db3dff916defba1deb975a19ec2e430b393e2d96ba44c87a68`
+  csv diligencias = `8f64257f6f2fc4050c21bf300708ee005b5fe52882a0ddb7621cb9f1ab2352c4`
+  pedido SEMSA = `24a45eccb232a66fe7c88d6d0a97545073278df4952450d02981b5496c0a4704`
+  pedido SESACRE = `90902728dcc75b57499a8993affc3e27704a1970f6a894d6a020452756734cd7`
+  manifest diligencias = `63d1115fbf91a363905a3020d6996d3206bc116627b1ffb792f64f752368ed0e`
+- Leitura operacional:
+  o caso `CEDIMP` agora esta pronto para o ciclo seguinte sem nova engenharia pesada:
+    obter documentos de `SEMSA/RH`
+    obter documentos de `SESACRE`
+    confrontar ficha funcional, declaracoes de acumulacao, escalas e execucao contratual
+
+[2026-03-13 21:27:42 -05] matriz de maturidade probatoria do caso CEDIMP gerada e corrigida
+- Objetivo:
+  dizer explicitamente o que o sistema pode afirmar hoje, o que ainda depende de documento e o que esta sem base atual
+- Scripts novos:
+  scripts/sync_vinculo_societario_saude_maturidade.py
+  scripts/export_vinculo_societario_saude_maturidade.py
+- Resultado:
+  `11` linhas de maturidade probatoria
+  eixos `COMPROVADO_DOCUMENTAL`:
+    contrato_estadual
+    qsa_socios
+    socio_administrador
+    cnes_profissional_ativo
+    cnes_historico_concomitante
+    carga_concomitante_extrema
+  eixos pendentes:
+    compatibilidade_horarios = `PENDENTE_DOCUMENTO`
+    vedacao_art_107_x = `PENDENTE_ENQUADRAMENTO`
+    acumulacao_ilegal = `SEM_CONCLUSAO_AUTOMATICA`
+  eixos vedados a afirmacao automatica:
+    nepotismo = `SEM_BASE_ATUAL`
+    fraude_penal = `SEM_BASE_ATUAL`
+- Correcao aplicada:
+  a primeira versao havia rebaixado `socio_administrador` por nao puxar a coluna juridica correta; isso foi corrigido e rerodado
+- Artefatos gerados:
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_MATURIDADE_DOSSIE.md
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_MATURIDADE_MANIFEST.json
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_vinculo_societario_saude_maturidade.csv
+- Hashes:
+  dossier maturidade = `63c3f21528fdcb678ea4ccd449b01614dedf20eb11bbf5b95741b5c799a4269c`
+  csv maturidade = `de5cb8459a97e60a0ee29743624112ad82f6bf41a3e03ccf1a7772019fec29d9`
+  manifest maturidade = `c41661e668b402c485813df5bae634364730e6679a29d657041a2a0b84b4b334`
+- Leitura operacional:
+  o caso `CEDIMP` agora esta fechado em seis camadas complementares:
+    1. sobreposicao societaria
+    2. profissional ativo no CNES
+    3. historico concomitante
+    4. metrica documental de carga
+    5. matriz juridico-funcional
+    6. pacote de diligencias e matriz de maturidade
+
+[2026-03-13 23:18:49 -05] bundle unico do caso CEDIMP gerado
+- Objetivo:
+  consolidar o caso `CEDIMP` em um artefato unico, estavel e transportavel
+- Script novo:
+  scripts/pack_cedimp_case.py
+- Resultado:
+  `22` arquivos incluidos
+  bundle = docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/cedimp_case_bundle_20260313.tar.gz
+  tamanho = `159K`
+  hash SHA-256 = `f05f7c51d3720780dc1278f9014d7e86a6e6252920d3638e2d4fc9975ae4b1cd`
+- Manifesto:
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/CEDIMP_CASE_BUNDLE_MANIFEST.json
+- Conteudo consolidado:
+  trilha societaria basica
+  follow-up de saude
+  matriz juridico-funcional
+  triagem funcional
+  diligencias dirigidas
+  maturidade probatoria
+  pedidos preliminares de documentos
+- Leitura operacional:
+  o caso `CEDIMP` agora esta pronto para circulacao controlada como pacote unico, sem depender de reconstruir manualmente a cadeia de arquivos
   top 10 SESACRE = 1/10 com detalhe financeiro
 - Artefatos reemitidos:
   relatorio_final_acre_rio_branco_sus.md
@@ -887,3 +980,299 @@
 - Leitura de rigor:
   isso prova coincidencia documental nominal entre estabelecimento privado, ficha oficial de profissionais do CNES, contrato estadual e base municipal de servidores
   ainda nao prova impedimento legal ou conflito ilicito sem amarracao juridica adicional
+[2026-03-13 23:49:12 -05] camada de respostas oficiais do caso CEDIMP implementada
+
+objetivo:
+  sair de dossie estatico para ciclo probatorio real, absorvendo documentos oficiais de `SEMSA/RH` e `SESACRE` com hash, indice e impacto controlado na maturidade
+
+arquivos principais:
+  scripts/sync_vinculo_societario_saude_respostas.py
+  scripts/export_vinculo_societario_saude_respostas.py
+  docs/Claude-march/patch_claude/claude_update/patch/RF_RNF_VINCULO_SOCIETARIO_SAUDE_RESPOSTAS.md
+  entrega_denuncia_atual/cedimp_respostas/README.md
+  entrega_denuncia_atual/cedimp_respostas/cedimp_respostas_index.csv
+  entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_RESPOSTAS_DOSSIE.md
+  entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_RESPOSTAS_MANIFEST.json
+  entrega_denuncia_atual/trace_vinculo_societario_saude_respostas.csv
+
+resultado esperado:
+  `12` documentos esperados materializados no indice inicial
+  a maturidade do caso agora pode reagir a cobertura documental real
+  sem arquivo local, nada sobe de status probatorio por automatismo
+
+[2026-03-13 23:35:46 -0500] camada de respostas oficiais validada no banco e no bundle do caso
+
+validacao executada:
+  python -m py_compile scripts/sync_vinculo_societario_saude_respostas.py scripts/export_vinculo_societario_saude_respostas.py scripts/sync_vinculo_societario_saude_maturidade.py scripts/validate_cedimp_quality.py scripts/pack_cedimp_case.py
+  .venv/bin/python scripts/sync_vinculo_societario_saude_respostas.py
+  .venv/bin/python scripts/sync_vinculo_societario_saude_maturidade.py
+  .venv/bin/python scripts/export_vinculo_societario_saude_respostas.py
+  .venv/bin/python scripts/export_vinculo_societario_saude_maturidade.py
+  .venv/bin/python scripts/pack_cedimp_case.py
+  .venv/bin/python scripts/validate_cedimp_quality.py
+
+resultado real:
+  respostas = `12`
+  eixos de cobertura = `4`
+  referencias quebradas = `0`
+  maturidade = `11` linhas
+  bundle do caso CEDIMP = `24` arquivos
+  hash do bundle = `21b415a775e5b485615595b216fbbf4a6939491081945dbfa919774b8b31d6d5`
+  validacao de qualidade = `23` checks / `all_pass=True`
+
+leitura:
+  o caso continua conservador
+  `compatibilidade_horarios` segue `PENDENTE_DOCUMENTO`
+  `vedacao_art_107_x` segue `PENDENTE_ENQUADRAMENTO`
+  `acumulacao_ilegal` segue `SEM_CONCLUSAO_AUTOMATICA`
+  a diferenca agora e operacional: existe um trilho controlado para quando os documentos oficiais chegarem
+
+[2026-03-13 23:58:10 -0500] gate operacional do caso CEDIMP implementado
+
+objetivo:
+  impedir salto indevido de `dossie forte` para `representacao`
+  transformar a maturidade e a cobertura documental em decisao conservadora de uso
+
+arquivos principais:
+  scripts/sync_vinculo_societario_saude_gate.py
+  scripts/export_vinculo_societario_saude_gate.py
+  entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_GATE_DOSSIE.md
+  entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_GATE_MANIFEST.json
+  entrega_denuncia_atual/trace_vinculo_societario_saude_gate.csv
+  entrega_denuncia_atual/nota_operacional_cedimp.txt
+
+resultado esperado:
+  estagio atual = `APTO_OFICIO_DOCUMENTAL`
+  uso recomendado = `PEDIDO_DOCUMENTAL`
+  externo permitido = `sim`, mas restrito a oficios e pedidos de documento
+  representacao preliminar continua bloqueada enquanto nao houver documento funcional recebido e analisado
+
+[2026-03-14 00:02:11 -0500] gate operacional validado e bundle do caso CEDIMP reemitido
+
+validacao executada:
+  python -m py_compile scripts/sync_vinculo_societario_saude_gate.py scripts/export_vinculo_societario_saude_gate.py scripts/validate_cedimp_quality.py scripts/pack_cedimp_case.py
+  .venv/bin/python scripts/sync_vinculo_societario_saude_gate.py
+  .venv/bin/python scripts/export_vinculo_societario_saude_gate.py
+  .venv/bin/python scripts/pack_cedimp_case.py
+  .venv/bin/python scripts/validate_cedimp_quality.py
+
+resultado real:
+  gate = `APTO_OFICIO_DOCUMENTAL`
+  uso recomendado = `PEDIDO_DOCUMENTAL`
+  pode_uso_externo = `True`
+  bundle do caso CEDIMP = `27` arquivos
+  hash do bundle = `e69a70846fe7967ff4141581cab9321b29e52c07fd9cfecb229aed5793d6ad84`
+  validacao de qualidade = `27` checks / `all_pass=True`
+
+leitura:
+  o sistema agora nao apenas encontra o caso e separa o que esta provado
+  ele tambem diz, de forma conservadora, qual e o uso externo permitido hoje
+  no estado atual, `CEDIMP` esta apto para oficios e pedidos documentais, mas ainda bloqueado para representacao preliminar
+
+[2026-03-14 00:18:04 -0500] fundacao operacional do painel implementada
+
+objetivo:
+  tirar o projeto do modo `colecao de scripts` e preparar o backend vivo para um painel real
+
+arquivos principais:
+  src/core/ops_registry.py
+  scripts/sync_ops_case_registry.py
+  docs/Claude-march/patch_claude/claude_update/patch/RF_RNF_MER_DER_AUTOMACAO_OPERACIONAL.md
+  backend/app/main.py
+  backend/app/schemas.py
+  frontend/lib/api.ts
+  frontend/lib/types.ts
+
+resultado esperado:
+  casos operacionais materializados a partir de:
+    `v_rb_contratos_prioritarios`
+    `sancoes_collapsed`
+    `v_vinculo_societario_saude_gate`
+  endpoints novos:
+    `/ops/summary`
+    `/ops/cases`
+    `/ops/cases/{case_id}`
+    `/ops/cases/{case_id}/artifacts`
+
+[2026-03-14 00:23:31 -0500] registry operacional validado com dados reais e endpoints ativos
+
+validacao executada:
+  python -m py_compile src/core/ops_registry.py scripts/sync_ops_case_registry.py backend/app/main.py backend/app/schemas.py
+  .venv/bin/python scripts/sync_ops_case_registry.py
+  fastapi TestClient -> `/ops/summary`
+  fastapi TestClient -> `/ops/cases?limit=5`
+  fastapi TestClient -> `/ops/cases/cedimp:saude_societario:13325100000130`
+  fastapi TestClient -> `/ops/cases/cedimp:saude_societario:13325100000130/artifacts`
+
+resultado real:
+  registry = `13` casos
+  artifacts = `34`
+  familias:
+    `sesacre_sancao` = `10`
+    `rb_sus_contrato` = `2`
+    `saude_societario` = `1`
+  estagios:
+    `APTO_REPRESENTACAO_PRELIMINAR` = `12`
+    `APTO_OFICIO_DOCUMENTAL` = `1`
+  caso `CEDIMP` = `APTO_OFICIO_DOCUMENTAL` / `PEDIDO_DOCUMENTAL` / `5` artefatos
+
+leitura:
+  ainda nao existe UI web real
+  mas agora ja existe backend vivo suficiente para um painel:
+    lista de casos
+    detalhe do caso
+    artefatos do caso
+    resumo operacional por estagio e familia
+
+[2026-03-14 00:41:52 -0500] correcao de trilha: o projeto ja tinha painel web real em Streamlit
+
+correcao:
+  a leitura anterior sobre `nao existir UI web real` estava errada
+  o painel ativo do projeto ja existia em:
+    `app.py`
+  e a operacao principal ja estava documentada no:
+    `README.md`
+  nao foi encontrada aplicacao `Dash` separada como interface principal
+
+decisao de engenharia:
+  a automacao operacional nova passa a ser integrada ao `Streamlit` existente
+  nao sera aberta uma segunda UI paralela
+
+[2026-03-14 00:49:10 -0500] aba operacional integrada ao Streamlit com visualizador de artefatos
+
+arquivos principais:
+  app.py
+  README.md
+  docs/Claude-march/patch_claude/claude_update/patch/RF_RNF_MER_DER_AUTOMACAO_OPERACIONAL.md
+  docs/Claude-march/patch_claude/claude_update/patch/RF_RNF_UI_OPERACIONAL_STREAMLIT.md
+
+resultado entregue:
+  nova aba `📂 OPERAÇÕES` no `app.py`
+  refresh manual do `ops_case_registry` pelo proprio painel
+  filtros por familia / estagio / orgao / uso externo / texto
+  detalhe do caso no proprio Streamlit
+  preview local de artefatos:
+    `md`
+    `txt`
+    `json`
+    `csv`
+    `html`
+    `pdf`
+
+leitura:
+  a partir daqui a refatoracao de UX deve acontecer em cima do painel real do projeto
+  o foco deixa de ser `mais um frontend`
+  e passa a ser `centro operacional investigativo`
+
+[2026-03-14 01:04:33 -0500] referencias oficiais de UX de controle consolidadas
+
+arquivo:
+  docs/Claude-march/patch_claude/claude_update/patch/REFERENCIAS_EUA_CONTROLE_UX.md
+
+fontes-base:
+  `USAspending`
+  `Oversight.gov`
+  `SEC/EDGAR`
+
+traducao para o produto:
+  filtro forte antes de grafico
+  drill-down por caso
+  documento no mesmo fluxo
+  status operacional explicito
+  nada de score opaco ou interface cosmetica
+
+[2026-03-14 00:15:02 -0500] inicio formal da fase `ops_pipeline_run + ops_source_cache`
+
+arquivo de handoff:
+  docs/Claude-march/patch_claude/claude_update/patch/FASE_AUTOMACAO_OPERACIONAL_20260314.md
+
+decisao:
+  a proxima fase passa a ser infraestrutura operacional do painel
+  prioridade:
+    `ops_pipeline_run`
+    `ops_source_cache`
+  depois:
+    `inbox operacional`
+    `timeline`
+    `diff documental`
+
+[2026-03-14 00:24:41 -0500] runtime operacional implementado no banco e ligado ao Streamlit
+
+arquivos principais:
+  src/core/ops_runtime.py
+  scripts/sync_ops_case_registry.py
+  scripts/sync_ops_source_cache.py
+  app.py
+  README.md
+
+resultado entregue:
+  nova tabela `ops_pipeline_run`
+  nova tabela `ops_source_cache`
+  views:
+    `v_ops_pipeline_run_latest`
+    `v_ops_source_cache_latest`
+  `sync_ops_case_registry.py` agora grava run log
+  `sync_ops_source_cache.py` verifica fontes publicas oficiais e grava:
+    `status_code`
+    `etag`
+    `last_modified`
+    `ttl`
+    `response_sha256`
+    `body_path` quando ha snapshot local
+  a aba `📂 OPERAÇÕES` agora mostra:
+    execucoes recentes
+    fontes monitoradas
+    refresh manual de fontes
+    preview de snapshot de fonte quando existir
+
+validacao executada:
+  python -m py_compile app.py src/core/ops_runtime.py scripts/sync_ops_case_registry.py scripts/sync_ops_source_cache.py
+  .venv/bin/python scripts/sync_ops_source_cache.py
+  .venv/bin/python scripts/sync_ops_case_registry.py
+  .venv/bin/python -> leitura de `load_ops_dashboard_data()` e `load_ops_runtime_data()`
+
+resultado real:
+  `ops_case_registry` = `13` casos
+  `ops_case_artifact` = `34` artefatos
+  `ops_pipeline_run` = `3` execucoes recentes lidas no app
+  `ops_source_cache` = `7` fontes oficiais monitoradas
+  todas as `7` fontes responderam `200`
+  `PNCP Dados Abertos` gerou snapshot local:
+    `data/ops_source_cache/pncp_api_orgaos.html`
+
+leitura:
+  o painel deixou de ser apenas visualizacao de caso
+  e passou a ter memoria operacional minima:
+    o que rodou
+    quando rodou
+    quais fontes estao saudaveis
+    qual snapshot local foi capturado
+
+[2026-03-14 00:20:54 -0500] refatoracao do painel operacional para reduzir monolito e redundancia
+
+arquivos principais:
+  app.py
+  src/ui/streamlit_ops.py
+
+resultado entregue:
+  a aba `📂 OPERAÇÕES` saiu do `app.py` e foi isolada em `src/ui/streamlit_ops.py`
+  novo fluxo da aba:
+    `Visão Geral`
+    `Bancada de Casos`
+    `Runtime`
+  a bancada agora usa layout de trabalho:
+    fila de casos
+    detalhe do caso
+    preview de evidencias
+  `app.py` caiu de `936` para `433` linhas
+
+validacao executada:
+  python -m py_compile app.py src/ui/streamlit_ops.py
+  streamlit run app.py --server.headless true --server.port 8767
+  curl -I http://localhost:8767 -> `200`
+
+leitura:
+  a UI ficou menos redundante
+  e a base de desenvolvimento ficou menos fragil
+  ainda ha espaco para modularizar outras paginas,
+  mas a trilha correta agora esta estabelecida

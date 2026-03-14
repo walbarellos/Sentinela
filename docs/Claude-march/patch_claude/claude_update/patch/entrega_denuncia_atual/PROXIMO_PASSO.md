@@ -26,6 +26,12 @@ Status atual:
   normas oficiais mapeadas
   `1` socio-administradora em coincidencia exata com cargo publico municipal
   perguntas de apuracao consolidadas para compatibilidade de horarios, alcance do art. 107, X, e eventual procedimento do art. 124
+- o pacote de diligencias tambem ja ficou pronto:
+  requisicoes objetivas por destino
+  modelo preliminar para `SEMSA/RH`
+  modelo preliminar para `SESACRE`
+- a matriz de maturidade probatoria tambem ja ficou pronta:
+  mostra, eixo por eixo, o que esta comprovado, o que depende de documento e o que esta sem base atual
 - o sistema classificou isso corretamente como:
   `HIPOTESE_INVESTIGATIVA / EXPLORATORIO / REVISAO_INTERNA` para a camada societaria basica
   `HIPOTESE_INVESTIGATIVA / INDICIARIO / REVISAO_INTERNA` para o follow-up de saude
@@ -40,6 +46,8 @@ Entrega esperada:
 - checar regime, lotacao, jornada e compatibilidade funcional dos dois medicos a luz da norma aplicavel
 - decidir se o caso sobe para representacao preliminar focada em conflito de interesse/compatibilidade funcional ou se permanece como apuracao interna qualificada
 - se houver base suficiente, elevar de `sobreposicao societaria exata` para `potencial conflito de interesse`; se nao houver, manter como triagem interna e nao como representacao
+- usar os pedidos dirigidos ja gerados para buscar a prova faltante em `SEMSA/RH` e `SESACRE`
+- usar a matriz de maturidade como trava contra exagero: so sobe de camada o que sair de `PENDENTE_*` para `COMPROVADO_DOCUMENTAL`
 
 ## Passo 1. Fechar os blocos AGRO fora do eixo principal da SEJUSP
 
@@ -175,3 +183,25 @@ No eixo de vinculo societario/saude, o melhor proximo passo deixou de ser raspag
 Com a ficha individual oficial do `CNES` ja amarrada, o proximo ciclo correto e transformar a concomitancia historica em metrica documental de carga por competencia e depois confrontar isso com a regra juridica aplicavel.
 Essa parte de metrica documental ja foi implementada. O ciclo seguinte agora e juridico-funcional: regime, norma, jornada e eventual compatibilidade real.
 O salto tecnico que faltava para nota alta ja entrou: hoje o sistema nao apenas encontra o caso, ele o entrega em formato de dossie probatorio, metrica documental e matriz de confronto normativo.
+O proximo salto real agora deixa de ser engenharia de raspagem e vira fechamento probatorio: resposta documental dos orgaos, confronto com ficha funcional e eventual decisao sobre subir ou nao o caso de `REVISAO_INTERNA` para representacao.
+Em termos de sistema, o pacote `CEDIMP` esta praticamente fechado: achado, metrica, norma, triagem, diligencia e maturidade. O proximo ciclo passa a ser ou `fechamento probatorio do CEDIMP` ou replicacao do mesmo padrao para o proximo caso de saude.
+
+## Passo 0A. Receber e travar respostas oficiais do caso CEDIMP
+
+Esse passo agora ja saiu do papel na engenharia:
+- existe uma caixa de recepcao local em `entrega_denuncia_atual/cedimp_respostas/`
+- existe um indice controlado `cedimp_respostas_index.csv`
+- cada documento recebido pode entrar com `hash`, `status`, `protocolo` e `caminho local`
+- a matriz de maturidade ja enxerga se chegou documento suficiente para sair de `PENDENTE_DOCUMENTO` e virar `DOCUMENTO_RECEBIDO_PENDENTE_ANALISE`
+
+Entrega esperada:
+- preencher o indice assim que chegarem respostas de `SEMSA/RH` ou `SESACRE`
+- anexar os arquivos recebidos em `cedimp_respostas/anexos/...`
+- rerodar:
+  `scripts/sync_vinculo_societario_saude_respostas.py`
+  `scripts/sync_vinculo_societario_saude_maturidade.py`
+  `scripts/sync_vinculo_societario_saude_gate.py`
+  `scripts/export_vinculo_societario_saude_respostas.py`
+  `scripts/export_vinculo_societario_saude_maturidade.py`
+- verificar se `compatibilidade_horarios`, `vedacao_art_107_x` ou `acumulacao_ilegal` passaram para estado de documento recebido
+- verificar se o gate saiu de `APTO_OFICIO_DOCUMENTAL` para `APTO_ANALISE_JURIDICO_FUNCIONAL`
