@@ -169,6 +169,11 @@ def load_ops_dashboard_data():
             rule_validation_fail_count = int(
                 con.execute("SELECT COUNT(*) FROM ops_rule_validation WHERE status = 'FAIL'").fetchone()[0] or 0
             )
+        calibration_fail_count = 0
+        if "ops_calibration_result" in tables:
+            calibration_fail_count = int(
+                con.execute("SELECT COUNT(*) FROM ops_calibration_result WHERE status = 'FAIL'").fetchone()[0] or 0
+            )
         cases_df = con.execute(
             """
             SELECT
@@ -216,6 +221,7 @@ def load_ops_dashboard_data():
         "generated_export": generated_export_count,
         "generated_export_diff": generated_export_diff_count,
         "rule_validation_fail": rule_validation_fail_count,
+        "calibration_fail": calibration_fail_count,
         "by_stage": by_stage_df.to_dict("records"),
         "by_family": by_family_df.to_dict("records"),
     }

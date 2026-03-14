@@ -330,3 +330,46 @@ validacao executada:
 - `python -m py_compile src/core/ops_burden.py src/core/ops_registry.py src/core/ops_runbook.py src/core/ops_rulebook.py`
 - `.venv/bin/python scripts/sync_ops_case_registry.py`
 - `.venv/bin/python scripts/validate_ops_rulebook.py`
+
+## Calibracao empirica minima (2026-03-14)
+
+escopo:
+- travar regressao em casos conhecidos;
+- medir o backend contra `3898`, `3895`, `CEDIMP` e `SESACRE` de referencia;
+- expor `fail/warn` objetivos de calibracao.
+
+resultado:
+- `src/core/ops_calibration.py`
+- `scripts/sync_ops_calibration.py`
+- `scripts/validate_ops_calibration.py`
+- relatorio em `CALIBRACAO_EMPIRICA_20260314.md`
+
+benchmarks:
+- confirmados:
+  - `RB_3898_ACTIVE_DOCUMENTAL`
+  - `CEDIMP_DOCUMENT_REQUEST_ONLY`
+  - `SESACRE_REFERENCE_CASE_ACTIVE`
+  - `GLOBAL_LANGUAGE_GUARD_CLEAN`
+- descartado:
+  - `RB_3895_FALSE_POSITIVE_REMOVED`
+- inconclusivos:
+  - `RB_3898_CORE_DOCS_PENDING`
+  - `CEDIMP_PARENTESCO_UNPROVEN`
+  - `SESACRE_REFERENCE_DUE_DILIGENCE_PENDING`
+
+estado:
+- `calibration_benchmark_rows = 8`
+- `calibration_result_rows = 8`
+- `calibration_fail_rows = 0`
+- `calibration_warn_rows = 0`
+- `confirmado = 4 PASS`
+- `descartado = 1 PASS`
+- `inconclusivo = 3 PASS`
+
+validacao executada:
+- `python -m py_compile src/core/ops_calibration.py src/core/ops_registry.py src/ui/ops_data.py src/ui/ops_sections.py src/ui/streamlit_ops.py scripts/sync_ops_calibration.py scripts/validate_ops_calibration.py scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/validate_ops_calibration.py`
+- `.venv/bin/python scripts/validate_ops_rulebook.py`
+- `streamlit run app.py --server.headless true --server.port 8785`
+- `curl -I http://localhost:8785 -> 200`

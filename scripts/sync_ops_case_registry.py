@@ -50,6 +50,10 @@ def main() -> int:
         print(f"rule_rows={stats.get('rule_rows', 0)}")
         print(f"rule_validation_rows={stats.get('rule_validation_rows', 0)}")
         print(f"rule_validation_fail_rows={stats.get('rule_validation_fail_rows', 0)}")
+        print(f"calibration_benchmark_rows={stats.get('calibration_benchmark_rows', 0)}")
+        print(f"calibration_result_rows={stats.get('calibration_result_rows', 0)}")
+        print(f"calibration_fail_rows={stats.get('calibration_fail_rows', 0)}")
+        print(f"calibration_warn_rows={stats.get('calibration_warn_rows', 0)}")
         print(f"indexed_docs={stats.get('indexed_docs', 0)}")
         return 0
     except Exception as exc:

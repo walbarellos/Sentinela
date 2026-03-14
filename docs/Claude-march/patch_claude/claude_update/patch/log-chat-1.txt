@@ -1949,3 +1949,36 @@ validacao:
 - `python -m py_compile src/core/ops_burden.py src/core/ops_registry.py src/core/ops_runbook.py src/core/ops_rulebook.py`
 - `.venv/bin/python scripts/sync_ops_case_registry.py`
 - `.venv/bin/python scripts/validate_ops_rulebook.py`
+
+calibracao empirica:
+- camada nova em `src/core/ops_calibration.py`
+- scripts novos:
+  - `scripts/sync_ops_calibration.py`
+  - `scripts/validate_ops_calibration.py`
+- benchmarks ativos:
+  - `RB_3898_ACTIVE_DOCUMENTAL`
+  - `RB_3895_FALSE_POSITIVE_REMOVED`
+  - `CEDIMP_DOCUMENT_REQUEST_ONLY`
+  - `SESACRE_REFERENCE_CASE_ACTIVE`
+  - `GLOBAL_LANGUAGE_GUARD_CLEAN`
+  - `RB_3898_CORE_DOCS_PENDING`
+  - `CEDIMP_PARENTESCO_UNPROVEN`
+  - `SESACRE_REFERENCE_DUE_DILIGENCE_PENDING`
+
+estado da calibracao:
+- `calibration_benchmark_rows = 8`
+- `calibration_result_rows = 8`
+- `calibration_fail_rows = 0`
+- `calibration_warn_rows = 0`
+- resumo:
+  - `confirmado = 4 PASS`
+  - `descartado = 1 PASS`
+  - `inconclusivo = 3 PASS`
+
+validacao:
+- `python -m py_compile src/core/ops_calibration.py src/core/ops_registry.py src/ui/ops_data.py src/ui/ops_sections.py src/ui/streamlit_ops.py scripts/sync_ops_calibration.py scripts/validate_ops_calibration.py scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/validate_ops_calibration.py`
+- `.venv/bin/python scripts/validate_ops_rulebook.py`
+- `streamlit run app.py --server.headless true --server.port 8785`
+- `curl -I http://localhost:8785 -> 200`

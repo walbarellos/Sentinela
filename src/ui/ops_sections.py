@@ -80,7 +80,7 @@ def render_overview_tab(summary: dict[str, Any], runs_df: pd.DataFrame, sources_
     extra4.metric("Exports congelados", summary.get("generated_export", 0))
     extra5.metric("Diffs congelados", summary.get("generated_export_diff", 0))
     extra6.metric("Falhas de regra", summary.get("rule_validation_fail", 0))
-    extra7.metric("Inbox ativa", summary.get("inbox_cases", 0))
+    extra7.metric("Falhas calibração", summary.get("calibration_fail", 0))
 
     block1, block2 = st.columns([1, 1])
     with block1:

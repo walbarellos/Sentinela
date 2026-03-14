@@ -444,6 +444,7 @@ def sync_ops_case_registry(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
         """
     )
     from src.core.ops_burden import ensure_ops_burden, sync_ops_burden
+    from src.core.ops_calibration import ensure_ops_calibration, sync_ops_calibration
     from src.core.ops_checklist import ensure_ops_checklist, sync_ops_checklist
     from src.core.ops_contradiction import ensure_ops_contradiction, sync_ops_contradiction
     from src.core.ops_export import (
@@ -458,6 +459,7 @@ def sync_ops_case_registry(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
     from src.core.ops_semantic import ensure_ops_semantic, sync_ops_semantic_analysis
 
     ensure_ops_burden(con)
+    ensure_ops_calibration(con)
     ensure_ops_checklist(con)
     ensure_ops_contradiction(con)
     ensure_ops_export_gate(con)
@@ -509,6 +511,7 @@ def sync_ops_case_registry(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
     runbook_stats = sync_ops_runbook(con)
     export_diff_stats = sync_ops_generated_export_diff(con)
     rulebook_stats = sync_ops_rulebook(con)
+    calibration_stats = sync_ops_calibration(con)
 
     return {
         "cases": len(all_cases),
@@ -527,4 +530,8 @@ def sync_ops_case_registry(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
         "rule_rows": int(rulebook_stats.get("rules_written", 0)),
         "rule_validation_rows": int(rulebook_stats.get("validation_rows", 0)),
         "rule_validation_fail_rows": int(rulebook_stats.get("fail_rows", 0)),
-        }
+        "calibration_benchmark_rows": int(calibration_stats.get("benchmark_rows", 0)),
+        "calibration_result_rows": int(calibration_stats.get("result_rows", 0)),
+        "calibration_fail_rows": int(calibration_stats.get("fail_rows", 0)),
+        "calibration_warn_rows": int(calibration_stats.get("warn_rows", 0)),
+    }
