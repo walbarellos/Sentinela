@@ -222,11 +222,14 @@ def fetch_snapshot(con: duckdb.DuckDBPyConnection) -> dict[str, object]:
 def build_panel(snapshot: dict[str, object]) -> list[dict[str, object]]:
     panel: list[dict[str, object]] = []
     for row in snapshot["rb_prioritarios_rows"]:
+        tipo_achado = row["fila"]
+        if tipo_achado == "auditoria_documental_licitacao":
+            tipo_achado = "divergencia_documental_licitacao"
         panel.append(
             {
                 "esfera": "municipal",
                 "orgao": "SEMSA",
-                "tipo_achado": row["fila"],
+                "tipo_achado": tipo_achado,
                 "identificador": f"contrato_{row['numero_contrato']}",
                 "processo_ou_cnpj": row["numero_processo"],
                 "nome_ou_fornecedor": row["fornecedor"] or "(nao resolvido)",
@@ -284,13 +287,14 @@ def build_markdown(snapshot: dict[str, object], panel: list[dict[str, object]], 
         "",
         f"Gerado em `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`.",
         "",
-        "Este relatorio consolida o estado atual do sistema para o recorte `Acre / Rio Branco / SUS`, reunindo o eixo municipal prioritario e o eixo estadual da SESACRE.",
+        "Este relatorio consolida o estado atual do sistema para o recorte `Acre / Rio Branco / SUS`, distinguindo caso municipal ativo, historico invalidado e eixo estadual da SESACRE.",
         "",
         "## Resumo executivo",
         "",
         f"- Rio Branco: `{snapshot['rb_lotacao_total']}` servidores com lotacao materializada, sendo `{snapshot['rb_lotacao_sus']}` classificados como SUS.",
         f"- Rio Branco: `{snapshot['rb_contratos_sus']}` contratos SUS, com `{snapshot['rb_contratos_sus_cnpj']}` ja resolvidos com CNPJ.",
-        f"- Rio Branco: `{snapshot['rb_prioritarios']}` casos prioritarios finais materializados.",
+        f"- Rio Branco: `{snapshot['rb_prioritarios']}` caso(s) municipal(is) ativo(s) para uso externo.",
+        "- Rio Branco: o contrato `3895` foi rebaixado para nota historica apos validacao temporal do cruzamento sancionatorio.",
         f"- SESACRE: `{snapshot['sesacre_ativas']}` fornecedores com sancao ativa, somando `{brl(snapshot['sesacre_valor'])}`.",
         f"- SESACRE: `{snapshot['sesacre_cross_rows']}` linhas de cruzamento bruto e `{snapshot['sesacre_insights']}` insights `SESACRE_SANCAO_ATIVA`.",
         f"- SESACRE top 10: `{snapshot['sesacre_top10_qsa_covered']}/10` com QSA, `{snapshot['sesacre_top10_socios_covered']}/10` com socios e `{snapshot['sesacre_top10_detalhes_covered']}/10` com detalhe financeiro (`{snapshot['sesacre_top10_detail_rows']}` linha(s)).",
@@ -316,6 +320,16 @@ def build_markdown(snapshot: dict[str, object], panel: list[dict[str, object]], 
             f"- contrato `{row['numero_contrato']}` / processo `{row['numero_processo']}` / valor `{brl(row['valor_referencia_brl'])}` / fila `{row['fila']}` / fornecedor `{row['fornecedor'] or '(nao resolvido)'}` / CNPJ `{row['cnpj'] or ''}`"
         )
 
+    lines.extend(
+        [
+            "",
+            "## Caso municipal historico rebaixado",
+            "",
+            "- contrato `3895` / processo `3044` / cruzamento sancionatorio invalidado por filtro temporal",
+            "- leitura correta: historico de validacao de falso positivo, sem uso sancionatorio externo",
+        ]
+    )
+
     lines.extend(["", "## Top 10 SESACRE por valor contratado sob sancao ativa", ""])
     for idx, row in enumerate(snapshot["sesacre_top10"], start=1):
         lines.append(
@@ -330,7 +344,10 @@ def build_markdown(snapshot: dict[str, object], panel: list[dict[str, object]], 
             f"- Bundle municipal: `{bundles['rb']['path']}` | sha256 `{bundles['rb'].get('sha256', '')}`",
             f"- Bundle SESACRE: `{bundles['sesacre']['path']}` | sha256 `{bundles['sesacre'].get('sha256', '')}`",
             "- Dossie municipal: `docs/Claude-march/patch_claude/claude_update/patch/dossie_rb_sus_prioritarios.md`",
+            "- Relato municipal: `docs/Claude-march/patch_claude/claude_update/patch/relato_apuracao_3898.txt`",
+            "- Nota historica 3895: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/nota_historica_3895_sancao_invalidada.txt`",
             "- Dossie SESACRE: `docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/dossie_sesacre_sancoes_prioritarias.md`",
+            "- Relato SESACRE: `docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/relato_apuracao_sesacre_top10.txt`",
             "- Indice geral: `docs/Claude-march/patch_claude/claude_update/patch/INDEX_PRIORITARIOS.md`",
             "",
             "## Pendencias remanescentes",

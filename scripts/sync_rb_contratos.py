@@ -57,6 +57,13 @@ SUS_KEYWORDS = (
     "CTA",
     "SAE",
 )
+ABRANGENCIA_MUNICIPAL_KEYWORDS = (
+    "todas as esferas",
+    "todos os poderes",
+    "todos os entes",
+    "nacional",
+    "todo o territor",
+)
 
 DDL_RB_CONTRATOS = """
 CREATE TABLE IF NOT EXISTS rb_contratos (
@@ -565,6 +572,55 @@ def build_sancoes_view(con: duckdb.DuckDBPyConnection) -> bool:
     fim_expr = column_expr(("data_fim", "data_fim_vigencia", "data_fim_mais_recente"), "NULL")
     orgao_expr = column_expr(("orgao_sancao", "orgao", "orgao_ac", "nome_orgao"), "NULL")
     ativa_expr = column_expr(("ativa",), "FALSE")
+    abrangencia_expr = column_expr(("abrangencia", "abrangencia_sancao", "ds_abrangencia"), "NULL")
+
+    contract_date_expr = """
+        COALESCE(
+            TRY_STRPTIME(NULLIF(TRIM(c.data_lancamento), ''), '%d/%m/%Y')::DATE,
+            TRY_CAST(NULLIF(TRIM(c.data_lancamento), '') AS DATE),
+            CASE
+                WHEN c.ano IS NOT NULL THEN MAKE_DATE(c.ano, 12, 31)
+                WHEN TRY_CAST(c.exercicio AS INTEGER) IS NOT NULL THEN MAKE_DATE(TRY_CAST(c.exercicio AS INTEGER), 12, 31)
+                ELSE NULL
+            END,
+            CAST(c.capturado_em AS DATE)
+        )
+    """
+    sancao_inicio_date_expr = f"""
+        COALESCE(
+            TRY_STRPTIME(CAST({inicio_expr} AS VARCHAR), '%d/%m/%Y')::DATE,
+            TRY_CAST(CAST({inicio_expr} AS VARCHAR) AS DATE)
+        )
+    """
+    sancao_fim_date_expr = f"""
+        COALESCE(
+            TRY_STRPTIME(CAST({fim_expr} AS VARCHAR), '%d/%m/%Y')::DATE,
+            TRY_CAST(CAST({fim_expr} AS VARCHAR) AS DATE)
+        )
+    """
+
+    if abrangencia_expr == "NULL":
+        abrangencia_verificada_expr = "FALSE"
+        requer_revisao_expr = "TRUE"
+    else:
+        broad_checks = " OR ".join(
+            f"LOWER(CAST({abrangencia_expr} AS VARCHAR)) LIKE '%{keyword}%'"
+            for keyword in ABRANGENCIA_MUNICIPAL_KEYWORDS
+        )
+        abrangencia_verificada_expr = f"""
+            CASE
+                WHEN {abrangencia_expr} IS NULL OR TRIM(CAST({abrangencia_expr} AS VARCHAR)) = '' THEN FALSE
+                WHEN {broad_checks} THEN TRUE
+                ELSE FALSE
+            END
+        """
+        requer_revisao_expr = f"""
+            CASE
+                WHEN {abrangencia_expr} IS NULL OR TRIM(CAST({abrangencia_expr} AS VARCHAR)) = '' THEN TRUE
+                WHEN {broad_checks} THEN FALSE
+                ELSE TRUE
+            END
+        """
 
     con.execute(
         f"""
@@ -581,12 +637,28 @@ def build_sancoes_view(con: duckdb.DuckDBPyConnection) -> bool:
             c.cnpj,
             c.valor_referencia_brl,
             c.sus,
+            {contract_date_expr} AS data_contrato_referencia,
             {fonte_expr} AS sancao_fonte,
             {tipo_expr} AS sancao_tipo,
-            {inicio_expr} AS sancao_inicio,
-            {fim_expr} AS sancao_fim,
+            CAST({inicio_expr} AS VARCHAR) AS sancao_inicio,
+            CAST({fim_expr} AS VARCHAR) AS sancao_fim,
+            {sancao_inicio_date_expr} AS sancao_inicio_date,
+            {sancao_fim_date_expr} AS sancao_fim_date,
             {orgao_expr} AS orgao_sancao,
-            CAST(COALESCE({ativa_expr}, FALSE) AS BOOLEAN) AS ativa
+            CAST(COALESCE({ativa_expr}, FALSE) AS BOOLEAN) AS ativa,
+            CAST({abrangencia_expr} AS VARCHAR) AS abrangencia,
+            CASE
+                WHEN {sancao_inicio_date_expr} IS NULL THEN TRUE
+                WHEN {sancao_inicio_date_expr} <= {contract_date_expr} THEN TRUE
+                ELSE FALSE
+            END AS sancao_preexiste_contrato,
+            CASE
+                WHEN {sancao_fim_date_expr} IS NULL THEN TRUE
+                WHEN {sancao_fim_date_expr} >= {contract_date_expr} THEN TRUE
+                ELSE FALSE
+            END AS sancao_vigente_na_data_contrato,
+            CAST({abrangencia_verificada_expr} AS BOOLEAN) AS abrangencia_alcanca_municipio,
+            CAST({requer_revisao_expr} AS BOOLEAN) AS requer_revisao_abrangencia
         FROM rb_contratos c
         JOIN sancoes_collapsed s
           ON REGEXP_REPLACE(c.cnpj, '[^0-9]', '', 'g')
@@ -594,8 +666,56 @@ def build_sancoes_view(con: duckdb.DuckDBPyConnection) -> bool:
         WHERE c.cnpj <> ''
         """
     )
-    total = con.execute("SELECT COUNT(*) FROM v_rb_contrato_ceis WHERE ativa = TRUE").fetchone()[0]
-    log.info("v_rb_contrato_ceis: %d contratos com sanção ativa", total)
+    con.execute(
+        """
+        CREATE OR REPLACE VIEW v_rb_contrato_ceis_valida AS
+        SELECT *
+        FROM v_rb_contrato_ceis
+        WHERE ativa = TRUE
+          AND sancao_preexiste_contrato = TRUE
+          AND sancao_vigente_na_data_contrato = TRUE
+          AND abrangencia_alcanca_municipio = TRUE
+        """
+    )
+    con.execute(
+        """
+        CREATE OR REPLACE VIEW v_rb_contrato_ceis_revisao AS
+        SELECT *
+        FROM v_rb_contrato_ceis
+        WHERE ativa = TRUE
+          AND sancao_preexiste_contrato = TRUE
+          AND sancao_vigente_na_data_contrato = TRUE
+          AND requer_revisao_abrangencia = TRUE
+        """
+    )
+    con.execute(
+        """
+        CREATE OR REPLACE VIEW v_rb_contrato_ceis_invalida AS
+        SELECT
+            *,
+            CASE
+                WHEN sancao_preexiste_contrato = FALSE THEN 'SANCAO_POSTERIOR_AO_CONTRATO'
+                WHEN sancao_vigente_na_data_contrato = FALSE THEN 'SANCAO_EXPIRADA_NA_DATA_CONTRATO'
+                ELSE 'ABRANGENCIA_NAO_VERIFICADA'
+            END AS motivo_exclusao
+        FROM v_rb_contrato_ceis
+        WHERE NOT (
+            ativa = TRUE
+            AND sancao_preexiste_contrato = TRUE
+            AND sancao_vigente_na_data_contrato = TRUE
+            AND abrangencia_alcanca_municipio = TRUE
+        )
+        """
+    )
+    total_valid = con.execute("SELECT COUNT(*) FROM v_rb_contrato_ceis_valida WHERE sus = TRUE").fetchone()[0]
+    total_review = con.execute("SELECT COUNT(*) FROM v_rb_contrato_ceis_revisao WHERE sus = TRUE").fetchone()[0]
+    total_invalid = con.execute("SELECT COUNT(*) FROM v_rb_contrato_ceis_invalida WHERE sus = TRUE").fetchone()[0]
+    log.info(
+        "v_rb_contrato_ceis: validos=%d | revisao=%d | invalidados=%d",
+        total_valid,
+        total_review,
+        total_invalid,
+    )
     return True
 
 
@@ -613,30 +733,42 @@ def build_views(con: duckdb.DuckDBPyConnection) -> int:
     sancao_cte = ""
     sancao_join = ""
     sancao_count_expr = "0"
+    sancao_review_count_expr = "0"
     sancao_source_expr = "''"
     sancao_cols = """
             FALSE AS sancao_ativa,
             0 AS n_sancoes_ativas,
             '' AS sancao_fontes
     """
-    if "v_rb_contrato_ceis" in views:
+    if "v_rb_contrato_ceis_valida" in views or "v_rb_contrato_ceis_revisao" in views:
         sancao_cte = """
-        , sancoes AS (
+        , sancoes_validas AS (
             SELECT
                 row_id,
                 COUNT(*) FILTER (WHERE ativa = TRUE) AS n_sancoes_ativas,
                 STRING_AGG(DISTINCT COALESCE(sancao_fonte, ''), ', ' ORDER BY COALESCE(sancao_fonte, '')) AS sancao_fontes
-            FROM v_rb_contrato_ceis
+            FROM v_rb_contrato_ceis_valida
+            GROUP BY 1
+        )
+        , sancoes_revisao AS (
+            SELECT
+                row_id,
+                COUNT(*) FILTER (WHERE ativa = TRUE) AS n_sancoes_revisao
+            FROM v_rb_contrato_ceis_revisao
             GROUP BY 1
         )
         """
-        sancao_join = "LEFT JOIN sancoes s ON s.row_id = c.row_id"
-        sancao_count_expr = "COALESCE(s.n_sancoes_ativas, 0)"
-        sancao_source_expr = "COALESCE(s.sancao_fontes, '')"
+        sancao_join = """
+        LEFT JOIN sancoes_validas sv ON sv.row_id = c.row_id
+        LEFT JOIN sancoes_revisao sr ON sr.row_id = c.row_id
+        """
+        sancao_count_expr = "COALESCE(sv.n_sancoes_ativas, 0)"
+        sancao_review_count_expr = "COALESCE(sr.n_sancoes_revisao, 0)"
+        sancao_source_expr = "COALESCE(sv.sancao_fontes, '')"
         sancao_cols = """
-            CAST(COALESCE(s.n_sancoes_ativas, 0) > 0 AS BOOLEAN) AS sancao_ativa,
-            COALESCE(s.n_sancoes_ativas, 0) AS n_sancoes_ativas,
-            COALESCE(s.sancao_fontes, '') AS sancao_fontes
+            CAST(COALESCE(sv.n_sancoes_ativas, 0) > 0 AS BOOLEAN) AS sancao_ativa,
+            COALESCE(sv.n_sancoes_ativas, 0) AS n_sancoes_ativas,
+            COALESCE(sv.sancao_fontes, '') AS sancao_fontes
         """
 
     con.execute(
@@ -671,14 +803,16 @@ def build_views(con: duckdb.DuckDBPyConnection) -> int:
             COALESCE(o.source_kind, '') AS ocr_source_kind,
             {sancao_cols},
             CASE
-                WHEN {sancao_count_expr} > 0 THEN 'denuncia_imediata'
+                WHEN {sancao_count_expr} > 0 THEN 'revisar_sancao_validada'
+                WHEN {sancao_review_count_expr} > 0 THEN 'revisar_sancao_data_abrangencia'
                 WHEN COALESCE(c.cnpj, '') = '' AND COALESCE(c.valor_referencia_brl, 0) >= 50000 THEN 'extrair_cnpj_prioritario'
                 WHEN COALESCE(c.cnpj, '') = '' THEN 'buscar_fonte_externa'
                 WHEN COALESCE(c.fornecedor, '') = '' THEN 'normalizar_fornecedor'
                 ELSE 'revisar'
             END AS fila_investigacao,
             CASE
-                WHEN {sancao_count_expr} > 0 THEN 100
+                WHEN {sancao_count_expr} > 0 THEN 90
+                WHEN {sancao_review_count_expr} > 0 THEN 70
                 WHEN COALESCE(c.cnpj, '') = '' AND COALESCE(c.valor_referencia_brl, 0) >= 50000 THEN 80
                 WHEN COALESCE(c.cnpj, '') = '' THEN 60
                 WHEN COALESCE(c.fornecedor, '') = '' THEN 40
@@ -704,7 +838,7 @@ def build_views(con: duckdb.DuckDBPyConnection) -> int:
             STRING_AGG(numero_contrato, ', ' ORDER BY numero_contrato) AS contratos,
             STRING_AGG(DISTINCT fila_investigacao, ', ' ORDER BY fila_investigacao) AS filas
         FROM v_rb_contratos_triagem
-        WHERE tem_cnpj = FALSE OR tem_fornecedor = FALSE OR sancao_ativa = TRUE
+        WHERE tem_cnpj = FALSE OR tem_fornecedor = FALSE OR sancao_ativa = TRUE OR fila_investigacao = 'revisar_sancao_data_abrangencia'
         GROUP BY 1, 2, 3
         ORDER BY prioridade_max DESC, total_brl DESC NULLS LAST
         """
@@ -797,7 +931,7 @@ def build_insights(con: duckdb.DuckDBPyConnection) -> int:
         )
 
     views = {row[0] for row in con.execute("SELECT table_name FROM information_schema.views").fetchall()}
-    if "v_rb_contrato_ceis" in views:
+    if "v_rb_contrato_ceis_valida" in views:
         sancao_rows = con.execute(
             """
             WITH contratos_sancionados AS (
@@ -807,9 +941,11 @@ def build_insights(con: duckdb.DuckDBPyConnection) -> int:
                     secretaria,
                     numero_contrato,
                     valor_referencia_brl,
-                    sancao_tipo
-                FROM v_rb_contrato_ceis
-                WHERE ativa = TRUE AND sus = TRUE
+                    sancao_tipo,
+                    sancao_inicio,
+                    abrangencia
+                FROM v_rb_contrato_ceis_valida
+                WHERE sus = TRUE
             )
             SELECT
                 cnpj,
@@ -817,36 +953,45 @@ def build_insights(con: duckdb.DuckDBPyConnection) -> int:
                 secretaria,
                 COUNT(DISTINCT numero_contrato) AS n_contratos,
                 SUM(valor_referencia_brl) AS total_brl,
-                COUNT(DISTINCT sancao_tipo) AS n_tipos
+                COUNT(DISTINCT sancao_tipo) AS n_tipos,
+                MIN(sancao_inicio) AS sancao_inicio_min,
+                STRING_AGG(DISTINCT COALESCE(abrangencia, ''), ' | ' ORDER BY COALESCE(abrangencia, '')) AS abrangencias
             FROM contratos_sancionados
             GROUP BY 1, 2, 3
             ORDER BY total_brl DESC NULLS LAST
             LIMIT 200
             """
         ).fetchall()
-        for cnpj, fornecedor, secretaria, n_contratos, total_brl, n_tipos in sancao_rows:
+        for cnpj, fornecedor, secretaria, n_contratos, total_brl, n_tipos, sancao_inicio_min, abrangencias in sancao_rows:
             exposure = float(total_brl or 0.0)
             insight_id = "INS_" + hashlib.sha1(
                 f"{KIND_SANCAO}|{cnpj}|{secretaria}".encode("utf-8")
             ).hexdigest()[:16]
+            scope_note = (
+                f"Abrangência verificada: {abrangencias}."
+                if abrangencias and abrangencias.strip()
+                else "Abrangência registrada como compatível com a esfera municipal."
+            )
             payload.append(
                 (
                     insight_id,
                     KIND_SANCAO,
                     "CRITICAL",
-                    95,
+                    90,
                     exposure,
-                    f"RB SUS: fornecedor sancionado {fornecedor or cnpj} contratado por {secretaria}",
+                    f"RB SUS: fornecedor com sanção preexistente validada {fornecedor or cnpj} contratado por {secretaria}",
                     (
                         f"**{fornecedor or cnpj}** (`{cnpj}`) aparece com **{n_tipos} tipo(s) de sanção ativa** "
+                        f"**preexistentes à referência temporal do contrato** "
+                        f"(primeiro início observado: **{sancao_inicio_min or 'não informado'}**) "
                         f"e, ainda assim, consta em **{n_contratos} contrato(s)** do SUS municipal de Rio Branco "
-                        f"em **{secretaria}**, totalizando **R$ {exposure:,.2f}**."
+                        f"em **{secretaria}**, totalizando **R$ {exposure:,.2f}**. {scope_note}"
                     ),
-                    "contrato_sus_fornecedor_sancionado_municipal",
+                    "contrato_sus_fornecedor_sancionado_municipal_validado",
                     json.dumps(
                         [
                             "rb_contratos",
-                            "sancoes_collapsed",
+                            "v_rb_contrato_ceis_valida",
                             "transparencia.riobranco.ac.gov.br/contrato",
                         ],
                         ensure_ascii=False,

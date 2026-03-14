@@ -1781,3 +1781,84 @@ leitura:
     nepotismo automatico
     fraude consumada automatica
     pedalada fiscal automatica
+
+2026-03-14 — correção crítica pós-auditoria `claude_feedback`
+
+o feedback procedia em pontos materiais e foi portado ao código real:
+- `3895 / NORTE DISTRIBUIDORA` caiu do fluxo sancionatório municipal
+- `validate_sancao_timeline.py` confirmou `5` cruzamentos brutos e `5` falsos positivos temporais
+- `v_rb_contrato_ceis_valida = 0`
+- `v_rb_contrato_ceis_invalida = 5`
+- `RB_CONTRATO_SANCIONADO = 0`
+
+hardening aplicado:
+- `scripts/sync_rb_contratos.py`
+  - cruzamento sancionatório municipal agora exige temporalidade válida
+  - escopo municipal sem `abrangencia` explícita não promove insight externo
+  - views novas:
+    - `v_rb_contrato_ceis_valida`
+    - `v_rb_contrato_ceis_revisao`
+    - `v_rb_contrato_ceis_invalida`
+- `scripts/validate_sancao_timeline.py`
+  - validador standalone da timeline CEIS x contratos SUS
+- `src/core/cross_reference_engine.py`
+  - schema compatível com o banco atual
+  - campos probatórios no `alerts`
+  - `fracionamento` corrigido para `R$ 50.000,00`
+  - `outlier_salarial` exige `n >= 30`
+  - `nepotismo` por sobrenome rebaixado para `REVISAO_INTERNA`
+  - detectores sensíveis bloqueados por padrão sem `--allow-internal`
+- streamlit:
+  - `🚩 ALERTAS CRÍTICOS` virou `🧪 ALERTAS LEGADOS (QUARENTENA)`
+  - aba legada não gera mais relato externo
+  - home parou de usar `alerts` como KPI central
+
+validação executada:
+- `python -m py_compile app.py src/ui/streamlit_alerts.py src/ui/streamlit_home.py src/ui/streamlit_sidebar.py src/core/cross_reference_engine.py scripts/sync_rb_contratos.py scripts/validate_sancao_timeline.py`
+- `.venv/bin/python scripts/validate_sancao_timeline.py`
+- rebuild local de views/insights com `build_views()` + `build_insights()`
+- `.venv/bin/python scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/validate_ops_output_guard.py`
+- `streamlit run app.py --server.headless true --server.port 8780`
+- `curl -I http://localhost:8780 -> 200`
+
+estado operacional final:
+- `cases = 12`
+- `artifacts = 35`
+- `burden_rows = 61`
+- `semantic_rows = 4`
+- `contradiction_rows = 2`
+- `checklist_rows = 61`
+- `language_guard_rows = 0`
+- `export_gate_rows = 36`
+- `generated_export_rows = 2`
+- `rule_validation_fail_rows = 0`
+- `indexed_docs = 32`
+
+famílias vivas no registry:
+- `sesacre_sancao = 10`
+- `rb_sus_contrato = 1` (`3898`)
+- `saude_societario = 1` (`CEDIMP`)
+
+rerun final do registry operacional:
+- `estagio_operacional` ativo no banco:
+  - `APTO_A_NOTICIA_DE_FATO`
+  - `APTO_OFICIO_DOCUMENTAL`
+
+limpeza do acervo ativo apos feedback:
+- `3895` saiu dos artefatos ativos e virou `nota_historica_3895_sancao_invalidada.txt`
+- o relato municipal ativo agora e `relato_apuracao_3898.txt`
+- o relato estadual ativo agora e `sesacre_prioritarios/relato_apuracao_sesacre_top10.txt`
+- `INDEX_PRIORITARIOS.md`, `relatorio_final_acre_rio_branco_sus.md`, `entrega_denuncia_atual/README.md` e `CASO_NORTE_DISTRIBUIDORA.md` foram corrigidos
+- `painel_prioridades_acre_rio_branco_sus.csv` ficou com `3898` como unico caso municipal ativo
+
+validacao final da limpeza:
+- `python -m py_compile scripts/export_rb_casos_prioritarios.py scripts/export_sesacre_prioritarios.py scripts/export_relatorio_final_acre_sus.py src/core/ops_registry.py`
+- `.venv/bin/python scripts/export_rb_casos_prioritarios.py`
+- `.venv/bin/python scripts/export_sesacre_prioritarios.py`
+- `.venv/bin/python scripts/export_relatorio_final_acre_sus.py`
+- `.venv/bin/python scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/validate_ops_output_guard.py`
+- `.venv/bin/python scripts/validate_sancao_timeline.py`
+- `streamlit run app.py --server.headless true --server.port 8781`
+- `curl -I http://localhost:8781 -> 200`

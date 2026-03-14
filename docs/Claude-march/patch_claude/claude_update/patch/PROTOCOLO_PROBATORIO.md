@@ -38,8 +38,8 @@ Cada insight passa a sair com:
 
 ## Uso externo
 
-- `APTO_REPRESENTACAO`
-  - pode integrar representacao preliminar ou noticia de fato
+- `APTO_A_NOTICIA_DE_FATO`
+  - pode integrar noticia de fato tecnicamente fundamentada
 - `APTO_APURACAO`
   - bom para auditoria, correcao, pedido de informacao e aprofundamento
 - `REVISAO_INTERNA`

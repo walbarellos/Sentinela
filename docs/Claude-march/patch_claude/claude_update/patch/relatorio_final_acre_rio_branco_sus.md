@@ -1,14 +1,15 @@
 # Relatorio Final - Acre / Rio Branco / SUS
 
-Gerado em `2026-03-13 12:16:28`.
+Gerado em `2026-03-14 09:54:33`.
 
-Este relatorio consolida o estado atual do sistema para o recorte `Acre / Rio Branco / SUS`, reunindo o eixo municipal prioritario e o eixo estadual da SESACRE.
+Este relatorio consolida o estado atual do sistema para o recorte `Acre / Rio Branco / SUS`, distinguindo caso municipal ativo, historico invalidado e eixo estadual da SESACRE.
 
 ## Resumo executivo
 
 - Rio Branco: `20403` servidores com lotacao materializada, sendo `4427` classificados como SUS.
 - Rio Branco: `13` contratos SUS, com `12` ja resolvidos com CNPJ.
-- Rio Branco: `2` casos prioritarios finais materializados.
+- Rio Branco: `1` caso(s) municipal(is) ativo(s) para uso externo.
+- Rio Branco: o contrato `3895` foi rebaixado para nota historica apos validacao temporal do cruzamento sancionatorio.
 - SESACRE: `67` fornecedores com sancao ativa, somando `R$ 101.329.947,27`.
 - SESACRE: `147` linhas de cruzamento bruto e `67` insights `SESACRE_SANCAO_ATIVA`.
 - SESACRE top 10: `10/10` com QSA, `9/10` com socios e `1/10` com detalhe financeiro (`23` linha(s)).
@@ -20,8 +21,7 @@ Este relatorio consolida o estado atual do sistema para o recorte `Acre / Rio Br
 
 ## Fila priorizada consolidada
 
-- prioridade `100` | `municipal` | `SEMSA` | `contrato_3895` | `NORTE DISTRIBUIDORA DE PRODUTOS LTDA` | `R$ 82.950,00` | `denuncia_imediata`
-- prioridade `95` | `municipal` | `SEMSA` | `contrato_3898` | `(nao resolvido)` | `R$ 31.200,00` | `auditoria_documental_licitacao`
+- prioridade `95` | `municipal` | `SEMSA` | `contrato_3898` | `(nao resolvido)` | `R$ 31.200,00` | `divergencia_documental_licitacao`
 - prioridade `89` | `estadual` | `SESACRE` | `sesacre_top_1` | `CIENTIFICA MEDICA HOSPITAL LTDA EM RECUPERACAO JUDICIAL` | `R$ 29.410.248,30` | `fornecedor_sancionado_ativo`
 - prioridade `88` | `estadual` | `SESACRE` | `sesacre_top_2` | `R. BISPO AGUIAR` | `R$ 12.329.014,18` | `fornecedor_sancionado_ativo`
 - prioridade `87` | `estadual` | `SESACRE` | `sesacre_top_3` | `HOSPSHOP PRODUTOS HOSPITALARES LTDA` | `R$ 7.577.625,00` | `fornecedor_sancionado_ativo`
@@ -35,8 +35,12 @@ Este relatorio consolida o estado atual do sistema para o recorte `Acre / Rio Br
 
 ## Casos municipais finais
 
-- contrato `3895` / processo `3044` / valor `R$ 82.950,00` / fila `denuncia_imediata` / fornecedor `NORTE DISTRIBUIDORA DE PRODUTOS LTDA` / CNPJ `37306014000148`
 - contrato `3898` / processo `3006` / valor `R$ 31.200,00` / fila `auditoria_documental_licitacao` / fornecedor `(nao resolvido)` / CNPJ ``
+
+## Caso municipal historico rebaixado
+
+- contrato `3895` / processo `3044` / cruzamento sancionatorio invalidado por filtro temporal
+- leitura correta: historico de validacao de falso positivo, sem uso sancionatorio externo
 
 ## Top 10 SESACRE por valor contratado sob sancao ativa
 
@@ -56,7 +60,10 @@ Este relatorio consolida o estado atual do sistema para o recorte `Acre / Rio Br
 - Bundle municipal: `docs/Claude-march/patch_claude/claude_update/patch/rb_sus_prioritarios_bundle_20260313.tar.gz` | sha256 `865441cc6eeba2f4c331099efe257231c14c2b4e7dcdf4d8131fef17aa609887`
 - Bundle SESACRE: `docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios_bundle_20260313.tar.gz` | sha256 `e12595b5b0052ddb2bd556e927b4d17a178e28e06241d210832109fd19618989`
 - Dossie municipal: `docs/Claude-march/patch_claude/claude_update/patch/dossie_rb_sus_prioritarios.md`
+- Relato municipal: `docs/Claude-march/patch_claude/claude_update/patch/relato_apuracao_3898.txt`
+- Nota historica 3895: `docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/nota_historica_3895_sancao_invalidada.txt`
 - Dossie SESACRE: `docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/dossie_sesacre_sancoes_prioritarias.md`
+- Relato SESACRE: `docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/relato_apuracao_sesacre_top10.txt`
 - Indice geral: `docs/Claude-march/patch_claude/claude_update/patch/INDEX_PRIORITARIOS.md`
 
 ## Pendencias remanescentes

@@ -220,7 +220,7 @@ def classify_probative_record(
     if _contains_any(kind, ("INCONSIST", "DIVERG", "VENCEDOR DIVERGENTE", "OBJETO DIVERGENTE")):
         classe = "DIVERGENCIA_DOCUMENTAL"
         grau = "DOCUMENTAL_CORROBORADO" if primary_doc_hit and corroborated_hit else "DOCUMENTAL_PRIMARIO" if primary_doc_hit else "INDICIARIO"
-        uso = "APTO_REPRESENTACAO" if grau == "DOCUMENTAL_CORROBORADO" else "APTO_APURACAO"
+        uso = "APTO_A_NOTICIA_DE_FATO" if grau == "DOCUMENTAL_CORROBORADO" else "APTO_APURACAO"
         inferencia = "Ha divergencia documental objetiva entre ato formal, portal publico ou publicacoes oficiais."
         limite = "Nao prova dolo, fraude penal ou direcionamento por si so; exige analise juridica e contexto administrativo."
     elif _contains_any(kind, ("SANCAO", "CEIS", "CNEP", "CEPIM", "CEAF")) or _contains_any(text, (" CEIS ", " CNEP ", " CEPIM ", " CEAF ", " SANCAO ")):

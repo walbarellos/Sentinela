@@ -136,7 +136,7 @@ def build_gate(case: dict, maturidade_rows: list[dict], respostas_rows: list[dic
             ]
         )
     else:
-        estagio = "APTO_REPRESENTACAO_PRELIMINAR"
+        estagio = "APTO_A_NOTICIA_DE_FATO"
         uso = "REPRESENTACAO_PRELIMINAR"
         pode_uso_externo = True
         recomendacoes.extend(

@@ -1,71 +1,43 @@
-# Caso Norte Distribuidora
+# Caso Norte Distribuidora - Nota Historica
 
-Este arquivo resume apenas o que o software ja materializou de forma objetiva sobre a `NORTE DISTRIBUIDORA DE PRODUTOS LTDA`.
+Este arquivo resume o estado correto e atual da `NORTE DISTRIBUIDORA DE PRODUTOS LTDA` no projeto.
 
 ## Identificacao basica
 
 - Razao social: `NORTE DISTRIBUIDORA DE PRODUTOS LTDA`
 - Nome fantasia: `NORTE DISTRIBUIDORA`
 - CNPJ: `37.306.014/0001-48`
-- Situacao cadastral: `ATIVA`
-- Capital social: `R$ 100.000,00`
-- Abertura: `2020-06-03`
 - Municipio/UF: `Ariquemes/RO`
-- CNAE principal: `4637107`
-- CNAE descricao: `Comércio atacadista de chocolates, confeitos, balas, bombons e semelhantes`
 
-## QSA basico levantado
+## O que permaneceu objetivo
 
-- `ANA TARCIA ALVES GONCALVES` — `Sócio-Administrador` — entrada `2020-06-03`
+- O CNPJ continua aparecendo na base `CEIS`, com sancoes publicas fora do Acre.
+- O CNPJ continua aparecendo em contratos estaduais do Acre, inclusive em `SEE`, `GOVERNO_ACRE`, `SESACRE`, `SEJUSP` e `SEDET`.
+- A trilha `NORTE` continua util como eixo exploratorio para rede empresarial e contratos estaduais.
 
-## O que esta provado no municipal
+## O que foi corrigido
 
-- Contrato SUS municipal identificado:
-  `3895`
-- Processo:
-  `3044`
-- Secretaria:
-  `SEMSA`
-- Valor de referencia:
-  `R$ 82.950,00`
-- Objeto:
-  aquisicao de cafe e acucar para a Secretaria Municipal de Saude
-- Detalhe publico:
-  `https://transparencia.riobranco.ac.gov.br/contrato/ver/1916838/`
+- O contrato municipal `3895` / processo `3044` nao integra mais a fila municipal ativa.
+- O cruzamento sancionatorio municipal foi invalidado por filtro temporal.
+- O insight `RB_CONTRATO_SANCIONADO` foi zerado para esse caso.
 
-No banco atual, esse contrato esta materializado como caso prioritario `denuncia_imediata` e insight `RB_CONTRATO_SANCIONADO`.
-
-## O que esta provado no sancionatorio
-
-O mesmo CNPJ aparece na base `CEIS` com sancoes ativas abertas fora do Acre, incluindo:
-
-- Controladoria Geral do Estado de Rondonia
-- Comando do Exercito
-- Estado de Rondonia
-
-No recorte local do software, esse CNPJ tambem apareceu colidindo com contratos em orgaos do Acre, inclusive:
-
-- `SEE` — `R$ 625.399,45`
-- `GOVERNO_ACRE` — `R$ 177.098,00`
-- `SESACRE` — `R$ 11.340,00`
-- `SEJUSP` — `R$ 4.921,50`
-- `SEDET` — `R$ 4.165,00`
-
-Alguns contratos estaduais ja materializados para esse CNPJ:
-
-- `SEE` — contrato `101/2023` — `R$ 490.039,45`
-- `GOVERNO_ACRE` — contrato `058/2023` — `R$ 172.190,00`
-- `SEE` — contrato `038/2023` — `R$ 135.360,00`
-- `SESACRE` — contrato `048/2023` — `R$ 11.340,00`
+Leitura correta:
+- a sancao encontrada comecou depois da data de referencia do contrato;
+- portanto, o caso `3895` nao sustenta noticia de fato sancionatoria municipal;
+- ele permanece apenas como historico de auditoria sobre falso positivo temporal.
 
 ## O que ainda nao esta provado
 
-As afirmacoes abaixo ainda nao estao demonstradas pelo banco atual e nao devem ser tratadas como fato fechado sem prova adicional:
+As afirmacoes abaixo continuam sem base fechada no banco atual e nao devem ser tratadas como fato:
 
 - nepotismo da empresa
 - fraude de licitacao atribuida especificamente a esse CNPJ
 - substituicao de servidores efetivos por empregados da empresa
 - fornecimento de mao de obra terceirizada com indicacao politica
 
-Ponto importante:
-o que o sistema encontrou ate aqui para `NORTE` esta mais ligado a contratos de fornecimento de bens de consumo do que a contratos de terceirizacao de pessoal. Se a empresa usada para substituir servidores for outro CNPJ do mesmo grupo ou outro nome empresarial, isso ainda precisa ser identificado.
+## Direcao correta
+
+O recorte `NORTE` continua valido apenas em dois eixos:
+
+- contratos estaduais e rede empresarial correlata;
+- trilha historica municipal do `3895`, agora usada so para validacao e controle de falso positivo.

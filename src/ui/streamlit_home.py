@@ -11,10 +11,10 @@ def render_home_page(db: duckdb.DuckDBPyConnection) -> None:
     st.markdown('<div class="main-header"><h1>Monitoramento de Rede e Influência</h1></div>', unsafe_allow_html=True)
 
     try:
+        tables = set(db.execute("SHOW TABLES").df()["name"].tolist())
         n_entidades = db.execute("SELECT COUNT(DISTINCT empresa_id) FROM obras WHERE empresa_id IS NOT NULL").fetchone()[0]
-        n_alertas = db.execute("SELECT COUNT(*) FROM alerts").fetchone()[0]
+        n_casos = db.execute("SELECT COUNT(*) FROM ops_case_registry").fetchone()[0] if "ops_case_registry" in tables else 0
         try:
-            tables = db.execute("SHOW TABLES").df()["name"].tolist()
             federal_exists = "federal_ceis" in tables
             n_verified = db.execute("SELECT COUNT(DISTINCT empresa_id) FROM obras WHERE empresa_id IS NOT NULL").fetchone()[0]
             if federal_exists:
@@ -29,7 +29,7 @@ def render_home_page(db: duckdb.DuckDBPyConnection) -> None:
         exposicao = db.execute("SELECT SUM(COALESCE(valor_total, 0)) FROM obras").fetchone()[0] or 0
     except Exception:
         n_entidades = 20430
-        n_alertas = 0
+        n_casos = 0
         n_vetted = 0
         federal_ok = False
         exposicao = 11600000
@@ -47,8 +47,8 @@ def render_home_page(db: duckdb.DuckDBPyConnection) -> None:
                 <div style="font-size:10px; opacity:0.6;">{"BASE ATIVA" if federal_ok else "SEM BASE LOCAL"}</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-label">Alertas Ativos</div>
-                <div class="kpi-value" style="color:#ff2244;">{n_alertas}</div>
+                <div class="kpi-label">Casos Operacionais</div>
+                <div class="kpi-value" style="color:#ff2244;">{n_casos}</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">Exposição (R$)</div>

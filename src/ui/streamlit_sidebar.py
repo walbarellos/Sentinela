@@ -8,7 +8,7 @@ import streamlit as st
 
 ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = ROOT / "data" / "sentinela_analytics.duckdb"
-PAGES = ["🏠 CENTRO DE COMANDO", "📂 OPERAÇÕES", "🚩 ALERTAS CRÍTICOS", "🏛️ AUDITORIA FEDERAL (CGU)", "👥 BUSCA AVANÇADA"]
+PAGES = ["🏠 CENTRO DE COMANDO", "📂 OPERAÇÕES", "🧪 ALERTAS LEGADOS (QUARENTENA)", "🏛️ AUDITORIA FEDERAL (CGU)", "👥 BUSCA AVANÇADA"]
 
 
 @st.cache_data(ttl=30, show_spinner=False)

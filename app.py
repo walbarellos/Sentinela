@@ -33,7 +33,7 @@ if page == "🏠 CENTRO DE COMANDO":
 elif page == "📂 OPERAÇÕES":
     render_ops_page()
 
-elif page == "🚩 ALERTAS CRÍTICOS":
+elif page == "🧪 ALERTAS LEGADOS (QUARENTENA)":
     db = get_db()
     try:
         render_alerts_page(db)

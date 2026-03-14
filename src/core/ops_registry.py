@@ -238,7 +238,7 @@ def build_rb_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, Any]]
                 "severity": "CRITICO" if sancionado else "ALTO",
                 "classe_achado": classes,
                 "uso_externo": "APTO_APURACAO",
-                "estagio_operacional": "APTO_REPRESENTACAO_PRELIMINAR",
+                "estagio_operacional": "APTO_A_NOTICIA_DE_FATO",
                 "status_operacional": "aberto",
                 "prioridade": int(item.get("prioridade_final") or 0),
                 "valor_referencia_brl": float(item.get("valor_referencia_brl") or 0),
@@ -252,10 +252,10 @@ def build_rb_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, Any]]
                 "evidence_json": json.dumps(item, ensure_ascii=False),
             }
         )
-        denuncia_name = f"docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/denuncia_preliminar_{numero}.txt"
+        note_name = f"docs/Claude-march/patch_claude/claude_update/patch/relato_apuracao_{numero}.txt"
         artifacts.extend(
             [
-                make_artifact(case_id, f"relato_apuracao_{numero}", "nota", denuncia_name),
+                make_artifact(case_id, f"relato_apuracao_{numero}", "nota", note_name),
                 make_artifact(case_id, "dossie_rb_sus", "dossie", "docs/Claude-march/patch_claude/claude_update/patch/dossie_rb_sus_prioritarios.md"),
             ]
         )
@@ -305,7 +305,7 @@ def build_sesacre_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, 
     cases: list[dict[str, Any]] = []
     artifacts: list[dict[str, Any]] = []
     dossie = "docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/dossie_sesacre_sancoes_prioritarias.md"
-    repr_path = "docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/representacao_preliminar_sesacre_top10.txt"
+    repr_path = "docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/relato_apuracao_sesacre_top10.txt"
     for item in json.loads(rows.to_json(orient="records", force_ascii=False)):
         cnpj = str(item["cnpj_cpf"])
         case_id = f"sesacre:sancao:{cnpj}"
@@ -326,7 +326,7 @@ def build_sesacre_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, 
                 "severity": "CRITICO",
                 "classe_achado": "CRUZAMENTO_SANCIONATORIO",
                 "uso_externo": "APTO_APURACAO",
-                "estagio_operacional": "APTO_REPRESENTACAO_PRELIMINAR",
+                "estagio_operacional": "APTO_A_NOTICIA_DE_FATO",
                 "status_operacional": "aberto",
                 "prioridade": min(100, int(item.get("n_sancoes_ativas") or 0) * 10 + 70),
                 "valor_referencia_brl": float(item.get("valor_contratado_ac") or 0),
@@ -346,7 +346,7 @@ def build_sesacre_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, 
         artifacts.extend(
             [
                 make_artifact(case_id, "dossie_sesacre_top10", "dossie", dossie),
-                make_artifact(case_id, "noticia_fato_top10", "nota", repr_path),
+                make_artifact(case_id, "relato_apuracao_top10", "nota", repr_path),
             ]
         )
     return cases, artifacts

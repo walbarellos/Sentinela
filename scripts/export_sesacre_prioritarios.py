@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT / "data" / "sentinela_analytics.duckdb"
 CEIS_ZIP = ROOT / "data" / "federal" / "ceis_20260312.zip"
 OUT_DIR = ROOT / "docs" / "Claude-march" / "patch_claude" / "claude_update" / "patch" / "sesacre_prioritarios"
+CURATED_DIR = ROOT / "docs" / "Claude-march" / "patch_claude" / "claude_update" / "patch" / "entrega_denuncia_atual"
 EVIDENCE_DIR = OUT_DIR / "evidencias"
 TOP_N = 10
 
@@ -67,6 +68,13 @@ def write_text(path: Path, content: str) -> dict[str, object]:
         "sha256": sha256_file(path),
         "size_bytes": path.stat().st_size,
     }
+
+
+def write_text_mirrored(path: Path, content: str, mirror_name: str | None = None) -> dict[str, object]:
+    meta = write_text(path, content)
+    CURATED_DIR.mkdir(parents=True, exist_ok=True)
+    write_text(CURATED_DIR / (mirror_name or path.name), content)
+    return meta
 
 
 def fetch_top_cases(con: duckdb.DuckDBPyConnection, top_n: int) -> list[dict[str, object]]:
@@ -360,7 +368,7 @@ def build_markdown(cases: list[dict[str, object]], evidence: dict[str, dict[str,
 
 def build_plaintext(cases: list[dict[str, object]]) -> str:
     lines = [
-        "ASSUNTO: representacao preliminar sobre fornecedores com sancao ativa contratados pela SESACRE",
+        "ASSUNTO: noticia de fato sobre fornecedores com sancao ativa contratados pela SESACRE",
         "",
         "FATOS OBJETIVOS",
     ]
@@ -425,8 +433,8 @@ def main() -> None:
 
     dossier_path = OUT_DIR / "dossie_sesacre_sancoes_prioritarias.md"
     dossier_meta = write_text(dossier_path, build_markdown(cases, evidence))
-    texto_path = OUT_DIR / "representacao_preliminar_sesacre_top10.txt"
-    texto_meta = write_text(texto_path, build_plaintext(cases))
+    texto_path = OUT_DIR / "relato_apuracao_sesacre_top10.txt"
+    texto_meta = write_text_mirrored(texto_path, build_plaintext(cases), "relato_apuracao_sesacre_top10.txt")
     manifest_path = OUT_DIR / "manifest_sesacre_prioritarios.json"
     manifest_meta = write_text(manifest_path, build_manifest(cases, evidence, copied_files))
 

@@ -303,7 +303,7 @@ def sync_ops_export_gate(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
                     allowed = False
                     blocking_reason = "Nao ha itens comprovados documentalmente em quantidade suficiente."
                     rationale = "Noticia de fato exige pelo menos um nucleo documental robusto."
-                elif family == "rb_sus_contrato" and contradiction_count == 0 and estagio != "APTO_REPRESENTACAO_PRELIMINAR":
+                elif family == "rb_sus_contrato" and contradiction_count == 0 and estagio != "APTO_A_NOTICIA_DE_FATO":
                     allowed = False
                     blocking_reason = "Caso municipal sem contradicao materializada para noticia de fato."
                     rationale = "Para contrato municipal, noticia de fato exige contradicao objetiva ou cruzamento forte."

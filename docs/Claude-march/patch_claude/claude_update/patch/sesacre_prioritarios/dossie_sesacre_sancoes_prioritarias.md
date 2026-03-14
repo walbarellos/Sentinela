@@ -1,6 +1,6 @@
 # Dossie Prioritario SESACRE
 
-Gerado em: `2026-03-13 12:15:26`
+Gerado em: `2026-03-14 09:52:02`
 
 Este dossie consolida os maiores fornecedores com sancao ativa contratados pela SESACRE, com base nas tabelas locais do projeto e na carga aberta do CEIS.
 

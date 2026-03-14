@@ -9,6 +9,7 @@ import duckdb
 ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT / "data" / "sentinela_analytics.duckdb"
 OUT_DIR = ROOT / "docs" / "Claude-march" / "patch_claude" / "claude_update" / "patch"
+CURATED_DIR = OUT_DIR / "entrega_denuncia_atual"
 
 
 def brl(value: object) -> str:
@@ -30,69 +31,15 @@ def render_sources(raw: str | None) -> list[str]:
     return [str(value)]
 
 
-def fetch_cases(con: duckdb.DuckDBPyConnection) -> dict[str, dict]:
-    cases: dict[str, dict] = {}
+def write_text_pair(filename: str, content: str) -> None:
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    CURATED_DIR.mkdir(parents=True, exist_ok=True)
+    (OUT_DIR / filename).write_text(content, encoding="utf-8")
+    (CURATED_DIR / filename).write_text(content, encoding="utf-8")
 
-    row_3895 = con.execute(
-        """
-        SELECT
-            t.numero_contrato,
-            t.numero_processo,
-            t.ano,
-            c.numero_termo,
-            c.detail_url,
-            t.secretaria,
-            t.objeto,
-            t.valor_referencia_brl,
-            t.fornecedor,
-            t.cnpj,
-            t.n_sancoes_ativas,
-            t.sancao_fontes,
-            t.fila_investigacao_final,
-            t.prioridade_final
-        FROM v_rb_contratos_triagem_final t
-        JOIN rb_contratos c ON c.row_id = t.row_id
-        WHERE t.numero_contrato = '3895'
-        """
-    ).fetchone()
-    if row_3895:
-        sancoes = con.execute(
-            """
-            SELECT sancao_fonte, sancao_tipo, sancao_inicio, sancao_fim, orgao_sancao, ativa
-            FROM v_rb_contrato_ceis
-            WHERE numero_contrato = '3895'
-            ORDER BY orgao_sancao, sancao_inicio
-            """
-        ).fetchall()
-        insight = con.execute(
-            """
-            SELECT severity, confidence, title, description_md, sources
-            FROM insight
-            WHERE kind = 'RB_CONTRATO_SANCIONADO'
-            ORDER BY created_at DESC
-            LIMIT 1
-            """
-        ).fetchone()
-        cases["3895"] = {
-            "numero_contrato": row_3895[0],
-            "numero_processo": row_3895[1],
-            "ano": row_3895[2],
-            "numero_termo": row_3895[3],
-            "detail_url": row_3895[4],
-            "secretaria": row_3895[5],
-            "objeto": row_3895[6],
-            "valor_referencia_brl": row_3895[7],
-            "fornecedor": row_3895[8],
-            "cnpj": row_3895[9],
-            "n_sancoes_ativas": row_3895[10],
-            "sancao_fontes": row_3895[11],
-            "fila": row_3895[12],
-            "prioridade": row_3895[13],
-            "sancoes": sancoes,
-            "insight": insight,
-        }
 
-    row_3898 = con.execute(
+def fetch_active_case_3898(con: duckdb.DuckDBPyConnection) -> dict:
+    row = con.execute(
         """
         SELECT
             t.numero_contrato,
@@ -111,135 +58,142 @@ def fetch_cases(con: duckdb.DuckDBPyConnection) -> dict[str, dict]:
         WHERE t.numero_contrato = '3898'
         """
     ).fetchone()
-    if row_3898:
-        audit_rows = con.execute(
-            """
-            SELECT
-                item_ordem,
-                item_descricao,
-                quantidade,
-                valor_unitario,
-                valor_total,
-                found_in_proposals,
-                found_in_edital,
-                candidate_count,
-                anomaly_kind,
-                severity,
-                evidence_json
-            FROM rb_contratos_item_audit
-            WHERE numero_contrato = '3898'
-            ORDER BY item_ordem
-            """
-        ).fetchall()
-        insight = con.execute(
-            """
-            SELECT severity, confidence, title, description_md, sources
-            FROM insight
-            WHERE kind = 'RB_CONTRATO_LICITACAO_INCONSISTENTE'
-            ORDER BY created_at DESC
-            LIMIT 1
-            """
-        ).fetchone()
-        cases["3898"] = {
-            "numero_contrato": row_3898[0],
-            "numero_processo": row_3898[1],
-            "ano": row_3898[2],
-            "numero_termo": row_3898[3],
-            "detail_url": row_3898[4],
-            "secretaria": row_3898[5],
-            "objeto": row_3898[6],
-            "valor_referencia_brl": row_3898[7],
-            "inconsistencias_licitacao": row_3898[8],
-            "fila": row_3898[9],
-            "prioridade": row_3898[10],
-            "audit_rows": audit_rows,
-            "insight": insight,
-        }
+    if not row:
+        raise SystemExit("Contrato 3898 nao encontrado no banco atual.")
 
-    return cases
+    audit_rows = con.execute(
+        """
+        SELECT
+            item_ordem,
+            item_descricao,
+            quantidade,
+            valor_unitario,
+            valor_total,
+            found_in_proposals,
+            found_in_edital,
+            candidate_count,
+            anomaly_kind,
+            severity,
+            evidence_json
+        FROM rb_contratos_item_audit
+        WHERE numero_contrato = '3898'
+        ORDER BY item_ordem
+        """
+    ).fetchall()
+    insight = con.execute(
+        """
+        SELECT severity, confidence, title, description_md, sources
+        FROM insight
+        WHERE kind = 'RB_CONTRATO_LICITACAO_INCONSISTENTE'
+        ORDER BY created_at DESC
+        LIMIT 1
+        """
+    ).fetchone()
+    return {
+        "numero_contrato": row[0],
+        "numero_processo": row[1],
+        "ano": row[2],
+        "numero_termo": row[3],
+        "detail_url": row[4],
+        "secretaria": row[5],
+        "objeto": row[6],
+        "valor_referencia_brl": row[7],
+        "inconsistencias_licitacao": row[8],
+        "fila": row[9],
+        "prioridade": row[10],
+        "audit_rows": audit_rows,
+        "insight": insight,
+    }
 
 
-def build_markdown(cases: dict[str, dict]) -> str:
+def fetch_historical_3895(con: duckdb.DuckDBPyConnection) -> dict | None:
+    row = con.execute(
+        """
+        SELECT
+            numero_contrato,
+            numero_processo,
+            ano,
+            secretaria,
+            objeto,
+            valor_referencia_brl,
+            fornecedor,
+            cnpj,
+            data_contrato_referencia,
+            COUNT(*) AS n_ocorrencias,
+            MIN(sancao_inicio_date) AS sancao_inicio_min,
+            MAX(sancao_fim_date) AS sancao_fim_max,
+            STRING_AGG(DISTINCT motivo_exclusao, ', ') AS motivos
+        FROM v_rb_contrato_ceis_invalida
+        WHERE numero_contrato = '3895'
+        GROUP BY
+            numero_contrato,
+            numero_processo,
+            ano,
+            secretaria,
+            objeto,
+            valor_referencia_brl,
+            fornecedor,
+            cnpj,
+            data_contrato_referencia
+        """
+    ).fetchone()
+    if not row:
+        return None
+    return {
+        "numero_contrato": row[0],
+        "numero_processo": row[1],
+        "ano": row[2],
+        "secretaria": row[3],
+        "objeto": row[4],
+        "valor_referencia_brl": row[5],
+        "fornecedor": row[6],
+        "cnpj": row[7],
+        "data_contrato_referencia": str(row[8] or ""),
+        "n_ocorrencias": int(row[9] or 0),
+        "sancao_inicio_min": str(row[10] or ""),
+        "sancao_fim_max": str(row[11] or ""),
+        "motivos": str(row[12] or ""),
+    }
+
+
+def build_markdown(active_case: dict, historical_3895: dict | None) -> str:
     generated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     parts = [
         "# Dossie Prioritario SUS Rio Branco",
         "",
         f"Gerado em: `{generated_at}`",
         "",
-        "Este dossie consolida os dois casos municipais prioritarios do recorte SUS em Rio Branco com base no banco local do projeto e nas fontes publicas ja integradas.",
+        "Este dossie consolida o estado municipal atual do recorte SUS em Rio Branco.",
         "",
-        "## Caso 1 — Contrato 3895 / fornecedor sancionado",
+        "## Resumo operacional",
         "",
+        "- Caso municipal ativo: `3898`.",
+        "- Natureza do caso ativo: `DIVERGENCIA_DOCUMENTAL`.",
+        "- Uso externo recomendado: `noticia de fato` ou `pedido de apuracao preliminar`.",
     ]
-
-    case = cases["3895"]
-    parts.extend(
-        [
-            f"- Contrato: `{case['numero_contrato']}`",
-            f"- Processo: `{case['numero_processo']}`",
-            f"- Termo: `{case['numero_termo']}`",
-            f"- Ano: `{case['ano']}`",
-            f"- Secretaria: `{case['secretaria']}`",
-            f"- Objeto: {case['objeto']}",
-            f"- Valor de referencia: {brl(case['valor_referencia_brl'])}",
-            f"- Fornecedor: **{case['fornecedor']}**",
-            f"- CNPJ: `{case['cnpj']}`",
-            f"- Fila final: `{case['fila']}`",
-            f"- Prioridade final: `{case['prioridade']}`",
-            f"- Link do contrato: {case['detail_url']}",
-            "",
-            "### Fatos objetivos",
-            "",
-            f"- O fornecedor aparece no banco com `{case['n_sancoes_ativas']}` sancao(oes) ativa(s).",
-            f"- Fontes de sancao materializadas: `{case['sancao_fontes']}`.",
-            "- O contrato esta vinculado a `SEMSA` e ja consta como caso de denuncia imediata na triagem final.",
-            "",
-            "### Sancoes materializadas",
-            "",
-        ]
-    )
-    for fonte, tipo, inicio, fim, orgao, ativa in case["sancoes"]:
-        status = "ativa" if ativa else "inativa"
-        parts.append(
-            f"- `{fonte}` | {tipo} | inicio `{inicio}` | fim `{fim}` | orgao sancionador `{orgao}` | status `{status}`"
-        )
-
-    insight = case["insight"]
-    if insight:
-        parts.extend(
-            [
-                "",
-                "### Insight consolidado",
-                "",
-                f"- Severidade: `{insight[0]}`",
-                f"- Confianca: `{insight[1]}`",
-                f"- Titulo: {insight[2]}",
-                f"- Fontes: {', '.join(render_sources(insight[4]))}",
-            ]
-        )
-
-    case = cases["3898"]
+    if historical_3895:
+        parts.append("- Caso `3895` rebaixado para nota historica apos validacao temporal do cruzamento sancionatorio.")
     parts.extend(
         [
             "",
-            "## Caso 2 — Contrato 3898 / anomalia documental de licitacao",
+            "## Caso ativo - Contrato 3898 / anomalia documental de licitacao",
             "",
-            f"- Contrato: `{case['numero_contrato']}`",
-            f"- Processo: `{case['numero_processo']}`",
-            f"- Termo: `{case['numero_termo']}`",
-            f"- Ano: `{case['ano']}`",
-            f"- Secretaria: `{case['secretaria']}`",
-            f"- Objeto: {case['objeto']}",
-            f"- Valor de referencia: {brl(case['valor_referencia_brl'])}",
-            f"- Fila final: `{case['fila']}`",
-            f"- Prioridade final: `{case['prioridade']}`",
-            f"- Link do contrato: {case['detail_url']}",
+            f"- Contrato: `{active_case['numero_contrato']}`",
+            f"- Processo: `{active_case['numero_processo']}`",
+            f"- Termo: `{active_case['numero_termo']}`",
+            f"- Ano: `{active_case['ano']}`",
+            f"- Secretaria: `{active_case['secretaria']}`",
+            f"- Objeto: {active_case['objeto']}",
+            f"- Valor de referencia: {brl(active_case['valor_referencia_brl'])}",
+            f"- Fila final: `{active_case['fila']}`",
+            f"- Prioridade final: `{active_case['prioridade']}`",
+            f"- Link do contrato: {active_case['detail_url']}",
             "",
             "### Fatos objetivos",
             "",
-            "- A licitacao mae do processo `3006` ja foi confirmada no portal municipal: `2274334`.",
-            "- O edital e a retificacao oficiais da CPL usados no confronto foram as publicacoes `1554` e `1640`.",
-            "- O contrato permanece sem fornecedor/CNPJ confirmado por fonte aberta.",
+            "- A licitacao-mae do processo `3006` foi confirmada no portal municipal: `2274334`.",
+            "- O edital e a retificacao oficiais usados no confronto foram as publicacoes `1554` e `1640` da CPL.",
+            "- O contrato segue sem fornecedor/CNPJ confirmado por fonte aberta, mas a divergencia documental do item foi preservada por auditoria.",
             "",
             "### Itens auditados",
             "",
@@ -257,7 +211,7 @@ def build_markdown(cases: dict[str, dict]) -> str:
         anomaly_kind,
         severity,
         evidence_json,
-    ) in case["audit_rows"]:
+    ) in active_case["audit_rows"]:
         evidence = json.loads(evidence_json) if evidence_json else {}
         line = (
             f"- Item `{item_ordem}`: {item_descricao} | qtd `{quantidade}` | "
@@ -270,7 +224,7 @@ def build_markdown(cases: dict[str, dict]) -> str:
         if evidence.get("terms"):
             parts.append(f"  termos auditados: {', '.join(evidence['terms'])}")
 
-    insight = case["insight"]
+    insight = active_case["insight"]
     if insight:
         parts.extend(
             [
@@ -284,96 +238,103 @@ def build_markdown(cases: dict[str, dict]) -> str:
             ]
         )
 
+    if historical_3895:
+        parts.extend(
+            [
+                "",
+                "## Nota historica - Contrato 3895 / cruzamento sancionatorio invalidado",
+                "",
+                f"- Contrato: `{historical_3895['numero_contrato']}`",
+                f"- Processo: `{historical_3895['numero_processo']}`",
+                f"- Secretaria: `{historical_3895['secretaria']}`",
+                f"- Fornecedor: `{historical_3895['fornecedor']}`",
+                f"- CNPJ: `{historical_3895['cnpj']}`",
+                f"- Valor de referencia: `{brl(historical_3895['valor_referencia_brl'])}`",
+                f"- Data de referencia do contrato: `{historical_3895['data_contrato_referencia']}`",
+                f"- Primeira data de sancao encontrada: `{historical_3895['sancao_inicio_min']}`",
+                f"- Linhas invalidadas: `{historical_3895['n_ocorrencias']}`",
+                f"- Motivo de exclusao: `{historical_3895['motivos']}`",
+                "",
+                "Leitura correta: o contrato foi preservado apenas como trilha historica de auditoria. Ele nao integra mais a fila municipal ativa nem sustenta insight sancionatorio valido.",
+            ]
+        )
+
     parts.extend(
         [
             "",
-            "## Leitura operacional",
-            "",
-            "- `3895` ja esta pronto para representacao como contratacao municipal com fornecedor sancionado.",
-            "- `3898` nao fecha fornecedor por fonte aberta, mas fecha uma inconsistencia documental forte: item fora do edital e fora das propostas publicas da licitacao mae.",
-            "- Os dois casos permanecem juntos na fila prioritaria municipal, com prioridades `100` e `95`.",
-            "",
             "## Proximos atos uteis",
             "",
-            "- Protocolo de representacao com anexacao dos links e evidencias acima.",
-            "- Se necessario, diligencia complementar manual em ambiente autenticado do `licitacoes-e` apenas para tentar identificar o lote/fornecedor do `3898`.",
-            "- Preservacao de captura PDF/HTML das telas do contrato, da licitacao mae e das publicacoes da CPL.",
+            "- Protocolar noticia de fato ou pedido de apuracao com foco na divergencia documental do contrato `3898`.",
+            "- Preservar HTML/PDF do contrato, da licitacao-mae e das publicacoes da CPL.",
+            "- Manter o `3895` apenas como historico de validacao de falso positivo temporal.",
         ]
     )
     return "\n".join(parts) + "\n"
 
 
-def build_plaintext_3895(case: dict) -> str:
+def build_relato_3898(case: dict) -> str:
     lines = [
-        "ASSUNTO: representacao preliminar sobre contratacao SUS municipal com fornecedor sancionado",
-        "",
-        "FATOS OBJETIVOS",
-        f"1. No contrato {case['numero_contrato']}, processo {case['numero_processo']}, vinculado a {case['secretaria']}, consta o fornecedor {case['fornecedor']}, CNPJ {case['cnpj']}.",
-        f"2. O valor de referencia do contrato no portal municipal e {brl(case['valor_referencia_brl'])}.",
-        f"3. O banco local materializou {case['n_sancoes_ativas']} sancao(oes) ativa(s) associadas a esse CNPJ, com origem {case['sancao_fontes']}.",
-        "4. A triagem final do projeto classificou o caso como denuncia_imediata.",
-        "",
-        "REQUERIMENTO INICIAL",
-        "Solicita-se a apuracao da regularidade da contratacao, com verificacao da compatibilidade entre a situacao sancionatoria do fornecedor e a sua contratacao pela Secretaria Municipal de Saude de Rio Branco.",
-        "",
-        "FONTES MINIMAS",
-        f"- Contrato municipal: {case['detail_url']}",
-        "- Cruzamento sancionatorio: tabela v_rb_contrato_ceis / insight RB_CONTRATO_SANCIONADO",
-        "",
-        "OBSERVACAO",
-        "O texto acima descreve fatos objetivos do banco e nao afirma, por si so, a existencia de dolo ou fraude, que dependem de apuracao pelos orgaos competentes.",
-    ]
-    return "\n".join(lines) + "\n"
-
-
-def build_plaintext_3898(case: dict) -> str:
-    lines = [
-        "ASSUNTO: representacao preliminar sobre inconsistencia documental entre contrato SUS municipal e licitacao mae",
+        "ASSUNTO: noticia de fato sobre inconsistencia documental entre contrato SUS municipal e licitacao-mae",
         "",
         "FATOS OBJETIVOS",
         f"1. No contrato {case['numero_contrato']}, processo {case['numero_processo']}, vinculado a {case['secretaria']}, consta o objeto {case['objeto']}.",
         f"2. O valor de referencia do contrato no portal municipal e {brl(case['valor_referencia_brl'])}.",
-        "3. A licitacao mae do processo foi confirmada no portal municipal como a licitacao 2274334.",
+        "3. A licitacao-mae do processo foi confirmada no portal municipal como a licitacao 2274334.",
         "4. As publicacoes oficiais da CPL usadas no confronto foram 1554 e 1640.",
-        "5. Na auditoria documental do contrato, o item 'Coletor de Material Perfurocortante' apareceu no contrato, mas nao apareceu nas propostas do portal nem no edital/retificacao oficiais da CPL para o PE SRP 141/2023.",
-        "6. O caso foi classificado na fila final como auditoria_documental_licitacao, prioridade 95.",
+        "5. Na auditoria documental, o item 'Coletor de Material Perfurocortante' apareceu no contrato, mas nao apareceu nas propostas do portal nem no edital/retificacao oficiais da CPL para o PE SRP 141/2023.",
+        "6. O caso foi classificado como divergencia documental objetiva, apto a noticia de fato.",
         "",
         "REQUERIMENTO INICIAL",
-        "Solicita-se a apuracao da compatibilidade entre o contrato municipal e a licitacao mae, com verificacao da origem do item divergente, do fornecedor efetivamente contratado e do lastro documental do item registrado no contrato.",
+        "Solicita-se a apuracao da compatibilidade entre o contrato municipal e a licitacao-mae, com verificacao da origem do item divergente, do fornecedor efetivamente contratado e do lastro documental do item registrado no contrato.",
         "",
         "FONTES MINIMAS",
         f"- Contrato municipal: {case['detail_url']}",
-        "- Licitacao mae: https://transparencia.riobranco.ac.gov.br/licitacao/ver/2274334/",
+        "- Licitacao-mae: https://transparencia.riobranco.ac.gov.br/licitacao/ver/2274334/",
         "- CPL: https://cpl.riobranco.ac.gov.br/publicacao/1554",
         "- CPL: https://cpl.riobranco.ac.gov.br/publicacao/1640",
         "- Auditoria: tabela rb_contratos_item_audit / insight RB_CONTRATO_LICITACAO_INCONSISTENTE",
         "",
         "OBSERVACAO",
-        "O texto acima descreve uma divergencia documental objetiva e nao afirma, por si so, fraude consumada, o que depende de apuracao e contraditorio.",
+        "O texto acima descreve divergencia documental objetiva e nao afirma, por si so, fraude consumada, favorecimento ou dolo, o que depende de apuracao e contraditorio.",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def build_historical_note_3895(case: dict) -> str:
+    lines = [
+        "ASSUNTO: nota historica de validacao sobre o contrato 3895",
+        "",
+        "SITUACAO ATUAL",
+        f"1. O contrato {case['numero_contrato']}, processo {case['numero_processo']}, antes aparecia em cruzamento sancionatorio bruto.",
+        f"2. A data de referencia do contrato ficou em {case['data_contrato_referencia']}.",
+        f"3. A primeira data de sancao encontrada ficou em {case['sancao_inicio_min']}.",
+        f"4. Foram invalidadas {case['n_ocorrencias']} linha(s) do cruzamento pelo motivo {case['motivos']}.",
+        "5. O contrato foi removido da fila municipal ativa e nao sustenta mais o insight RB_CONTRATO_SANCIONADO.",
+        "",
+        "LEITURA CORRETA",
+        "O caso deve permanecer apenas como trilha de auditoria sobre falso positivo temporal, sem uso como noticia de fato sancionatoria.",
     ]
     return "\n".join(lines) + "\n"
 
 
 def main() -> None:
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
     con = duckdb.connect(str(DB_PATH), read_only=True)
-    cases = fetch_cases(con)
+    active_case = fetch_active_case_3898(con)
+    historical_3895 = fetch_historical_3895(con)
     con.close()
-    if "3895" not in cases or "3898" not in cases:
-        raise SystemExit("Casos prioritarios 3895/3898 nao encontrados no banco.")
 
-    dossier_path = OUT_DIR / "dossie_rb_sus_prioritarios.md"
-    dossier_path.write_text(build_markdown(cases), encoding="utf-8")
+    write_text_pair("dossie_rb_sus_prioritarios.md", build_markdown(active_case, historical_3895))
+    write_text_pair("relato_apuracao_3898.txt", build_relato_3898(active_case))
+    if historical_3895:
+        write_text_pair(
+            "nota_historica_3895_sancao_invalidada.txt",
+            build_historical_note_3895(historical_3895),
+        )
 
-    txt_3895 = OUT_DIR / "denuncia_preliminar_3895.txt"
-    txt_3895.write_text(build_plaintext_3895(cases["3895"]), encoding="utf-8")
-
-    txt_3898 = OUT_DIR / "denuncia_preliminar_3898.txt"
-    txt_3898.write_text(build_plaintext_3898(cases["3898"]), encoding="utf-8")
-
-    print(dossier_path)
-    print(txt_3895)
-    print(txt_3898)
+    print(OUT_DIR / "dossie_rb_sus_prioritarios.md")
+    print(OUT_DIR / "relato_apuracao_3898.txt")
+    if historical_3895:
+        print(OUT_DIR / "nota_historica_3895_sancao_invalidada.txt")
 
 
 if __name__ == "__main__":

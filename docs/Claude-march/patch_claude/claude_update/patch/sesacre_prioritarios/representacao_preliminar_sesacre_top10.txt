@@ -1,24 +1,8 @@
-ASSUNTO: noticia de fato sobre fornecedores com sancao ativa contratados pela SESACRE
+ARQUIVO LEGADO DESATIVADO
 
-FATOS OBJETIVOS
-1. CIENTIFICA MEDICA HOSPITAL LTDA EM RECUPERACAO JUDICIAL (CNPJ 07847837000110) aparece com 3 sancao(oes) ativa(s) e R$ 29.410.248,30 em contratos com a SESACRE, distribuidos em 64 contrato(s).
-2. R. BISPO AGUIAR (CNPJ 32595581000148) aparece com 1 sancao(oes) ativa(s) e R$ 12.329.014,18 em contratos com a SESACRE, distribuidos em 11 contrato(s).
-3. HOSPSHOP PRODUTOS HOSPITALARES LTDA (CNPJ 07094705000164) aparece com 1 sancao(oes) ativa(s) e R$ 7.577.625,00 em contratos com a SESACRE, distribuidos em 11 contrato(s).
-4. GOLDENPLUS - COMERCIO DE MEDICAMENTOS E PRODUTOS HOSPITALARES LTDA (CNPJ 17472278000164) aparece com 1 sancao(oes) ativa(s) e R$ 6.590.265,00 em contratos com a SESACRE, distribuidos em 16 contrato(s).
-5. INDUSTRIA BRASILEIRA DE EQUIPAMENTOS MEDICOS HOSPITALARES LTDA - (LUANNA FREIRE FELIX LTDA) (CNPJ 13200879000167) aparece com 1 sancao(oes) ativa(s) e R$ 6.230.171,66 em contratos com a SESACRE, distribuidos em 8 contrato(s).
-6. ASCLE BRASIL LTDA (CNPJ 28911309000152) aparece com 9 sancao(oes) ativa(s) e R$ 5.828.123,20 em contratos com a SESACRE, distribuidos em 15 contrato(s).
-7. COSTA CAMARGO COMERCIO DE PRODUTOS HOSPITALARES LTDA (CNPJ 36325157000134) aparece com 1 sancao(oes) ativa(s) e R$ 4.954.446,50 em contratos com a SESACRE, distribuidos em 13 contrato(s).
-8. RUPO CRESCERE COM E SERV LTDA (CNPJ 51801426000185) aparece com 1 sancao(oes) ativa(s) e R$ 2.653.478,89 em contratos com a SESACRE, distribuidos em 4 contrato(s).
-9. MCW PRODUTOS MÉDICOS E HOSPITALARES LTDA (CNPJ 94389400000184) aparece com 8 sancao(oes) ativa(s) e R$ 2.480.306,00 em contratos com a SESACRE, distribuidos em 29 contrato(s).
-10. PREVIX PRODUTOS PARA SAUDE LTDA (CNPJ 11877124000176) aparece com 1 sancao(oes) ativa(s) e R$ 2.129.400,00 em contratos com a SESACRE, distribuidos em 1 contrato(s).
+Este arquivo foi substituido por:
+- `docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/relato_apuracao_sesacre_top10.txt`
 
-REQUERIMENTO INICIAL
-Solicita-se a apuracao da regularidade da manutencao desses contratos pela SESACRE, com verificacao da compatibilidade entre as sancoes vigentes, a abrangencia das restricoes e a permanencia das contratacoes no periodo auditado.
-
-FONTES MINIMAS
-- Base aberta CEIS preservada localmente: docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/evidencias/fontes_federais/ceis_20260312.zip
-- Extratos CSV por fornecedor em sesacre_prioritarios/evidencias/
-- Insight local: kind SESACRE_SANCAO_ATIVA
-
-OBSERVACAO
-O texto acima descreve fatos objetivos do banco local e nao afirma, por si so, fraude consumada ou dolo, cuja caracterizacao depende de apuracao pelos orgaos competentes.
+Motivo:
+- o fluxo operacional ativo nao usa mais `representacao preliminar` como rotulo padrao;
+- a saida atual e um relato tecnico para apuracao externa.
