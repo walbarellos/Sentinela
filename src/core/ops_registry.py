@@ -418,6 +418,90 @@ def build_sesacre_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, 
     return cases, artifacts
 
 
+def build_political_risk_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Detecta sócios de empresas que foram candidatos (Risco Político) com rigor de localidade."""
+    try:
+        # Cruza sócios com a base verídica do TSE baixada (Filtro UF=AC para evitar homônimos nacionais)
+        query = """
+            SELECT 
+                es.socio_nome,
+                tse.cpf as cpf_tse,
+                tse.nome as nome_tse,
+                tse.cargo as cargo_politico,
+                tse.ano as ano_eleicao,
+                tse.partido,
+                tse.situacao as situacao_eleicao,
+                es.cnpj,
+                emp.razao_social,
+                emp.capital_social
+            FROM empresa_socios es
+            JOIN ops_tse_candidatos tse ON es.socio_nome = tse.nome
+            JOIN empresas_cnpj emp ON es.cnpj = emp.cnpj
+            WHERE tse.uf = 'AC'  -- Rigor geográfico: Candidatos do Acre
+            LIMIT 50
+        """
+        rows = con.execute(query).fetchdf()
+    except duckdb.Error:
+        return [], []
+    
+    if rows.empty:
+        return [], []
+
+    cases: list[dict[str, Any]] = []
+    artifacts: list[dict[str, Any]] = []
+    
+    for item in json.loads(rows.to_json(orient="records", force_ascii=False)):
+        nome = item["socio_nome"]
+        cnpj = item["cnpj"]
+        case_id = f"political:socio_candidato:{cnpj}:{nome}".replace(" ", "_")
+        
+        # Como o CPF no QSA está vindo ***000000**, usamos o rigor geográfico
+        # Confiança ALTA (80+) porque é Nome Exato + Estado do Acre
+        metrics = {
+            "document_valid": True,
+            "front_company_risk": False,
+            "days_old": 999
+        }
+        risk = calculate_risk_score(metrics)
+        risk["score"] = min(100, risk["score"] + 80)
+        risk["risk_label"] = "CRÍTICO"
+        risk["flags"].append("SOCIO_CANDIDATO_ACRE")
+
+        cases.append({
+            "case_id": case_id,
+            "family": "risco_politico",
+            "title": f"🚩 [POLÍTICO] Sócio Candidato no Acre: {nome}",
+            "subtitle": f"Candidato a {item['cargo_politico']} ({item['ano_eleicao']}) / Sócio de {item['razao_social']}",
+            "subject_name": nome,
+            "subject_doc": cnpj,
+            "esfera": "estadual",
+            "ente": "Acre",
+            "orgao": "TSE",
+            "municipio": "Rio Branco",
+            "uf": "AC",
+            "area_tematica": "politica",
+            "severity": "CRITICO",
+            "classe_achado": "RISCO_POLITICO",
+            "uso_externo": "APTO_APURACAO",
+            "estagio_operacional": "APTO_A_NOTICIA_DE_FATO",
+            "status_operacional": "aberto",
+            "prioridade": 95,
+            "valor_referencia_brl": float(item.get("capital_social") or 0),
+            "source_table": "empresa_socios x ops_tse_candidatos (Acre)",
+            "source_row_ref": f"{nome}:{cnpj}",
+            "resumo_curto": f"Sócio {nome} identificado como candidato a {item['cargo_politico']} no Acre pelo {item['partido']} em {item['ano_eleicao']}. Identidade reforçada pelo contexto geográfico.",
+            "proximo_passo": "Verificar se a empresa obteve contratos com órgãos geridos pelo partido do candidato.",
+            "bundle_path": None,
+            "bundle_sha256": None,
+            "risk_score": risk["score"],
+            "risk_label": risk["risk_label"],
+            "risk_flags": risk["flags"],
+            "artifact_count": 0,
+            "evidence_json": json.dumps(item, ensure_ascii=False),
+        })
+        
+    return cases, artifacts
+
 def build_conflict_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Detecta servidores que são sócios de empresas com contratos (conflito de interesse)."""
     try:
@@ -506,7 +590,7 @@ def sync_ops_case_registry(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
     con.execute("DELETE FROM ops_case_artifact")
     con.execute("DELETE FROM ops_case_registry")
 
-    builders = [build_cedimp_case, build_rb_cases, build_sesacre_cases, build_conflict_cases]
+    builders = [build_cedimp_case, build_rb_cases, build_sesacre_cases, build_conflict_cases, build_political_risk_cases]
     all_cases: list[dict[str, Any]] = []
     all_artifacts: list[dict[str, Any]] = []
     for builder in builders:

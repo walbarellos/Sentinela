@@ -1,0 +1,41 @@
+Auditando operadores para 16 candidatos de risco real...
+
+--- CLUSTERS DE FORNECEDORES ---
+                                       NM_FORNECEDOR  NR_CPF_CNPJ_FORNECEDOR  n_candidatos_atendidos
+                                               #NULO                      -1                      93
+                                A.C. DOS SANTOS LIMA          31333359000104                       6
+     RIAN CARLOS MARTINS FELICIO DA CRUZ 04538168270          45041243000106                       6
+                                     E . P LIMA - ME          21346460000146                       5
+                  MABILA CRISTINA CADENE 00952934264          38402971000130                       5
+                               ACRE PUBLICIDADE LTDA           2787053000120                       4
+                                         ROCHA   CIA          43231948000160                       4
+                             JORDAN SARMENTO RIBEIRO               393046206                       4
+F   R COMERCIO E SERVIÇOS DE COMUNICAÇÃO VISUAL LTDA          19078592000192                       3
+                    A   S DERIVADOS DE PETROLEO LTDA          15112947000161                       2
+                                   DIGICOPIAS EIRELI           6234024000191                       2
+                      A S DERIVADOS DE PETROLEO LTDA          15112947000161                       2
+                                    F SILVA DE SOUZA           5815776000183                       2
+LEONARDO AUGUSTO RODRIGUES DA SILVA NORA 00301522243          27936564000197                       2
+                                  ML SERVIÇOS EIRELI          27503763000101                       2
+                           MARIA INEZ PINTO DA SILVA             36075019200                       2
+                         ONOFRE JOSÉ DE MOURA MORAIS             62347977253                       2
+            NORTE COM. DE DERIVADOS DE PETRÓLEO LTDA           5771239000189                       2
+                              RAIMUNDO MELO DE SOUZA             32208677234                       2
+                           ROBSON DE AGUIAR DE SOUZA             69131902200                       2
+
+--- PRESTADORES TÉCNICOS ---
+                                       NM_FORNECEDOR                                         DS_DESPESA  VR_DESPESA_CONTRATADA
+                              RAIMUNDO MELO DE SOUZA                          ASSESSORIA DE COMUNICAÇÃO                 4000.0
+                             CLEBIO BARBOSA DA SILVA ASSESSORIA/ DIVULGAÇÃO/ APOIO À CAMPANHA ELEITORAL                 3000.0
+                 LOHANNY CRYSTINE TAUMATURGO PEREIRA ASSESSORIA/ DIVULGAÇÃO/ APOIO À CAMPANHA ELEITORAL                 3000.0
+LEONARDO AUGUSTO RODRIGUES DA SILVA NORA 00301522243 SERVIÇOS DE CONTABILIDADE PARA PRESTAÇÃO DE CONTAS                 2000.0
+                            CLARISSA SANTOS DA COSTA                                 SERVIÇOS CONTABEIS                 2000.0
+                            ROMARIO OLIVEIRA PEREIRA ASSESSORIA/ DIVULGAÇÃO/ APOIO À CAMPANHA ELEITORAL                 1350.0
+                        PEDRO VICENTE FERREIRA FELIX ASSESSORIA/ DIVULGAÇÃO/ APOIO À CAMPANHA ELEITORAL                 1000.0
+                           LUSSANDRINA BARBOSA SILVA ASSESSORIA/ DIVULGAÇÃO/ APOIO À CAMPANHA ELEITORAL                 1000.0
+                            ANALENE DE LIMA FERREIRA ASSESSORIA/ DIVULGAÇÃO/ APOIO À CAMPANHA ELEITORAL                 1000.0
+                             ERCULANA ALVES DA SILVA ASSESSORIA/ DIVULGAÇÃO/ APOIO À CAMPANHA ELEITORAL                 1000.0
+                                      IVANETE COELHO ASSESSORIA/ DIVULGAÇÃO/ APOIO À CAMPANHA ELEITORAL                  600.0
+                    ANA NERI NEGREIROS DO NASCIMENTO ASSESSORIA/ DIVULGAÇÃO/ APOIO À CAMPANHA ELEITORAL                  500.0
+                       ANTONIA EVANUBIA SILVA MARÇAL ASSESSORIA/ DIVULGAÇÃO/ APOIO À CAMPANHA ELEITORAL                  500.0
+                                MATEUS BARBOSA SILVA ASSESSORIA/ DIVULGAÇÃO/ APOIO À CAMPANHA ELEITORAL                  500.0

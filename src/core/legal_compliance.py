@@ -184,6 +184,69 @@ def calculate_risk_score(metrics: dict[str, Any]) -> dict[str, Any]:
         "flags": flags
     }
 
+def validate_shared_control_cluster(cnpj: str, partners: list[str], con: duckdb.DuckDBPyConnection) -> dict[str, Any]:
+    """
+    Detecta se a empresa faz parte de um cluster de controle compartilhado (Cartel ou ORCRIM).
+    Cruza sócios da empresa com outros CNPJs na base.
+    """
+    if not partners:
+        return {"in_cluster": False, "cluster_size": 0, "risk_level": "BAIXO"}
+    
+    # Busca outros CNPJs que compartilham os mesmos sócios
+    query = """
+        SELECT DISTINCT cnpj
+        FROM empresa_socios
+        WHERE socio_nome IN (SELECT unnest(?))
+          AND cnpj <> ?
+    """
+    other_cnpjs = con.execute(query, [partners, cnpj]).fetchdf()
+    
+    cluster_size = len(other_cnpjs)
+    risk = "BAIXO"
+    if cluster_size >= 5:
+        risk = "CRÍTICO" # Rede vasta de empresas sob o mesmo comando
+    elif cluster_size >= 2:
+        risk = "ALTO"    # Grupo de empresas interligadas
+        
+    return {
+        "in_cluster": cluster_size > 0,
+        "cluster_size": cluster_size,
+        "linked_cnpjs": other_cnpjs['cnpj'].tolist(),
+        "risk_level": risk,
+        "details": f"Empresa interligada a {cluster_size} outra(s) entidade(s) via QSA."
+    }
+
+def validate_partner_economic_disparity(declared_wealth: float, contract_value: float) -> dict[str, Any]:
+    """
+    Detecta risco de 'Sócio Laranja' baseado na disparidade entre bens e contratos.
+    """
+    risk_score = 0
+    flags = []
+    ratio = None
+    
+    if declared_wealth > 0:
+        ratio = contract_value / declared_wealth
+        if ratio > 100:
+            risk_score += 60
+            flags.append("DISPARIDADE_PATRIMONIAL_EXTREMA")
+        elif ratio > 10:
+            risk_score += 30
+            flags.append("DISPARIDADE_PATRIMONIAL_SUSPEITA")
+    elif contract_value > 50000:
+        risk_score += 40
+        flags.append("SOCIO_SEM_PATRIMONIO_DECLARADO")
+        
+    risk_label = "BAIXO"
+    if risk_score >= 70: risk_label = "CRÍTICO"
+    elif risk_score >= 40: risk_label = "ALTO"
+    
+    return {
+        "risk_score": risk_score,
+        "risk_label": risk_label,
+        "flags": flags,
+        "ratio": ratio
+    }
+
 def validate_cnpj(cnpj: str | None) -> bool:
     """Valida formato e dígitos verificadores de CNPJ."""
     if not cnpj:
