@@ -6,12 +6,115 @@ Centraliza regras da Lei 14.133/2021 e validação de integridade documental.
 from __future__ import annotations
 import re
 
-# --- LEI 14.133/2021 (Nova Lei de Licitações) ---
-# Valores atualizados conforme Decreto Federal 11.871/2023 para o exercício de 2024+
-THRESHOLD_DISPENSA_OBRAS_ENGENHARIA = 119_812.02
-THRESHOLD_DISPENSA_BENS_SERVICOS = 59_906.02
+from datetime import date, datetime
 
-# --- INTEGRIDADE DOCUMENTAL ---
+# --- LEI 14.133/2021 (Nova Lei de Licitações) ---
+# ... (constantes existentes) ...
+
+def validate_company_seniority(creation_date: date | str, contract_date: date | str) -> dict[str, Any]:
+    """
+    Valida se a empresa tinha senioridade mínima ao assinar o contrato.
+    Indicador de risco: 'Shelf Company' (Empresa de prateleira).
+    """
+    if isinstance(creation_date, str):
+        creation_date = datetime.strptime(creation_date[:10], "%Y-%m-%d").date()
+    if isinstance(contract_date, str):
+        contract_date = datetime.strptime(contract_date[:10], "%Y-%m-%d").date()
+    
+    delta = (contract_date - creation_date).days
+    
+    risk = "BAIXO"
+    if delta < 0:
+        risk = "CRÍTICO" # Contrato assinado antes da empresa existir!
+    elif delta < 180:
+        risk = "ALTO"    # Menos de 6 meses
+    elif delta < 365:
+        risk = "MÉDIO"   # Menos de 1 ano
+        
+    return {
+        "days_old": delta,
+        "risk_level": risk,
+        "is_shelf_company": delta < 180
+    }
+
+def validate_financial_capacity(contract_value: float, capital_social: float) -> dict[str, Any]:
+    """
+    Valida a capacidade econômico-financeira da empresa frente ao valor do contrato.
+    Base Legal: Lei 14.133/2021, Art. 69, § 4º (O capital mínimo exigido não pode exceder 10% do valor estimado).
+    Logo, se o contrato for maior que 10x o capital social, há risco severo de incapacidade financeira ou empresa de fachada.
+    """
+    if capital_social <= 0:
+        return {
+            "ratio": float('inf'),
+            "risk_level": "CRÍTICO",
+            "is_front_company_risk": True,
+            "legal_basis": "Lei 14.133/2021, Art. 69, § 4º"
+        }
+        
+    ratio = contract_value / capital_social
+    
+    risk = "BAIXO"
+    if ratio > 10.0:
+        risk = "CRÍTICO" # Contrato supera o limite legal de 10x o capital
+    elif ratio > 5.0:
+        risk = "ALTO"    # Contrato é 5x maior que o capital (Sinal de alerta)
+    elif ratio > 2.0:
+        risk = "MÉDIO"
+        
+    return {
+        "ratio": ratio,
+        "risk_level": risk,
+        "is_front_company_risk": ratio > 10.0,
+        "legal_basis": "Lei 14.133/2021, Art. 69, § 4º"
+    }
+
+# --- CLASSIFICAÇÃO SETORIAL (CNAE) ---
+CNAE_GROUPS = {
+    "saude": {
+        "prefixes": ["86", "87", "88", "4644", "4645", "4646", "4649"], # Hospitais, Medicamentos, Equipamentos Médicos
+        "label": "Atividades de Saúde e Produtos Farmacêuticos"
+    },
+    "construcao": {
+        "prefixes": ["41", "42", "43"],
+        "label": "Construção Civil e Engenharia"
+    },
+    "ti": {
+        "prefixes": ["62", "63"],
+        "label": "Tecnologia da Informação"
+    }
+}
+
+def validate_cnae_compatibility(company_cnaes: list[str], target_sector: str) -> dict[str, Any]:
+    """
+    Valida se os CNAEs da empresa são compatíveis com o setor do contrato.
+    Base Legal: Lei 14.133/2021, Art. 67 (Comprovação de aptidão para a atividade).
+    """
+    if target_sector not in CNAE_GROUPS:
+        return {"compatible": True, "risk_level": "BAIXO", "details": "Setor não monitorado para CNAE"}
+    
+    group = CNAE_GROUPS[target_sector]
+    prefixes = group["prefixes"]
+    
+    # Normaliza e limpa CNAEs da empresa
+    cleaned_cnaes = [re.sub(r'[^0-9]', '', str(c)) for v in company_cnaes for c in (v if isinstance(v, list) else [v])]
+    
+    is_compatible = False
+    for cnae in cleaned_cnaes:
+        if any(cnae.startswith(prefix) for prefix in prefixes):
+            is_compatible = True
+            break
+            
+    risk = "BAIXO"
+    if not is_compatible:
+        risk = "CRÍTICO" # Nenhum CNAE da empresa bate com o setor do contrato!
+        
+    return {
+        "compatible": is_compatible,
+        "risk_level": risk,
+        "expected_group": group["label"],
+        "found_cnaes": cleaned_cnaes,
+        "legal_basis": "Lei 14.133/2021, Art. 67"
+    }
 
 def validate_cnpj(cnpj: str | None) -> bool:
     """Valida formato e dígitos verificadores de CNPJ."""

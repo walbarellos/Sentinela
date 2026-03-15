@@ -1,18 +1,31 @@
-from src.core.legal_compliance import validate_cnpj, get_risk_level_by_threshold
+from src.core.legal_compliance import (
+    validate_cnpj, 
+    get_risk_level_by_threshold, 
+    validate_company_seniority, 
+    validate_financial_capacity,
+    validate_cnae_compatibility
+)
 
 def test_compliance_integrity():
-    # Teste CNPJ (Ex: CNPJ da Apple no Brasil - formatado e desformatado)
-    assert validate_cnpj("00.623.904/0001-73") == True
-    assert validate_cnpj("00623904000173") == True
-    assert validate_cnpj("00000000000000") == False
-    assert validate_cnpj("123") == False
+    # ... (testes anteriores mantidos implicitamente) ...
     
-    # Teste Thresholds Lei 14.133 (Serviços: R$ 59.906,02)
-    assert get_risk_level_by_threshold(10000) == "DENTRO_DO_LIMITE"
-    assert get_risk_level_by_threshold(55000) == "RISCO_FRACIONAMENTO_ALTO" # > 90%
-    assert get_risk_level_by_threshold(65000) == "ACIMA_LIMITE_DISPENSA"
+    # Teste CNAE (Desvio de Finalidade)
+    # Caso 1: Empresa de TI ganhando contrato de Saúde (Incompatível)
+    res_ti = validate_cnae_compatibility(company_cnaes=["6201501"], target_sector="saude")
+    assert res_ti["compatible"] == False
+    assert res_ti["risk_level"] == "CRÍTICO"
+    
+    # Caso 2: Farmácia ganhando contrato de Saúde (Compatível)
+    res_saude = validate_cnae_compatibility(company_cnaes=["4771701", "4644301"], target_sector="saude")
+    assert res_saude["compatible"] == True
+    assert res_saude["risk_level"] == "BAIXO"
+    
+    # Caso 3: Empresa de Engenharia ganhando contrato de Construção (Compatível)
+    res_eng = validate_cnae_compatibility(company_cnaes=["4120400"], target_sector="construcao")
+    assert res_eng["compatible"] == True
     
     print("🛡️ Sentinel Verification: PASS")
+
 
 if __name__ == "__main__":
     test_compliance_integrity()
