@@ -116,6 +116,74 @@ def validate_cnae_compatibility(company_cnaes: list[str], target_sector: str) ->
         "legal_basis": "Lei 14.133/2021, Art. 67"
     }
 
+def validate_cpf(cpf: str | None) -> bool:
+    """Valida formato e dígitos verificadores de CPF."""
+    if not cpf:
+        return False
+    cpf = re.sub(r'[^0-9]', '', str(cpf))
+    if len(cpf) != 11 or len(set(cpf)) == 1:
+        return False
+    
+    def calculate_digit(numbers: str, weights: list[int]) -> int:
+        s = sum(int(n) * w for n, w in zip(numbers, weights))
+        r = s % 11
+        return 0 if r < 2 else 11 - r
+
+    weights1 = list(range(10, 1, -1))
+    weights2 = list(range(11, 1, -1))
+    
+    d1 = calculate_digit(cpf[:9], weights1)
+    d2 = calculate_digit(cpf[:9] + str(d1), weights2)
+    
+    return cpf[-2:] == f"{d1}{d2}"
+
+def calculate_risk_score(metrics: dict[str, Any]) -> dict[str, Any]:
+    """
+    Calcula a 'Temperatura de Risco' (0-100).
+    Baseado em indicadores de integridade e legalidade.
+    """
+    score = 0
+    flags = []
+    
+    # 1. Risco de Senioridade (Shelf Company)
+    if metrics.get("days_old", 999) < 30:
+        score += 40
+        flags.append("EMPRESA_RECEM_CRIADA_CRITICO")
+    elif metrics.get("days_old", 999) < 180:
+        score += 20
+        flags.append("EMPRESA_RECENTE")
+        
+    # 2. Risco de Capital Social (Fachada)
+    if metrics.get("front_company_risk"):
+        score += 40
+        flags.append("INCAPACIDADE_FINANCEIRA_PROVAVEL")
+    elif metrics.get("financial_ratio", 0) > 5:
+        score += 20
+        flags.append("CAPITAL_SOCIAL_BAIXO_X_CONTRATO")
+        
+    # 3. Risco de CNAE (Desvio de Finalidade)
+    if not metrics.get("cnae_compatible", True):
+        score += 40
+        flags.append("CNAE_INCOMPATIVEL")
+        
+    # 4. Integridade Documental (Erro fatal)
+    if not metrics.get("document_valid", True):
+        score = 100
+        flags.append("DOCUMENTO_INVALIDO_OU_FRAUDULENTO")
+        
+    normalized_score = min(100, score)
+    
+    risk_label = "BAIXO"
+    if normalized_score >= 80: risk_label = "CRÍTICO"
+    elif normalized_score >= 50: risk_label = "ALTO"
+    elif normalized_score >= 25: risk_label = "MÉDIO"
+    
+    return {
+        "score": normalized_score,
+        "risk_label": risk_label,
+        "flags": flags
+    }
+
 def validate_cnpj(cnpj: str | None) -> bool:
     """Valida formato e dígitos verificadores de CNPJ."""
     if not cnpj:

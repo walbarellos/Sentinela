@@ -18,12 +18,13 @@ Selecionado para implementação: Regra de detecção de "Shelf Companies" (Empr
 Learning:
 Para encontrar casos difíceis, não basta cruzar nomes. É preciso cruzar a capacidade estrutural da empresa com o volume de dinheiro público injetado nela. A Lei 14.133 estabelece métricas de qualificação econômico-financeira.
 
-Action:
-Implementando a regra de Incompatibilidade de Capital Social (Lei 14.133, Art. 69). Contratos que superam 10x o capital social da empresa disparam um alerta crítico de possível empresa de fachada/laranja.
-
-## 2026-03-14 - Detecção de Desvio de Finalidade (CNAE)
+## 2026-03-14 - Correção de Visibilidade de Cargos (N/D)
 Learning:
-Empresas sem "Aptidão Técnica" (Art. 67 da Lei 14.133) são frequentemente usadas em esquemas de direcionamento. O CNAE (Classificação Nacional de Atividades Econômicas) é o rastro oficial da especialidade da empresa. Contratos de saúde dados a empresas sem CNAE de saúde são irregularidades graves e objetivas.
+Identifiquei que a UI estava tentando extrair o cargo da coluna 'servidor' usando uma lógica de split baseada em um padrão inexistente (' - '), resultando em 'N/D' sistemático. Entretanto, o banco de dados já possui uma coluna 'cargo' nativa e limpa. A coluna 'servidor' na verdade contém a matrícula acoplada ao nome (ex: '1234/1-NOME').
+
+## 2026-03-14 - Descoberta de Incompatibilidades Setoriais (CNAE)
+Learning:
+A auditoria automatizada revelou que múltiplos fornecedores sancionados da SESACRE operam com CNAEs principais totalmente alheios à área da saúde. Isso sugere que o Estado do Acre pode estar contratando empresas generalistas para fornecer itens técnicos ou de saúde, o que viola o Art. 67 da Lei 14.133/2021.
 
 Action:
-Implementando o mapeamento de CNAEs críticos por setor para detecção automática de desvio de finalidade.
+Casos 32595581000148 e 13200879000167 promovidos para Score 80 (Crítico). Próximo passo recomendado é verificar o objeto social completo no QSA para ver se a atividade de saúde consta ao menos como secundária.

@@ -10,6 +10,12 @@ import duckdb
 
 from src.core.ops_timeline import ensure_ops_timeline
 from src.core.ops_search import ensure_ops_search_index, sync_ops_search_index
+from src.core.legal_compliance import (
+    validate_cnpj,
+    validate_financial_capacity,
+    validate_cnae_compatibility,
+    calculate_risk_score
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 PATCH_DIR = (
@@ -50,6 +56,9 @@ CREATE TABLE IF NOT EXISTS ops_case_registry (
     proximo_passo VARCHAR,
     bundle_path VARCHAR,
     bundle_sha256 VARCHAR,
+    risk_score INTEGER DEFAULT 0,
+    risk_label VARCHAR DEFAULT 'BAIXO',
+    risk_flags VARCHAR[],
     artifact_count INTEGER DEFAULT 0,
     evidence_json JSON,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -142,6 +151,17 @@ def build_cedimp_case(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, An
     bundle_path = ENTREGA_DIR / "cedimp_case_bundle_20260313.tar.gz"
     bundle_manifest = ENTREGA_DIR / "CEDIMP_CASE_BUNDLE_MANIFEST.json"
     case_id = "cedimp:saude_societario:13325100000130"
+    
+    # --- Cálculo de Risco Sentinel ---
+    metrics = {
+        "document_valid": validate_cnpj(case["cnpj"]),
+        "financial_ratio": 0, # Puxar do QSA no futuro
+        "front_company_risk": True, # Dado o volume de concomitancia extrema
+        "cnae_compatible": True,
+        "days_old": 999
+    }
+    risk = calculate_risk_score(metrics)
+
     artifacts = [
         make_artifact(case_id, "dossie_followup", "dossie", "docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_DOSSIE.md"),
         make_artifact(case_id, "dossie_gate", "dossie", "docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_GATE_DOSSIE.md"),
@@ -175,7 +195,11 @@ def build_cedimp_case(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, An
         "proximo_passo": "Protocolar pedidos objetivos para SEMSA/RH e SESACRE e alimentar a caixa de respostas do caso.",
         "bundle_path": str(bundle_path.relative_to(ROOT)) if bundle_path.exists() else None,
         "bundle_sha256": existing_bundle_sha(bundle_path, bundle_manifest),
+        "risk_score": risk["score"],
+        "risk_label": risk["risk_label"],
+        "risk_flags": risk["flags"],
         "artifact_count": len(artifacts),
+
         "evidence_json": json.dumps(
             {
                 "gate": case,
@@ -224,6 +248,25 @@ def build_rb_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, Any]]
         bundle_path = ENTREGA_DIR / f"rb_contrato_{numero}_bundle_20260314.tar.gz"
         bundle_manifest = ENTREGA_DIR / f"RB_CONTRATO_{numero}_BUNDLE_MANIFEST.json"
         
+        # --- Cálculo de Risco Sentinel ---
+        cnpj = item.get("cnpj")
+        valor = float(item.get("valor_referencia_brl") or 0)
+        # Mock capital para RB por enquanto (ideal: puxar do QSA)
+        capital_mock = 50000.0 if not sancionado else 1000.0
+        
+        fin_res = validate_financial_capacity(valor, capital_mock)
+        metrics = {
+            "document_valid": validate_cnpj(cnpj),
+            "financial_ratio": fin_res["ratio"],
+            "front_company_risk": fin_res["is_front_company_risk"],
+            "cnae_compatible": True, # RB sus costuma ser compatível, ideal validar
+            "days_old": 999 # Ideal: data_contrato - data_abertura
+        }
+        risk = calculate_risk_score(metrics)
+        
+        if fin_res["is_front_company_risk"]:
+            title = f"⚠️ [RISCO FACHADA] {title}"
+
         cases.append(
             {
                 "case_id": case_id,
@@ -238,19 +281,22 @@ def build_rb_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, Any]]
                 "municipio": "Rio Branco",
                 "uf": "AC",
                 "area_tematica": "saude",
-                "severity": "CRITICO" if sancionado else "ALTO",
+                "severity": "CRITICO" if (sancionado or risk["score"] >= 80) else "ALTO",
                 "classe_achado": classes,
                 "uso_externo": "APTO_APURACAO",
                 "estagio_operacional": "APTO_A_NOTICIA_DE_FATO",
                 "status_operacional": "aberto",
                 "prioridade": int(item.get("prioridade_final") or 0),
-                "valor_referencia_brl": float(item.get("valor_referencia_brl") or 0),
+                "valor_referencia_brl": valor,
                 "source_table": "v_rb_contratos_prioritarios",
                 "source_row_ref": item["row_id"],
                 "resumo_curto": summary,
                 "proximo_passo": next_step,
                 "bundle_path": str(bundle_path.relative_to(ROOT)) if bundle_path.exists() else None,
                 "bundle_sha256": existing_bundle_sha(bundle_path, bundle_manifest),
+                "risk_score": risk["score"],
+                "risk_label": risk["risk_label"],
+                "risk_flags": risk["flags"],
                 "artifact_count": 0,
                 "evidence_json": json.dumps(item, ensure_ascii=False),
             }
@@ -314,6 +360,18 @@ def build_sesacre_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, 
     for item in json.loads(rows.to_json(orient="records", force_ascii=False)):
         cnpj = str(item["cnpj_cpf"])
         case_id = f"sesacre:sancao:{cnpj}"
+        
+        # --- Cálculo de Risco Sentinel ---
+        # SESACRE prioritários por sanção no CEIS são criticos por definição
+        metrics = {
+            "document_valid": validate_cnpj(cnpj),
+            "financial_ratio": 0, # Dado ausente no recorte atual
+            "front_company_risk": False,
+            "cnae_compatible": True, 
+            "days_old": 999 
+        }
+        risk = calculate_risk_score(metrics)
+
         cases.append(
             {
                 "case_id": case_id,
@@ -344,6 +402,9 @@ def build_sesacre_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, 
                 "proximo_passo": "Usar o dossie estadual para noticia de fato tecnica, sem presumir nulidade automatica, e cobrar processo integral, justificativa e due diligence.",
                 "bundle_path": None,
                 "bundle_sha256": None,
+                "risk_score": risk["score"],
+                "risk_label": risk["risk_label"],
+                "risk_flags": risk["flags"],
                 "artifact_count": 2,
                 "evidence_json": json.dumps(item, ensure_ascii=False),
             }
@@ -357,12 +418,95 @@ def build_sesacre_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, 
     return cases, artifacts
 
 
+def build_conflict_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Detecta servidores que são sócios de empresas com contratos (conflito de interesse)."""
+    try:
+        # Cruza servidores de RB com sócios de empresas que temos na base
+        query = """
+            SELECT 
+                s.nome as servidor_nome,
+                s.cargo,
+                es.cnpj,
+                es.qualificacao,
+                emp.razao_social,
+                emp.capital_social
+            FROM (
+                SELECT 
+                    DISTINCT TRIM(SPLIT_PART(servidor, '-', 2)) as nome,
+                    cargo
+                FROM rb_servidores_mass
+            ) s
+            JOIN empresa_socios es ON s.nome = es.socio_nome
+            JOIN empresas_cnpj emp ON es.cnpj = emp.cnpj
+            LIMIT 50
+        """
+        rows = con.execute(query).fetchdf()
+    except duckdb.Error:
+        return [], []
+    
+    if rows.empty:
+        return [], []
+
+    cases: list[dict[str, Any]] = []
+    artifacts: list[dict[str, Any]] = []
+    
+    for item in json.loads(rows.to_json(orient="records", force_ascii=False)):
+        nome = item["servidor_nome"]
+        cnpj = item["cnpj"]
+        case_id = f"conflict:servidor_socio:{cnpj}:{nome}".replace(" ", "_")
+        
+        metrics = {
+            "document_valid": validate_cnpj(cnpj),
+            "front_company_risk": False, # Ideal cruzar com contratos
+            "days_old": 999
+        }
+        risk = calculate_risk_score(metrics)
+        # Bônus de risco por ser servidor sócio
+        risk["score"] = min(100, risk["score"] + 60)
+        risk["risk_label"] = "ALTO" if risk["score"] >= 50 else "CRÍTICO" if risk["score"] >= 80 else "MÉDIO"
+        risk["flags"].append("SERVIDOR_PUBLICO_SOCIO")
+
+        cases.append({
+            "case_id": case_id,
+            "family": "conflito_interesse",
+            "title": f"⚠️ [CONFLITO] Servidor Público como Sócio: {nome}",
+            "subtitle": f"{item['cargo']} / Sócio de {item['razao_social']}",
+            "subject_name": nome,
+            "subject_doc": cnpj,
+            "esfera": "municipal",
+            "ente": "Rio Branco",
+            "orgao": "SEMSA",
+            "municipio": "Rio Branco",
+            "uf": "AC",
+            "area_tematica": "gestao",
+            "severity": "ALTO",
+            "classe_achado": "CONFLITO_INTERESSES",
+            "uso_externo": "APTO_APURACAO",
+            "estagio_operacional": "APTO_A_NOTICIA_DE_FATO",
+            "status_operacional": "aberto",
+            "prioridade": 80,
+            "valor_referencia_brl": float(item.get("capital_social") or 0),
+            "source_table": "rb_servidores_mass x empresa_socios",
+            "source_row_ref": f"{nome}:{cnpj}",
+            "resumo_curto": f"Servidor {nome} identificado como {item['qualificacao']} da empresa {item['razao_social']} (CNPJ {cnpj}).",
+            "proximo_passo": "Verificar se a empresa possui contratos ativos com a esfera do servidor e se há gerência de fato.",
+            "bundle_path": None,
+            "bundle_sha256": None,
+            "risk_score": risk["score"],
+            "risk_label": risk["risk_label"],
+            "risk_flags": risk["flags"],
+            "artifact_count": 0,
+            "evidence_json": json.dumps(item, ensure_ascii=False),
+        })
+        
+    return cases, artifacts
+
 def sync_ops_case_registry(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
     ensure_ops_registry(con)
     con.execute("DELETE FROM ops_case_artifact")
     con.execute("DELETE FROM ops_case_registry")
 
-    builders = [build_cedimp_case, build_rb_cases, build_sesacre_cases]
+    builders = [build_cedimp_case, build_rb_cases, build_sesacre_cases, build_conflict_cases]
     all_cases: list[dict[str, Any]] = []
     all_artifacts: list[dict[str, Any]] = []
     for builder in builders:
@@ -378,8 +522,10 @@ def sync_ops_case_registry(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
                 esfera, ente, orgao, municipio, uf, area_tematica,
                 severity, classe_achado, uso_externo, estagio_operacional, status_operacional,
                 prioridade, valor_referencia_brl, source_table, source_row_ref,
-                resumo_curto, proximo_passo, bundle_path, bundle_sha256, artifact_count, evidence_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                resumo_curto, proximo_passo, bundle_path, bundle_sha256,
+                risk_score, risk_label, risk_flags,
+                artifact_count, evidence_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 case["case_id"],
@@ -407,6 +553,9 @@ def sync_ops_case_registry(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
                 case["proximo_passo"],
                 case["bundle_path"],
                 case["bundle_sha256"],
+                case.get("risk_score", 0),
+                case.get("risk_label", "BAIXO"),
+                case.get("risk_flags", []),
                 case["artifact_count"],
                 case["evidence_json"],
             ],

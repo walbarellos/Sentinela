@@ -12,24 +12,24 @@ def render_people_page(db: duckdb.DuckDBPyConnection) -> None:
         if nome:
             query = """
                 SELECT
-                    TRIM(SPLIT_PART(servidor, ' - ', 1)) AS nome,
-                    COALESCE(NULLIF(TRIM(SPLIT_PART(servidor, ' - ', 2)),''),'N/D') AS cargo,
+                    TRIM(SPLIT_PART(servidor, '-', 2)) AS nome,
+                    COALESCE(NULLIF(TRIM(cargo),''),'N/D') AS cargo,
                     ch AS matricula,
                     vencimento_base,
                     outras_verbas,
                     salario_liquido,
                     COALESCE(vencimento_base,0) + COALESCE(outras_verbas,0) AS total_bruto
                 FROM rb_servidores_mass
-                WHERE servidor ILIKE ?
+                WHERE servidor ILIKE ? OR cargo ILIKE ?
                 ORDER BY salario_liquido DESC NULLS LAST
                 LIMIT 100
             """
-            df_res = db.execute(query, [f"%{nome}%"]).df()
+            df_res = db.execute(query, [f"%{nome}%", f"%{nome}%"]).df()
         else:
             query = """
                 SELECT
-                    TRIM(SPLIT_PART(servidor, ' - ', 1)) AS nome,
-                    COALESCE(NULLIF(TRIM(SPLIT_PART(servidor, ' - ', 2)),''),'N/D') AS cargo,
+                    TRIM(SPLIT_PART(servidor, '-', 2)) AS nome,
+                    COALESCE(NULLIF(TRIM(cargo),''),'N/D') AS cargo,
                     ch AS matricula,
                     vencimento_base,
                     outras_verbas,
