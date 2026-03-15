@@ -40,7 +40,7 @@ def render_artifact_preview(path_value: str | None, kind: str | None = None) -> 
     if suffix == ".csv":
         content = read_text_artifact(path_value)
         try:
-            st.dataframe(pd.read_csv(StringIO(content)), use_container_width=True, hide_index=True)
+            st.dataframe(pd.read_csv(StringIO(content)), width='stretch', hide_index=True)
         except Exception:
             st.code(content[:12000], language="csv")
         return

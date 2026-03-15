@@ -108,7 +108,7 @@ def render_artifact_diff(artifacts_df: pd.DataFrame) -> None:
                                 "apenas_em_B": sorted(right_keys - left_keys)[:diff_len],
                             }
                         ),
-                        use_container_width=True,
+                        width='stretch',
                         hide_index=True,
                     )
         except Exception:

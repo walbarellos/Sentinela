@@ -30,13 +30,13 @@ def render_timeline_tab(timeline_df: pd.DataFrame) -> None:
         .reset_index(name="total")
         .sort_values(["phase_order", "phase_label"])
     )
-    st.dataframe(phase_counts[["phase_label", "total"]], use_container_width=True, hide_index=True)
+    st.dataframe(phase_counts[["phase_label", "total"]], width='stretch', hide_index=True)
 
     for phase in phase_counts.to_dict("records"):
         phase_df = filtered[filtered["phase_label"] == phase["phase_label"]].copy()
         with st.expander(f"{phase['phase_label']} ({int(phase['total'])})", expanded=len(phase_counts) <= 2):
             st.dataframe(
                 phase_df[["event_at", "event_type", "event_group", "title", "detail", "source_ref", "path_ref"]],
-                use_container_width=True,
+                width='stretch',
                 hide_index=True,
             )

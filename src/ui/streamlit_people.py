@@ -44,12 +44,12 @@ def render_people_page(db: duckdb.DuckDBPyConnection) -> None:
         if df_res.empty:
             st.warning("Nenhum servidor encontrado.")
         else:
-            st.dataframe(df_res, use_container_width=True)
+            st.dataframe(df_res, width='stretch')
             teto = 22000.0
             acima_teto = df_res[df_res["salario_liquido"] > teto]
             if not acima_teto.empty:
                 st.error(f"🔴 {len(acima_teto)} servidor(es) com salário líquido acima do teto estimado (R$ 22.000)")
-                st.dataframe(acima_teto[["nome", "cargo", "salario_liquido"]], use_container_width=True)
+                st.dataframe(acima_teto[["nome", "cargo", "salario_liquido"]], width='stretch')
     except Exception as exc:
         st.error(f"Erro ao processar busca: {exc}")
         with st.expander("Debug - Schema"):

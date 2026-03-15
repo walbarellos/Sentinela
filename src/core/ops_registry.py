@@ -221,6 +221,9 @@ def build_rb_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, Any]]
             if sancionado
             else "Noticia de fato ou pedido de apuracao com foco em item fora do edital e das propostas da licitacao-mae."
         )
+        bundle_path = ENTREGA_DIR / f"rb_contrato_{numero}_bundle_20260314.tar.gz"
+        bundle_manifest = ENTREGA_DIR / f"RB_CONTRATO_{numero}_BUNDLE_MANIFEST.json"
+        
         cases.append(
             {
                 "case_id": case_id,
@@ -246,8 +249,8 @@ def build_rb_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, Any]]
                 "source_row_ref": item["row_id"],
                 "resumo_curto": summary,
                 "proximo_passo": next_step,
-                "bundle_path": None,
-                "bundle_sha256": None,
+                "bundle_path": str(bundle_path.relative_to(ROOT)) if bundle_path.exists() else None,
+                "bundle_sha256": existing_bundle_sha(bundle_path, bundle_manifest),
                 "artifact_count": 0,
                 "evidence_json": json.dumps(item, ensure_ascii=False),
             }
@@ -259,6 +262,8 @@ def build_rb_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, Any]]
                 make_artifact(case_id, "dossie_rb_sus", "dossie", "docs/Claude-march/patch_claude/claude_update/patch/dossie_rb_sus_prioritarios.md"),
             ]
         )
+        if bundle_path.exists():
+            artifacts.append(make_artifact(case_id, "bundle", "bundle", str(bundle_path.relative_to(ROOT))))
         if numero == "3895":
             artifacts.extend(
                 [

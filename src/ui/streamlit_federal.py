@@ -30,11 +30,11 @@ def render_federal_page(db: duckdb.DuckDBPyConnection) -> None:
                 fig = go.Figure()
                 fig.add_annotation(text="✅ Nenhuma sanção encontrada para as empresas locais", x=0.5, y=0.5, showarrow=False, font=dict(size=14, color="#00ff88"))
                 fig.update_layout(template="plotly_dark", paper_bgcolor="#0a0e1a", plot_bgcolor="#0a0e1a", height=300)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
             else:
                 fig = px.bar(df_stats, x="tipo_sancao", y="total", color="total", color_continuous_scale=["#ff6b6b", "#ff0000"], template="plotly_dark")
                 fig.update_layout(paper_bgcolor="#0a0e1a", plot_bgcolor="#0a0e1a", height=300, showlegend=False)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
         except Exception:
             st.warning("Base CEIS não populada. Use `python portal_transparencia_integrator.py --bulk-sancoes`.")
 

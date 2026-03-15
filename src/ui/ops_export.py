@@ -36,7 +36,7 @@ def render_export_tab(
         st.info("Gate de exportação ainda não foi materializado para este caso.")
         return
 
-    st.dataframe(gate_df, use_container_width=True, hide_index=True)
+    st.dataframe(gate_df, width='stretch', hide_index=True)
     if runbook_df is not None and not runbook_df.empty:
         with st.expander("Encaminhamento operacional", expanded=False):
             steps_df = runbook_steps_df if runbook_steps_df is not None else pd.DataFrame()
@@ -48,18 +48,19 @@ def render_export_tab(
         st.caption("Nenhuma exportação controlada foi congelada para este caso ainda.")
     else:
         st.markdown("##### Exportações congeladas")
-        st.dataframe(frozen_df, use_container_width=True, hide_index=True)
+        st.dataframe(frozen_df, width='stretch', hide_index=True)
     if not diff_df.empty:
         st.markdown("##### Diferenças entre versões congeladas")
         st.dataframe(
             diff_df.drop(columns=["diff_text"]),
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
         )
         selected_diff_idx = st.selectbox(
             "Abrir diff congelado",
             range(len(diff_df)),
             format_func=lambda idx: f"{diff_df.iloc[int(idx)]['export_mode']} :: {diff_df.iloc[int(idx)]['summary']}",
+            key=f"ops_export_diff_{case_id}"
         )
         st.code(str(diff_df.iloc[int(selected_diff_idx)]["diff_text"] or ""), language="diff")
 
@@ -72,10 +73,11 @@ def render_export_tab(
         "Modo permitido",
         allowed_df["export_mode"].tolist(),
         format_func=_format_mode,
+        key=f"ops_export_mode_{case_id}"
     )
 
     preview_key = f"ops_export_preview:{case_id}:{export_mode}"
-    if st.button("Gerar texto seguro", use_container_width=True):
+    if st.button("Gerar texto seguro", width='stretch'):
         con = duckdb.connect(str(DB_PATH), read_only=True)
         try:
             payload = build_case_external_text(con, case_id=case_id, export_mode=export_mode)
@@ -90,9 +92,9 @@ def render_export_tab(
             data=str(st.session_state[preview_key]).encode("utf-8"),
             file_name=f"{case_id.replace(':', '_')}__{export_mode.lower()}.txt",
             mime="text/plain",
-            use_container_width=True,
+            width='stretch',
         )
-        if st.button("Congelar exportação controlada", type="primary", use_container_width=True):
+        if st.button("Congelar exportação controlada", type="primary", width='stretch'):
             try:
                 result = freeze_ops_case_export_now(case_id, export_mode)
                 st.cache_data.clear()

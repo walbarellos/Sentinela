@@ -17,7 +17,7 @@ def render_ops_page() -> None:
 
     toolbar_left, toolbar_mid, toolbar_right, toolbar_far = st.columns([2.5, 1, 1, 1])
     with toolbar_mid:
-        if st.button("🔄 Atualizar Registry", use_container_width=True):
+        if st.button("🔄 Atualizar Registry", width='stretch'):
             try:
                 stats = sync_ops_registry_now()
                 st.cache_data.clear()
@@ -34,7 +34,7 @@ def render_ops_page() -> None:
             except Exception as exc:
                 st.error(f"Falha ao atualizar registry: {exc}")
     with toolbar_right:
-        if st.button("🌐 Atualizar Fontes", use_container_width=True):
+        if st.button("🌐 Atualizar Fontes", width='stretch'):
             try:
                 stats = sync_ops_source_cache_now()
                 st.cache_data.clear()
@@ -43,7 +43,7 @@ def render_ops_page() -> None:
             except Exception as exc:
                 st.error(f"Falha ao atualizar fontes: {exc}")
     with toolbar_far:
-        if st.button("🔎 Reindexar Texto", use_container_width=True):
+        if st.button("🔎 Reindexar Texto", width='stretch'):
             try:
                 stats = sync_ops_search_index_now()
                 st.cache_data.clear()

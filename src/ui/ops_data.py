@@ -607,7 +607,7 @@ def load_ops_inbox_queue() -> pd.DataFrame:
             FROM ops_case_registry r
             JOIN ops_case_inbox_document d ON d.case_id = r.case_id
             GROUP BY 1,2,3,4
-            ORDER BY pending_docs DESC, received_docs ASC, last_updated DESC, case_id
+            ORDER BY pending_docs DESC, received_docs ASC, last_updated DESC, r.case_id
             """
         ).df()
     finally:

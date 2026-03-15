@@ -6,12 +6,11 @@
 
 # 🛡️ SENTINELA // COMMAND CENTER
 
-Sistema de inteligência e auditoria de gastos públicos focado no Estado do Acre e Município de Rio Branco. O projeto utiliza **DuckDB** para análise massiva de dados e **Neo4j** para mapeamento de grafos de influência.
+Sistema de inteligência e auditoria de gastos públicos focado no Estado do Acre e Município de Rio Branco. O projeto utiliza **DuckDB** para análise massiva de dados e conformidade probatória.
 
 ## 🚀 Pré-requisitos
 
 - **Python 3.10+**
-- **Docker & Docker Compose** (para o banco Neo4j)
 - **Venv** (ambiente virtual)
 
 ---
@@ -36,81 +35,24 @@ Sistema de inteligência e auditoria de gastos públicos focado no Estado do Acr
 
 ---
 
-## 🚦 Operação (Dois Terminais)
+## 🚦 Operação
 
-Para o funcionamento completo, você deve manter dois processos rodando simultaneamente:
-
-### Terminal 1: Banco de Dados (Grafo)
-Sobe o container do Neo4j para análises de relacionamentos.
-```bash
-chmod +x start_db.sh
-./start_db.sh
-```
-*Acesse a interface visual em: `http://localhost:7474`*
-
-### Terminal 2: Dashboard (Streamlit)
-Interface principal de monitoramento e alertas.
+### Painel Principal (Dashboard)
+Interface principal de monitoramento, casos e evidências.
 ```bash
 source .venv/bin/activate
 streamlit run app.py
 ```
 *Acesse o painel em: `http://localhost:8501`*
 
-Observação:
-- O painel operacional ativo do projeto é o `Streamlit` em `app.py`.
-- Hoje não há aplicação `Dash` separada versionada como interface principal.
-- As camadas novas de casos e artefatos operacionais devem ser integradas nesse painel, não em uma UI paralela.
-
 ---
 
-## 📡 Ingestão de Dados (Os Motores)
+## 📂 Camada Operacional (V5)
 
-O dashboard só exibirá sinais se os dados forem capturados. Rode os scripts abaixo conforme a necessidade de atualização de cada aba:
+O Streamlit opera como centro de comando da fila de casos probatórios. Para sincronizar as tabelas operacionais e processar o rastro documental:
 
-### 1. Janela: Inteligência de Pessoal & Salários
-Captura a folha de pagamento completa (CSV massivo) e alimenta triagem interna estatística conservadora de remuneração.
 ```bash
-export PYTHONPATH=$PYTHONPATH:.
-python3 src/ingest/riobranco_servidores_mass.py
-```
-
-### 2. Janela: Radar de Obras Públicas
-Captura a lista de obras e detalhes de contratos para análise exploratória e cruzamentos futuros.
-```bash
-export PYTHONPATH=$PYTHONPATH:.
-python3 src/ingest/riobranco_obras_list.py
-```
-
-### 3. Janela: Rastreio de Diárias
-Captura o histórico de diárias para revisão documental e cruzamentos posteriores.
-```bash
-export PYTHONPATH=$PYTHONPATH:.
-python3 src/ingest/riobranco_diarias.py
-```
-
----
-
-## 📂 Camada Operacional
-
-O Streamlit agora também pode operar como fila de casos probatórios:
-- `ops_case_registry`: registro materializado de casos
-- `ops_case_artifact`: artefatos locais com `path`, `sha256` e tamanho
-- `ops_pipeline_run`: trilha de execuções dos syncs operacionais
-- `ops_source_cache`: catálogo/cache de fontes públicas com `ttl`, `etag`, `last_modified` e snapshot local quando disponível
-- `ops_case_inbox_document`: caixa operacional de respostas oficiais por caso
-- `v_ops_case_timeline_event`: timeline documental por caso
-- `ops_artifact_text_index`: índice textual local dos artefatos e anexos suportados
-- `ops_case_burden_item`: matriz de ônus probatório por caso
-- `ops_case_semantic_issue`: diff semântico materializado por caso
-- `ops_case_contradiction`: contradições objetivas materializadas
-- `ops_case_checklist`: checklist probatório por caso
-- `ops_case_language_guard`: gate de linguagem externa não-acusatória
-- `ops_case_generated_export`: exportações seguras congeladas como artefato controlado do caso
-- aba `📂 OPERAÇÕES`: resumo, filtros, detalhe do caso, busca textual, inbox, timeline, diff e visualização local de artefatos
-- cobertura atual da inbox: `13` casos (`RB_SUS`, `SESACRE` e `CEDIMP`)
-
-Para rematerializar essa camada:
-```bash
+# Sync completo da camada de casos e auditoria
 .venv/bin/python scripts/sync_ops_case_registry.py
 .venv/bin/python scripts/sync_ops_source_cache.py
 .venv/bin/python scripts/sync_ops_inbox.py
@@ -122,24 +64,44 @@ Para rematerializar essa camada:
 .venv/bin/python scripts/sync_ops_checklist.py
 .venv/bin/python scripts/sync_ops_guard.py
 .venv/bin/python scripts/sync_ops_export_gate.py
-.venv/bin/python scripts/sync_ops_rulebook.py
-.venv/bin/python scripts/validate_ops_output_guard.py
-.venv/bin/python scripts/validate_ops_rulebook.py
 ```
 
-Para congelar uma saída segura como artefato versionado do caso:
-```bash
-.venv/bin/python scripts/freeze_ops_case_export.py --case-id rb:contrato:3898 --mode NOTICIA_FATO
-```
+### Principais Funcionalidades (V5):
+- `ops_case_registry`: Registro materializado de casos de alta prioridade.
+- `ops_case_burden_item`: Matriz de ônus probatório (o que falta provar).
+- `ops_case_generated_export`: Exportações seguras e não-acusatórias.
+- `ops_artifact_text_index`: Busca textual em documentos anexados.
 
 ---
 
-## 📊 Estrutura de Dados
+## 🏗️ Módulos Arquivados / Experimentais
 
-- **`data/sentinela_analytics.duckdb`**: Banco principal onde os dados normalizados são armazenados.
-- **`src/core/analytics_db.py`**: Gerenciador de conexão e esquemas SQL.
-- **`insights_engine.py`**: Motor legado e exploratório. Fica desligado por padrão e serve apenas para triagem interna explícita.
-- **`jsf_client.py`**: Driver customizado para interagir com portais de transparência baseados em Java (JSF/PrimeFaces).
+Estes módulos fizeram parte de versões anteriores e estão mantidos para referência histórica ou triagem técnica interna, mas **não são o foco operacional atual**:
+
+- **Neo4j (V1/Experimental):** Mapeamento de grafos de influência (`start_db.sh`, `docker-compose.yml`). Atualmente inativo.
+- **Insights Engine (V2/V3):** Motor exploratório (`insights_engine.py`, `scripts/sync_v2.py`). Fica desligado por padrão devido ao alto ruído.
+- **Alertas Legados (V1/Quarentena):** Tabela `alerts` e `cross_reference_engine.py`. Mantidos em quarentena técnica no dashboard.
+
+---
+
+## 📡 Ingestão de Dados (Fontes Locais)
+
+Para atualizar as bases brutas do DuckDB:
+
+### 1. Inteligência de Pessoal & Salários
+```bash
+python3 src/ingest/riobranco_servidores_mass.py
+```
+
+### 2. Radar de Obras Públicas
+```bash
+python3 src/ingest/riobranco_obras_list.py
+```
+
+### 3. Rastreio de Diárias
+```bash
+python3 src/ingest/riobranco_diarias.py
+```
 
 ---
 **AVISO:** Este sistema é para uso em auditoria e controle social. Respeite os termos de uso dos portais de transparência.

@@ -32,7 +32,7 @@ def render_semantic_diff(semantic_df: pd.DataFrame) -> None:
     st.caption("Comparacao orientada a contradicoes objetivas entre contrato, edital/publicacao e proposta congelada.")
     status_counts = semantic_df["status"].value_counts(dropna=False).reset_index()
     status_counts.columns = ["status", "total"]
-    st.dataframe(status_counts, use_container_width=True, hide_index=True)
+    st.dataframe(status_counts, width='stretch', hide_index=True)
 
     for _, row in semantic_df.iterrows():
         status_label, badge_color = STATUS_HELP.get(str(row["status"]), (str(row["status"]), "gray"))
@@ -48,7 +48,7 @@ def render_semantic_diff(semantic_df: pd.DataFrame) -> None:
                     {"papel": row["right_label"], "valor": row["right_value"]},
                 ]
             )
-            st.dataframe(comp_df, use_container_width=True, hide_index=True)
+            st.dataframe(comp_df, width='stretch', hide_index=True)
             st.markdown(f"**Racional:** {row.get('rationale') or 'N/D'}")
             st.markdown("**Fontes locais usadas**")
             _render_sources(row.get("source_refs_json"))

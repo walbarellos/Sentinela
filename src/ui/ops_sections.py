@@ -34,10 +34,10 @@ def apply_case_filters(ops_cases: pd.DataFrame) -> pd.DataFrame:
     stage_options = ["Todos"] + sorted(v for v in ops_cases["estagio_operacional"].dropna().unique().tolist())
     orgao_options = ["Todos"] + sorted(v for v in ops_cases["orgao"].dropna().unique().tolist())
     uso_options = ["Todos"] + sorted(v for v in ops_cases["uso_externo"].dropna().unique().tolist())
-    family_filter = filt1.selectbox("Família", family_options)
-    stage_filter = filt2.selectbox("Estágio", stage_options)
-    orgao_filter = filt3.selectbox("Órgão", orgao_options)
-    uso_filter = filt4.selectbox("Uso externo", uso_options)
+    family_filter = filt1.selectbox("Família", family_options, key="ops_sections_family")
+    stage_filter = filt2.selectbox("Estágio", stage_options, key="ops_sections_stage")
+    orgao_filter = filt3.selectbox("Órgão", orgao_options, key="ops_sections_orgao")
+    uso_filter = filt4.selectbox("Uso externo", uso_options, key="ops_sections_uso")
     search = st.text_input("Busca livre", placeholder="case_id, sujeito, resumo, classe do achado...")
 
     filtered = ops_cases.copy()
@@ -89,14 +89,14 @@ def render_overview_tab(summary: dict[str, Any], runs_df: pd.DataFrame, sources_
         if df_stage.empty:
             st.info("Sem estágios materializados.")
         else:
-            st.dataframe(df_stage, use_container_width=True, hide_index=True)
+            st.dataframe(df_stage, width='stretch', hide_index=True)
     with block2:
         st.markdown("#### Famílias")
         df_family = pd.DataFrame(summary["by_family"])
         if df_family.empty:
             st.info("Sem famílias materializadas.")
         else:
-            st.dataframe(df_family, use_container_width=True, hide_index=True)
+            st.dataframe(df_family, width='stretch', hide_index=True)
 
     st.markdown("#### Saúde operacional")
     runtime_left, runtime_right = st.columns([1, 1])
@@ -104,7 +104,7 @@ def render_overview_tab(summary: dict[str, Any], runs_df: pd.DataFrame, sources_
         if runs_df.empty:
             st.info("Sem execuções registradas ainda.")
         else:
-            st.dataframe(runs_df.head(8), use_container_width=True, hide_index=True)
+            st.dataframe(runs_df.head(8), width='stretch', hide_index=True)
     with runtime_right:
         if sources_df.empty:
             st.info("Sem fontes monitoradas ainda.")
@@ -113,7 +113,7 @@ def render_overview_tab(summary: dict[str, Any], runs_df: pd.DataFrame, sources_
             st.metric("Fontes saudáveis", f"{healthy}/{len(sources_df)}")
             st.dataframe(
                 sources_df[["source_name", "status_code", "fetched_at", "expires_at"]],
-                use_container_width=True,
+                width='stretch',
                 hide_index=True,
             )
 
@@ -131,6 +131,7 @@ def render_case_workbench(filtered: pd.DataFrame) -> None:
             "Fila de casos",
             case_ids,
             format_func=lambda cid: format_case_label(filtered.loc[filtered["case_id"] == cid].iloc[0]),
+            key="ops_sections_case_id"
         )
         st.dataframe(
             filtered[
@@ -143,7 +144,7 @@ def render_case_workbench(filtered: pd.DataFrame) -> None:
                     "valor_referencia_brl",
                 ]
             ],
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
         )
 
@@ -206,7 +207,7 @@ def render_case_workbench(filtered: pd.DataFrame) -> None:
             else:
                 artifacts_left, artifacts_right = st.columns([1, 1.2])
                 with artifacts_left:
-                    st.dataframe(artifacts_df, use_container_width=True, hide_index=True)
+                    st.dataframe(artifacts_df, width='stretch', hide_index=True)
                 with artifacts_right:
                     previewable = artifacts_df[artifacts_df["exists"] & artifacts_df["path"].notna()].copy()
                     if previewable.empty:
@@ -217,6 +218,7 @@ def render_case_workbench(filtered: pd.DataFrame) -> None:
                             "Abrir artefato",
                             range(len(previewable)),
                             format_func=lambda idx: preview_labels[idx],
+                            key="ops_sections_preview_artifact"
                         )
                         selected_artifact = previewable.iloc[int(preview_index)]
                         meta1, meta2, meta3 = st.columns(3)
@@ -247,7 +249,7 @@ def render_runtime_tab(runs_df: pd.DataFrame, sources_df: pd.DataFrame) -> None:
         if runs_df.empty:
             st.info("Sem execuções registradas.")
         else:
-            st.dataframe(runs_df, use_container_width=True, hide_index=True)
+            st.dataframe(runs_df, width='stretch', hide_index=True)
     with right:
         st.markdown("#### Fontes")
         if sources_df.empty:
@@ -264,7 +266,7 @@ def render_runtime_tab(runs_df: pd.DataFrame, sources_df: pd.DataFrame) -> None:
                         "expires_at",
                     ]
                 ],
-                use_container_width=True,
+                width='stretch',
                 hide_index=True,
             )
             preview_sources = sources_df[sources_df["body_path"].notna()].copy()
@@ -273,6 +275,7 @@ def render_runtime_tab(runs_df: pd.DataFrame, sources_df: pd.DataFrame) -> None:
                     "Abrir snapshot de fonte",
                     range(len(preview_sources)),
                     format_func=lambda idx: str(preview_sources.iloc[int(idx)]["source_name"]),
+                    key="ops_sections_preview_source"
                 )
                 selected_source = preview_sources.iloc[int(selected_source_idx)]
                 render_artifact_preview(str(selected_source.get("body_path") or ""), "source_snapshot")

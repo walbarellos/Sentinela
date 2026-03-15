@@ -62,23 +62,24 @@ def render_inbox_tab(cases_df: pd.DataFrame) -> None:
     queue_df = load_ops_inbox_queue()
     if not queue_df.empty:
         st.caption("Fila de pendências documentais inspirada no modelo de recomendações abertas: prioriza o que ainda falta receber.")
-        st.dataframe(queue_df, use_container_width=True, hide_index=True)
+        st.dataframe(queue_df, width='stretch', hide_index=True)
 
     case_id = st.selectbox(
         "Caso com caixa de respostas",
         available_cases["case_id"].tolist(),
         format_func=lambda cid: f"{available_cases.loc[available_cases['case_id'] == cid, 'subject_name'].iloc[0]} [{cid}]",
+        key="ops_inbox_case_id"
     )
 
     toolbar_left, toolbar_mid, toolbar_right = st.columns([1, 1, 1.4])
     with toolbar_left:
-        if st.button("📥 Sincronizar Inbox", use_container_width=True):
+        if st.button("📥 Sincronizar Inbox", width='stretch'):
             stats = sync_case_inbox_now(case_id)
             st.cache_data.clear()
             st.success(f"Inbox sincronizada: {stats['rows_written']} linhas.")
             st.rerun()
     with toolbar_mid:
-        if st.button("▶️ Rerodar Workflow", use_container_width=True):
+        if st.button("▶️ Rerodar Workflow", width='stretch'):
             try:
                 result = run_case_workflow(case_id)
                 st.cache_data.clear()
@@ -104,7 +105,7 @@ def render_inbox_tab(cases_df: pd.DataFrame) -> None:
         metric1.metric("Pendentes", int(inbox_df["status_documento"].isin(["PENDENTE", "ARQUIVO_NAO_LOCALIZADO"]).sum()))
         metric2.metric("Recebidos", int((inbox_df["status_documento"] == "RECEBIDO").sum()))
         metric3.metric("Documentos", len(inbox_df))
-        st.dataframe(inbox_df, use_container_width=True, hide_index=True)
+        st.dataframe(inbox_df, width='stretch', hide_index=True)
 
     st.markdown("#### Anexar resposta oficial")
     if inbox_df.empty:
@@ -115,7 +116,12 @@ def render_inbox_tab(cases_df: pd.DataFrame) -> None:
         lambda row: f"{row['documento_chave']} :: {row['destino']} :: {row['categoria_documental']}",
         axis=1,
     ).tolist()
-    selected_idx = st.selectbox("Documento-alvo", range(len(inbox_df)), format_func=lambda idx: pending_options[int(idx)])
+    selected_idx = st.selectbox(
+        "Documento-alvo",
+        range(len(inbox_df)),
+        format_func=lambda idx: pending_options[int(idx)],
+        key=f"ops_inbox_target_{case_id}"
+    )
     selected_row = inbox_df.iloc[int(selected_idx)]
 
     form_left, form_right = st.columns([1, 1])

@@ -39,7 +39,7 @@ def render_checklist_tab(checklist_df: pd.DataFrame, contradiction_df: pd.DataFr
         st.markdown("##### Contradicoes objetivas")
         st.dataframe(
             contradiction_df[["title", "severity", "status", "rationale", "next_action"]],
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
         )
 
@@ -48,7 +48,7 @@ def render_checklist_tab(checklist_df: pd.DataFrame, contradiction_df: pd.DataFr
         st.warning("Ha saidas com linguagem externa potencialmente impropria. O sistema deve preferir noticia de fato e pedido de apuracao.")
         st.dataframe(
             guard_df[["label", "issue_type", "severity", "suggestion"]],
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
         )
     else:

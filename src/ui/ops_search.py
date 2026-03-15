@@ -98,15 +98,15 @@ def render_search_tab() -> None:
     family_options = ["Todas"] + sorted(v for v in index_df["family"].dropna().unique().tolist())
     suffix_options = ["Todos"] + sorted(v for v in index_df["suffix"].dropna().unique().tolist())
     source_options = ["Todos"] + sorted(v for v in index_df["source_type"].dropna().unique().tolist())
-    family_filter = col2.selectbox("Família", family_options)
-    suffix_filter = col3.selectbox("Tipo", suffix_options)
-    source_filter = col4.selectbox("Origem", source_options)
+    family_filter = col2.selectbox("Família", family_options, key="ops_search_family")
+    suffix_filter = col3.selectbox("Tipo", suffix_options, key="ops_search_type")
+    source_filter = col4.selectbox("Origem", source_options, key="ops_search_source")
 
     col5, col6, col7 = st.columns([1, 1, 1.4])
     event_options = ["Todos"] + sorted(v for v in index_df["event_type"].dropna().unique().tolist())
     orgao_options = ["Todos"] + sorted(v for v in index_df["orgao"].dropna().unique().tolist())
-    event_filter = col5.selectbox("Evento", event_options)
-    orgao_filter = col6.selectbox("Órgão", orgao_options)
+    event_filter = col5.selectbox("Evento", event_options, key="ops_search_event")
+    orgao_filter = col6.selectbox("Órgão", orgao_options, key="ops_search_orgao")
     case_filter = col7.text_input("Case ID", placeholder="rb:contrato:3898")
 
     filtered = index_df.copy()
@@ -127,7 +127,7 @@ def render_search_tab() -> None:
         st.caption("Digite pelo menos 3 caracteres para pesquisar no índice local.")
         st.dataframe(
             filtered[["case_id", "family", "orgao", "source_type", "event_type", "label", "suffix", "text_chars", "updated_at"]].head(20),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
         return
@@ -149,7 +149,7 @@ def render_search_tab() -> None:
     st.caption(f"Resultados: {len(results)}")
     st.dataframe(
         results[["case_id", "family", "orgao", "source_type", "event_type", "label", "suffix", "hit_score", "snippet", "updated_at"]],
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
 
@@ -157,6 +157,7 @@ def render_search_tab() -> None:
         "Abrir resultado",
         range(len(results)),
         format_func=lambda idx: f"{results.iloc[int(idx)]['case_id']} :: {results.iloc[int(idx)]['label']}",
+        key="ops_search_preview_result"
     )
     selected = results.iloc[int(preview_idx)]
     st.markdown(selected["snippet_md"])

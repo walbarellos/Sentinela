@@ -358,6 +358,7 @@ def summary():
           (SELECT COUNT(*) FROM edge)    AS edges,
           (SELECT COUNT(DISTINCT source) FROM evidence) AS sources,
           (SELECT COUNT(*) FROM insight WHERE severity IN ('CRITICO','ALTO')) AS alerts,
+          (SELECT COUNT(*) FROM ops_case_registry) AS cases,
           (SELECT MAX(captured_at) FROM evidence) AS last_updated;
     """).fetchone()
     con.close()
@@ -366,7 +367,8 @@ def summary():
         "edges": res[1],
         "sources": res[2],
         "alerts": res[3],
-        "last_updated": res[4]
+        "cases": res[4],
+        "last_updated": res[5]
     }
 
 @app.get("/insights", response_model=List[InsightOut])

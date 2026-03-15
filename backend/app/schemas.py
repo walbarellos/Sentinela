@@ -60,6 +60,7 @@ class SummaryOut(BaseModel):
     edges: int
     sources: int
     alerts: int
+    cases: int
     last_updated: Optional[datetime] = None
 
 
