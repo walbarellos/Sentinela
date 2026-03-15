@@ -1,0 +1,25 @@
+ASSUNTO: pedido documental para apuracao preliminar :: Vinculo societario em saude com sobreposicao publico-privada documentada
+
+FATO OBJETIVO
+1. Caso: Vinculo societario em saude com sobreposicao publico-privada documentada
+2. Sujeito: CEDIMP-CENTRO DE DIAGNOSTICO POR IMAGEM DRS. MAIRA E MARCOS PARENTE LTDA / documento 13325100000130
+3. Orgao: SESACRE / Rio Branco-AC
+4. Classe do achado: HIPOTESE_INVESTIGATIVA
+5. Resumo: O caso CEDIMP-CENTRO DE DIAGNOSTICO POR IMAGEM DRS. MAIRA E MARCOS PARENTE LTDA (13325100000130) esta em estagio `APTO_OFICIO_DOCUMENTAL`. Contrato 779/2023 da SECRETARIA DE ESTADO DE SAÚDE - SESACRE no valor de R$ 6.604.510,00. Base documental minima=sim; documentos oficiais recebidos=0; documentos localizados=0; score funcional=80.
+6. Valor de referencia: R$ 6.604.510,00
+
+BASE DOCUMENTAL MINIMA
+1. Historico CNES com concomitancia publico-privada
+2. Socio/administrador em empresa de saude com contrato publico
+
+DOCUMENTOS E DILIGENCIAS RECOMENDADOS
+1. Compatibilidade juridico-funcional de horarios e cargas — Cobrar ficha funcional, escalas e parecer de compatibilidade.
+
+LIMITE DA CONCLUSAO
+Este texto relata fatos e contradicoes documentais para apuracao. Nao imputa culpa, dolo, fraude consumada ou crime, e deve ser usado com as fontes indicadas.
+
+USO SUGERIDO
+Modo liberado com base no estagio operacional e no lastro documental atual.
+
+PROXIMO PASSO
+Protocolar pedidos objetivos para SEMSA/RH e SESACRE e alimentar a caixa de respostas do caso.

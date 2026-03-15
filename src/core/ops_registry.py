@@ -163,11 +163,11 @@ def build_cedimp_case(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, An
     risk = calculate_risk_score(metrics)
 
     artifacts = [
-        make_artifact(case_id, "dossie_followup", "dossie", "docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_DOSSIE.md"),
-        make_artifact(case_id, "dossie_gate", "dossie", "docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_GATE_DOSSIE.md"),
-        make_artifact(case_id, "nota_operacional", "nota", "docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/nota_operacional_cedimp.txt"),
-        make_artifact(case_id, "diligencias", "dossie", "docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_DILIGENCIAS.md"),
-        make_artifact(case_id, "bundle", "bundle", "docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/cedimp_case_bundle_20260313.tar.gz"),
+        make_artifact(case_id, "dossie_followup", "dossie", "investigations/claude_march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_DOSSIE.md"),
+        make_artifact(case_id, "dossie_gate", "dossie", "investigations/claude_march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_GATE_DOSSIE.md"),
+        make_artifact(case_id, "nota_operacional", "nota", "investigations/claude_march/patch_claude/claude_update/patch/entrega_denuncia_atual/nota_operacional_cedimp.txt"),
+        make_artifact(case_id, "diligencias", "dossie", "investigations/claude_march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_DILIGENCIAS.md"),
+        make_artifact(case_id, "bundle", "bundle", "investigations/claude_march/patch_claude/claude_update/patch/entrega_denuncia_atual/cedimp_case_bundle_20260313.tar.gz"),
     ]
     case_row = {
         "case_id": case_id,
@@ -301,11 +301,11 @@ def build_rb_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, Any]]
                 "evidence_json": json.dumps(item, ensure_ascii=False),
             }
         )
-        note_name = f"docs/Claude-march/patch_claude/claude_update/patch/relato_apuracao_{numero}.txt"
+        note_name = f"investigations/claude_march/patch_claude/claude_update/patch/relato_apuracao_{numero}.txt"
         artifacts.extend(
             [
                 make_artifact(case_id, f"relato_apuracao_{numero}", "nota", note_name),
-                make_artifact(case_id, "dossie_rb_sus", "dossie", "docs/Claude-march/patch_claude/claude_update/patch/dossie_rb_sus_prioritarios.md"),
+                make_artifact(case_id, "dossie_rb_sus", "dossie", "investigations/claude_march/patch_claude/claude_update/patch/dossie_rb_sus_prioritarios.md"),
             ]
         )
         if bundle_path.exists():
@@ -313,19 +313,19 @@ def build_rb_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, Any]]
         if numero == "3895":
             artifacts.extend(
                 [
-                    make_artifact(case_id, "contrato_detail", "evidencia", "docs/Claude-march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3895/contrato_3895_detail.html"),
-                    make_artifact(case_id, "contrato_anexo", "evidencia", "docs/Claude-march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3895/contrato_3895_anexo_2247658.pdf"),
+                    make_artifact(case_id, "contrato_detail", "evidencia", "investigations/claude_march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3895/contrato_3895_detail.html"),
+                    make_artifact(case_id, "contrato_anexo", "evidencia", "investigations/claude_march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3895/contrato_3895_anexo_2247658.pdf"),
                 ]
             )
         if numero == "3898":
             artifacts.extend(
                 [
-                    make_artifact(case_id, "contrato_detail", "evidencia", "docs/Claude-march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3898/contrato_3898_detail.html"),
-                    make_artifact(case_id, "licitacao_detail", "evidencia", "docs/Claude-march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3898/licitacao_2274334_detail.html"),
-                    make_artifact(case_id, "cpl_publicacao_1554_html", "evidencia", "docs/Claude-march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3898/cpl_publicacao_1554.html"),
-                    make_artifact(case_id, "cpl_publicacao_1554_pdf", "evidencia", "docs/Claude-march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3898/cpl_publicacao_1554_3.pdf"),
-                    make_artifact(case_id, "cpl_publicacao_1640_html", "evidencia", "docs/Claude-march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3898/cpl_publicacao_1640.html"),
-                    make_artifact(case_id, "cpl_publicacao_1640_pdf", "evidencia", "docs/Claude-march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3898/cpl_publicacao_1640_3.pdf"),
+                    make_artifact(case_id, "contrato_detail", "evidencia", "investigations/claude_march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3898/contrato_3898_detail.html"),
+                    make_artifact(case_id, "licitacao_detail", "evidencia", "investigations/claude_march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3898/licitacao_2274334_detail.html"),
+                    make_artifact(case_id, "cpl_publicacao_1554_html", "evidencia", "investigations/claude_march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3898/cpl_publicacao_1554.html"),
+                    make_artifact(case_id, "cpl_publicacao_1554_pdf", "evidencia", "investigations/claude_march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3898/cpl_publicacao_1554_3.pdf"),
+                    make_artifact(case_id, "cpl_publicacao_1640_html", "evidencia", "investigations/claude_march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3898/cpl_publicacao_1640.html"),
+                    make_artifact(case_id, "cpl_publicacao_1640_pdf", "evidencia", "investigations/claude_march/patch_claude/claude_update/patch/evidencias_rb_sus_prioritarios/caso_3898/cpl_publicacao_1640_3.pdf"),
                 ]
             )
 
@@ -355,8 +355,8 @@ def build_sesacre_cases(con: duckdb.DuckDBPyConnection) -> tuple[list[dict[str, 
 
     cases: list[dict[str, Any]] = []
     artifacts: list[dict[str, Any]] = []
-    dossie = "docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/dossie_sesacre_sancoes_prioritarias.md"
-    repr_path = "docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/relato_apuracao_sesacre_top10.txt"
+    dossie = "investigations/claude_march/patch_claude/claude_update/patch/sesacre_prioritarios/dossie_sesacre_sancoes_prioritarias.md"
+    repr_path = "investigations/claude_march/patch_claude/claude_update/patch/sesacre_prioritarios/relato_apuracao_sesacre_top10.txt"
     for item in json.loads(rows.to_json(orient="records", force_ascii=False)):
         cnpj = str(item["cnpj_cpf"])
         case_id = f"sesacre:sancao:{cnpj}"

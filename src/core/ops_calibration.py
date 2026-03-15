@@ -89,7 +89,7 @@ BENCHMARKS: list[dict[str, Any]] = [
         "expectation_type": "case_absent",
         "expected": {
             "case_id": "rb:contrato:3895",
-            "historical_note": "docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/nota_historica_3895_sancao_invalidada.txt",
+            "historical_note": "investigations/claude_march/patch_claude/claude_update/patch/entrega_denuncia_atual/nota_historica_3895_sancao_invalidada.txt",
         },
         "note": "Benchmark negativo para travar regressão do falso positivo temporal.",
     },

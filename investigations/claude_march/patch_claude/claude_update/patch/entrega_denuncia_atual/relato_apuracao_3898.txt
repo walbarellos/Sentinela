@@ -1,0 +1,22 @@
+ASSUNTO: noticia de fato sobre inconsistencia documental entre contrato SUS municipal e licitacao-mae
+
+FATOS OBJETIVOS
+1. No contrato 3898, processo 3006, vinculado a 01.10.00.00000.000.00 - Secretaria Municipal de Saúde - SEMSA, consta o objeto Contratação de empresa especializada na confecção de material e serviços gráficos, para atender a demanda da Secretaria Municipal de Saúde, no Município de Rio Branco - AC.
+2. O valor de referencia do contrato no portal municipal e R$ 31.200,00.
+3. A licitacao-mae do processo foi confirmada no portal municipal como a licitacao 2274334.
+4. As publicacoes oficiais da CPL usadas no confronto foram 1554 e 1640.
+5. Na auditoria documental, o item 'Coletor de Material Perfurocortante' apareceu no contrato, mas nao apareceu nas propostas do portal nem no edital/retificacao oficiais da CPL para o PE SRP 141/2023.
+6. O caso foi classificado como divergencia documental objetiva, apto a noticia de fato.
+
+REQUERIMENTO INICIAL
+Solicita-se a apuracao da compatibilidade entre o contrato municipal e a licitacao-mae, com verificacao da origem do item divergente, do fornecedor efetivamente contratado e do lastro documental do item registrado no contrato.
+
+FONTES MINIMAS
+- Contrato municipal: https://transparencia.riobranco.ac.gov.br/contrato/ver/2274688/
+- Licitacao-mae: https://transparencia.riobranco.ac.gov.br/licitacao/ver/2274334/
+- CPL: https://cpl.riobranco.ac.gov.br/publicacao/1554
+- CPL: https://cpl.riobranco.ac.gov.br/publicacao/1640
+- Auditoria: tabela rb_contratos_item_audit / insight RB_CONTRATO_LICITACAO_INCONSISTENTE
+
+OBSERVACAO
+O texto acima descreve divergencia documental objetiva e nao afirma, por si so, fraude consumada, favorecimento ou dolo, o que depende de apuracao e contraditorio.

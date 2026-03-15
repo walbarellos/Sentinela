@@ -1,0 +1,1209 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><link type="text/css" rel="stylesheet" href="/faces/javax.faces.resource/theme.css?ln=primefaces-bootstrap" /><link type="text/css" rel="stylesheet" href="/faces/javax.faces.resource/bootstrap.css?ln=css" /><link type="text/css" rel="stylesheet" href="/faces/javax.faces.resource/jquery.dataTables.min.css?ln=css" /><link type="text/css" rel="stylesheet" href="/faces/javax.faces.resource/portal.css?ln=css" /><link type="text/css" rel="stylesheet" href="/faces/javax.faces.resource/animate.css?ln=css" /><link type="text/css" rel="stylesheet" href="/faces/javax.faces.resource/css/font-awesome.css?ln=font-awesome" /><link type="text/css" rel="stylesheet" href="/faces/javax.faces.resource/slide/thumbnail-slider.css?ln=js" /><link type="text/css" rel="stylesheet" href="/faces/javax.faces.resource/slide/thumbs2.css?ln=js" /><script type="text/javascript" src="/faces/javax.faces.resource/jquery/jquery.js?ln=primefaces&amp;v=5.0"></script><script type="text/javascript" src="/faces/javax.faces.resource/primefaces.js?ln=primefaces&amp;v=5.0"></script><link type="text/css" rel="stylesheet" href="/faces/javax.faces.resource/primefaces.css?ln=primefaces&amp;v=5.0" /><script type="text/javascript" src="/faces/javax.faces.resource/hotkey/hotkey.js?ln=primefaces&amp;v=5.0"></script><script type="text/javascript" src="/faces/javax.faces.resource/jquery/jquery-plugins.js?ln=primefaces&amp;v=5.0"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="description" content="webpublico webpúblico" />
+        <meta name="author" content="Portal transparência rio branco webpúblico gestão pública" />
+        <title>Portal da Transparência</title>
+        <!--&lt;h:outputStylesheet library=&quot;css&quot; name=&quot;style_1.css&quot;/&gt;-->
+
+
+        <!--&lt;h:outputScript src=&quot;https://code.jquery.com/jquery-1.10.2.js&quot;/&gt;-->
+        <!--&lt;h:outputScript library=&quot;js&quot; name=&quot;jquery-2.1.1.js&quot;/&gt;--><script type="text/javascript" src="/faces/javax.faces.resource/jquery-ui.min.js?ln=js"></script><script type="text/javascript" src="/faces/javax.faces.resource/bootstrap.min.js?ln=js"></script><script type="text/javascript" src="/faces/javax.faces.resource/jquery.dataTables.min.js?ln=js"></script><script type="text/javascript" src="/faces/javax.faces.resource/jquery.metisMenu.js?ln=js"></script><script type="text/javascript" src="/faces/javax.faces.resource/jquery.slimscroll.js?ln=js"></script><script type="text/javascript" src="/faces/javax.faces.resource/jquery.mask.min.js?ln=js"></script><script type="text/javascript" src="/faces/javax.faces.resource/inspinia.js?ln=js"></script><script type="text/javascript" src="/faces/javax.faces.resource/functions-portal.js?ln=js"></script><script type="text/javascript" src="/faces/javax.faces.resource/locales-calendar-primefaces.js?ln=js"></script>
+
+        <!--charts/gr&aacute;ficos--><script type="text/javascript" src="/faces/javax.faces.resource/Chart.min.js?ln=js"></script>
+
+        <!--Slider Links--><script type="text/javascript" src="/faces/javax.faces.resource/slide/thumbnail-slider.js?ln=js"></script>
+
+
+        <link rel="stylesheet" title="default" type="text/css" href="/faces/javax.faces.resource/inspinia.css?ln=css" />
+        <link rel="alternate stylesheet" title="high-contrast-w-b" type="text/css" href="/faces/javax.faces.resource/dark-inspinia.css?ln=css" /></head><body>
+    <!-- Modal -->
+    <div class="modal fade" id="aguarde" tabindex="-1" role="dialog" aria-labelledby="aguarde">
+        <div class="modal-dialog" role="document">
+
+    <div class="spiner-example">
+        <div class="sk-spinner sk-spinner-fading-circle">
+            <div class="sk-circle1 sk-circle"></div>
+            <div class="sk-circle2 sk-circle"></div>
+            <div class="sk-circle3 sk-circle"></div>
+            <div class="sk-circle4 sk-circle"></div>
+            <div class="sk-circle5 sk-circle"></div>
+            <div class="sk-circle6 sk-circle"></div>
+            <div class="sk-circle7 sk-circle"></div>
+            <div class="sk-circle8 sk-circle"></div>
+            <div class="sk-circle9 sk-circle"></div>
+            <div class="sk-circle10 sk-circle"></div>
+            <div class="sk-circle11 sk-circle"></div>
+            <div class="sk-circle12 sk-circle"></div>
+        </div>
+    </div>
+        </div>
+    </div><html xmlns="http://www.w3.org/1999/xhtml">
+<form id="j_idt35" name="j_idt35" method="post" action="/contrato/ver/2274688/" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="j_idt35" value="j_idt35" />
+<script type="text/javascript">redirecionaServidoresCedidos = function() {PrimeFaces.ab({s:'j_idt35:j_idt36',f:'j_idt35',p:'j_idt35:j_idt36',pa:arguments[0]});}</script>
+    <nav class="navbar-default navbar-static-side animated fadeInRight" role="navigation">
+        <div class="sidebar-collapse">
+            <ul class="nav metismenu" id="side-menu">
+                <li class="nav-header">
+                    <a href="/resumo-geral/" onclick="aguardeSemControl();">
+                        <div class="profile-element text-center animated fadeInUp">
+                    <span>
+                        <img src="/arquivo?id=2042294" style="max-height: 100px!important; margin-top: -50px!important;" />
+                    </span>
+                            <a href="#">
+                            <span class="clear">
+                                <span class="block m-t-xs">
+                                    <strong class="font-bold">Controladoria-Geral do Município de Rio Branco</strong>
+                             </span>
+                            </span>
+                            </a>
+                        </div>
+                        <div class="logo-element">
+                            PMRB
+                        </div>
+                    </a>
+                </li>
+                <li id="abaCovid">
+                    <a href="/calamidade-publica/ver-abreviacao/covid-19/" onclick="aguardeSemControl();">
+                        <i class="fa fa-medkit"></i>
+                        COVID-19
+                        <span class="badge badge-danger">Novo</span>
+                    </a>
+                </li>
+                <li id="abaHome">
+                    <a href="/home/" onclick="aguardeSemControl();">
+                        <i class="fa fa-home"></i>
+                        <span class="nav-label">Página Inicial</span>
+                    </a>
+                </li>
+                <li id="abaInstitucional">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-building"></i>
+                        <span class="nav-label">Institucional</span>
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="nav nav-second-level collapse" role="menu">
+                        <li>
+                            <a class="negrito" href="/institucional/" onclick="aguardeSemControl();">Estrutura Organizacional</a>
+                        </li>
+                    </ul>
+                </li>
+                <li id="abaIndicadores">
+                    <a href="/resumo-geral/" onclick="aguardeSemControl();">
+                        <i class="fa fa-bar-chart"></i>
+                        <span class="nav-label">Indicadores</span>
+                    </a>
+                </li>
+
+                <li id="abaPortal">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-question"></i>
+                        <span class="nav-label">O Portal</span>
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="nav nav-second-level collapse" role="menu">
+
+                        <li>
+                            <a href="/portal/" class="negrito" onclick="aguardeSemControl();">
+                                O que é ?
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/acessibilidade/" class="negrito" onclick="aguardeSemControl();">
+                                Acessibilidade
+                            </a>
+
+                        </li>
+                        <li>
+                            <a href="/mapa-site/" class="negrito" onclick="aguardeSemControl();">
+                                Mapa do Site
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/glossario/" class="negrito" onclick="aguardeSemControl();">
+                                Glossário
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/mapa-site/" class="negrito" onclick="aguardeSemControl();">
+                                Manual de Navegação
+                            </a>
+
+                        </li>
+                        <li>
+
+                            <a href="http://eouv.riobranco.ac.gov.br/" class="negrito" onclick="aguardeSemControl();">
+                                Fale conosco
+                            </a>
+
+                        </li>
+                    </ul>
+                </li>
+                <li id="abaCalamidade">
+                    <a href="/calamidade-publica/" aria-expanded="false">
+                        <i class="fa fa-fire"></i>
+                        <span class="nav-label">Calamidade Pública</span>
+                    </a>
+                </li>
+                <li id="abaReceita">
+                    <a href="/receita/" aria-expanded="false">
+                        <i class="fa fa-arrow-up"></i>
+                        <span class="nav-label">Receita</span>
+                    </a>
+                </li>
+                <li id="abaDespesa">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-arrow-down"></i>
+                        <span class="nav-label">Despesa</span>
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="nav nav-second-level collapse" role="menu">
+
+                        <li>
+                            <a class="negrito" href="/despesa/" onclick="aguardeSemControl();">Despesas</a>
+                        </li>
+                        <li>
+                            <a class="negrito" href="/resto-pagar/" onclick="aguardeSemControl();">Restos a Pagar</a>
+                        </li>
+
+                        <li>
+                            <a href="#" id="damian" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                                <span class="nav-label">Diárias</span>
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="nav nav-third-level collapse">
+                                <li>
+                                    <a class="negrito" href="/diaria/" onclick="aguardeSemControl();">Diárias</a>
+                                </li>
+                                <li>
+                                    <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/diarias/demonstrativo-das-concessoes-e-comprovacoes/" onclick="aguardeSemControl();">Demonstrativo das Concessões e Comprovações</a>
+                                </li>
+                                <li>
+                                    <a class="negrito" href="/diaria-ato/" onclick="aguardeSemControl();">Legislação</a>
+                                </li>
+                                <li>
+                                    <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/diarias/legislacao-e-formularios/" onclick="aguardeSemControl();">Legislação até 2016</a>
+                                </li>
+
+                            </ul>
+                        </li>
+
+
+                    </ul>
+                </li>
+                <li id="abaBensPatrimoniais">
+                    <a href="/bem/" aria-expanded="false">
+                        <i class="fa fa-calculator"></i>
+                        <span class="nav-label">Bens Patrimoniais</span>
+                    </a>
+                </li>
+                <li id="abaConvenio">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-list"></i>
+                        <span class="nav-label">Convênio</span>
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="nav nav-second-level collapse" role="menu">
+                        <li>
+                            <a class="negrito" href="/convenio-despesa/" onclick="aguardeSemControl();">Convênio de Despesa</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="/convenio-receita/" onclick="aguardeSemControl();">Convênio de Receita</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=1379" onclick="aguardeSemControl();">Legislação</a>
+                        </li>
+                    </ul>
+                </li>
+                <li id="abaRepasse">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-exchange"></i>
+                        <span class="nav-label">Repasse</span>
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="nav nav-second-level collapse" role="menu">
+
+                        <li>
+                            <a class="negrito" href="/liberacao-financeira/" onclick="aguardeSemControl();">Repasse</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="/repasse-ato/" onclick="aguardeSemControl();">Legislação</a>
+                        </li>
+
+                    </ul>
+                </li>
+                <li id="abaServidor">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-users"></i>
+                        <span class="nav-label">Pessoal</span>
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="nav nav-second-level collapse" role="menu">
+
+                        <li>
+                            <a class="negrito" href="/servidor/" onclick="aguardeSemControl();">Pessoal</a>
+                        </li>
+                        <li>
+                            <a class="negrito" href="/servidor-ato/" onclick="aguardeSemControl();">Legislação</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=521" onclick="aguardeSemControl();">Estagiários</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=451" onclick="aguardeSemControl();">Atribuições e Descrições dos Cargos</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=453" onclick="aguardeSemControl();">Calendário de Feriados e Pontos Facultativos</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=457" onclick="aguardeSemControl();">Calendário de Pagamentos das Remunerações</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="#" onclick="redirecionaServidoresCedidos();">Servidores Cedidos</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=2828" onclick="aguardeSemControl();">Consignação em Folha de Pagamento</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=469" onclick="aguardeSemControl();">Grupo Ocupacional</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=471" onclick="aguardeSemControl();">Jornada de Trabalho</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=473" onclick="aguardeSemControl();">Legislação até 2016</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=493" onclick="aguardeSemControl();">Remuneração - Ativos até 2016</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=496" onclick="aguardeSemControl();">Remuneração - Inativos/Pensionistas</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=499" onclick="aguardeSemControl();">Remuneração - Temporários</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=501" onclick="aguardeSemControl();">Responsabilidade dos Prefeitos e Vereadores</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=503" onclick="aguardeSemControl();">Sanções aplicáveis aos Agentes Públicos</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=505" onclick="aguardeSemControl();">Tabela de Adicional de Atenção a Saúde</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=507" onclick="aguardeSemControl();">Tabela de Adicionais de ESF, PAB e AVS</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=509" onclick="aguardeSemControl();">Tabela de Dedicação Integral de Chefe de Campo; Tabela de Indenização de Campo; e Tabela de Direção de Unidade de Saúde da Família</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=511" onclick="aguardeSemControl();">Tabela de Gratificação de Diretores e Coordenadores Administrativos</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=513" onclick="aguardeSemControl();">Tabela de Valores de Plantões</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=515" onclick="aguardeSemControl();">Tabela de Vantagem por Desempenho Profissional dos Professores - VDP</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=517" onclick="aguardeSemControl();">Tabela de Vencimentos</a>
+                        </li>
+
+                    </ul>
+                </li>
+                <li id="abaPlanejamento">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-building-o"></i>
+                        <span class="nav-label">Planejamento</span>
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="nav nav-second-level collapse" role="menu">
+
+                        <li>
+                            <a class="negrito" href="/ppa/" onclick="aguardeSemControl();">PPA</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="/ldo/" onclick="aguardeSemControl();">LDO</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="/loa/" onclick="aguardeSemControl();">LOA</a>
+                        </li>
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/planejamento-municipal/mapa-de-processos/" onclick="aguardeSemControl();">Mapa Estratégico</a>
+                        </li>
+                        <li>
+                            <a class="negrito" href="/ato-plano-municipal/" onclick="aguardeSemControl();">Plano Municipal</a>
+                        </li>
+
+                        <li>
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                                <span class="nav-label">PPA, LDO e LOA até 2017</span>
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="nav nav-third-level collapse">
+                                <li>
+                                    <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=1" onclick="aguardeSemControl();">PPA</a>
+                                </li>
+                                <li>
+                                    <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=2" onclick="aguardeSemControl();">LDO</a>
+                                </li>
+                                <li>
+                                    <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=3" onclick="aguardeSemControl();">LOA</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li id="abaEmenda">
+                    <a href="/emenda/" aria-expanded="false">
+                        <i class="fa fa-book"></i>
+                        <span class="nav-label">Emendas Parlamentares</span>
+                    </a>
+                </li>
+                <li id="abaBolsaFamilia">
+                    <a href="http://portalcgm.riobranco.ac.gov.br/portal/links-uteis" aria-expanded="false">
+                        <i class="fa fa-calendar"></i>
+                        <span class="nav-label">Bolsa Família</span>
+                    </a>
+                </li>
+                <li id="abaLicitacao">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-money"></i>
+                        <span class="nav-label">Contratações</span>
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="nav nav-second-level collapse" role="menu">
+
+                        <li>
+                            <a class="negrito" href="/licitacao/" onclick="aguardeSemControl();">Licitações</a>
+                        </li>
+
+
+                        <li>
+                            <a class="negrito" href="/contrato/" onclick="aguardeSemControl();">Contratos</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=1348" onclick="aguardeSemControl();">Licitação até 2016</a>
+                        </li>
+                    </ul>
+                </li>
+                <li id="abaObra">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-building"></i>
+                        <span class="nav-label">Obras</span>
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="nav nav-second-level collapse" role="menu">
+                        <li>
+                            <a class="negrito" href="/obra/" onclick="aguardeSemControl();">Obra</a>
+                        </li>
+                    </ul>
+                </li>
+                <li id="abaAnexo">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-file-text-o"></i>
+                        <span class="nav-label">Prestação de Contas</span>
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="nav nav-second-level collapse" role="menu">
+
+                        <li>
+                            <a class="negrito" href="/anexo-contabilidade/" onclick="aguardeSemControl();">Prestação de Contas</a>
+                        </li>
+
+                        <li>
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                                <span class="nav-label">Prestação de Contas até 2016</span>
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="nav nav-third-level collapse">
+                                <li>
+                                    <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=6" onclick="aguardeSemControl();">Aviso aos Contribuintes</a>
+                                </li>
+                                <li>
+                                    <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=871" onclick="aguardeSemControl();">Decretos de Acesso a Movimentação Bancária</a>
+                                </li>
+                                <li>
+                                    <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=71" onclick="aguardeSemControl();">Cronograma de Obrigações da Gestão para Prestação de Contas</a>
+                                </li>
+                                <li>
+                                    <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=1533" onclick="aguardeSemControl();">Julgamento das Prestações de Contas no TCE/AC</a>
+                                </li>
+                            </ul>
+                        </li>
+
+
+                    </ul>
+                </li>
+
+                <li id="abaFiscal">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-edit"></i>
+                        <span class="nav-label"><span style="font-size: 12px">Responsabilidade Fiscal</span>
+                    </span>
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="nav nav-second-level collapse" role="menu">
+
+                        <li>
+                            <a class="negrito" href="/responsabilidade-fiscal/" onclick="aguardeSemControl();">Responsabilidade Fiscal</a>
+                        </li>
+
+                        <li>
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                                <span class="nav-label">Responsabilidade Fiscal até 2016</span>
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="nav nav-third-level collapse">
+                                <li>
+                                    <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=57" onclick="aguardeSemControl();">Programação Financeira e Cronograma Mensal de Desembolso</a>
+                                </li>
+                                <li>
+                                    <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=17" onclick="aguardeSemControl();">Relatório Resumido da Execução Orçamentária - RREO</a>
+                                </li>
+                                <li>
+                                    <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=18" onclick="aguardeSemControl();">Relatório de Gestão Fiscal - RGF</a>
+                                </li>
+                            </ul>
+                        </li>
+
+
+                    </ul>
+                </li>
+                <li id="abaLeis">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-money"></i>
+                        <span class="nav-label">Legislação</span>
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="nav nav-second-level collapse" role="menu">
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/lai/legislacao/ " onclick="aguardeSemControl();">Acesso à informação</a>
+                        </li>
+                        <li>
+                            <a href="/ato-legal/" onclick="aguardeSemControl();">
+
+                                <span class="nav-label">Legislação Geral</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="http://portalcgm.riobranco.ac.gov.br/portal/legislacao/" onclick="aguardeSemControl();">
+
+                                <span class="nav-label">Legislação até 2016</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li id="abaPrecatorio">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-leaf"></i>
+                        <span class="nav-label">Precatório</span>
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="nav nav-second-level collapse" role="menu">
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/precatorios/deposito/" onclick="aguardeSemControl();">Depósito</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/precatorios/lista/" onclick="aguardeSemControl();">Lista</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="/precatorio-ato/" onclick="aguardeSemControl();">Legislação</a>
+                        </li>
+
+                    </ul>
+                </li>
+
+                <li id="abaControleInterno">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-gears"></i>
+                        <span class="nav-label">Controle Interno e Contabilidade</span>
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="nav nav-second-level collapse" role="menu">
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=31" onclick="aguardeSemControl();">Cadastro de Contadores</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=32" onclick="aguardeSemControl();">Cadastro de Ordenadores de Despesas</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=30" onclick="aguardeSemControl();">Contabilidade Aplicada ao Setor Público</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=45" onclick="aguardeSemControl();">Contratação de Pessoal por Tempo Determinado</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=1837" onclick="aguardeSemControl();">Cronograma de Obrigações da Gestão para fins de prestação de contas e de adimplência</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=1602" onclick="aguardeSemControl();">Decreto de Medidas Administrativas Temporárias para Contenção e Otimização de Despesas</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=120" onclick="aguardeSemControl();">Decretos de Encerramento do Exercício Financeiro</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=1609" onclick="aguardeSemControl();">Instrução Normativa Conjunta Nº 002 de 17 de agosto de 2009</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=41" onclick="aguardeSemControl();">Fiscalização e Acompanhamento de Contratos Administrativos</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=122" onclick="aguardeSemControl();">Lei nº 12.846, de 1º de agosto de 2013 - Lei Anticorrupção</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=22" onclick="aguardeSemControl();">Modelos de Extratos para Publicação no DOE</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=37" onclick="aguardeSemControl();">Normas de Organização do Relatório de Gestão e da Prestação de Contas</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=40" onclick="aguardeSemControl();">Normas do Sistema de Administração Patrimonial do Município de Rio Branco</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=42" onclick="aguardeSemControl();">Organização do Sistema de Controle Interno Municipal</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=23" onclick="aguardeSemControl();">Orientações Técnicas da CGM</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=126" onclick="aguardeSemControl();">Regulamenta a retenção do Imposto Sobre Serviços de Qualquer Natureza - ISSQN</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=1666" onclick="aguardeSemControl();">Instruções Normativas CGM</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=128" onclick="aguardeSemControl();">Resoluções do TCE/AC</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=120" onclick="aguardeSemControl();">Terceirização de Serviços na Administração Municipal</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=132" onclick="aguardeSemControl();">Termo de Cooperação Técnica entre o TCE e o Município de Rio Branco</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=1660" onclick="aguardeSemControl();">Utilização de veículos oficiais pela Administração Pública</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=1679" onclick="aguardeSemControl();">Comissão Permanente de Controle do Mobiliário Municipal – CPCM</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=1887" onclick="aguardeSemControl();">Decreto Nº 717-2015 - Regula o Sistema de Registro de Preços</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=2173" onclick="aguardeSemControl();">Decreto Nº 925-2015 - Aplicação do Portal LICON pelo Poder Executivo Municipal</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=2359" onclick="aguardeSemControl();">Quadros do Relatório de Gestão 2015</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=3222" onclick="aguardeSemControl();">MINISTÉRIO PÚBLICO-FOCCO - RECOMENDAÇÃO Nº 001/2016</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=2413" onclick="aguardeSemControl();">DECRETO Nº 060-2016 - Decreto sobre o último ano de mandato</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="http://portalcgm.riobranco.ac.gov.br/portal/?page_id=3512" onclick="aguardeSemControl();">DECRETO Nº 407-2017 - Delegação de Competência</a>
+                        </li>
+
+                    </ul>
+                </li>
+                <li style="display: none!important;">
+                    <a href="https://e-gov.betha.com.br/transparencia/01030-013/con_movimentoestoque.faces?mun=Tkt1kqNuSWlk0qrMXo7JTg==" aria-expanded="false">
+                        <i class="fa fa-bank"></i>
+                        <span class="nav-label">Almoxarifado</span>
+                    </a>
+                </li>
+                <li style="display: none!important;">
+                    <a href="https://e-gov.betha.com.br/transparencia/01030-013/con_relacaopatrimonio.faces?mun=Tkt1kqNuSWlk0qrMXo7JTg==" aria-expanded="false">
+                        <i class="fa fa-bar-chart"></i>
+                        <span class="nav-label">Patrimônio</span>
+                    </a>
+                </li>
+                <li style="display: none!important;">
+                    <a href="https://e-gov.betha.com.br/transparencia/01030-013/con_relacaofrotas.faces?mun=Tkt1kqNuSWlk0qrMXo7JTg==" aria-expanded="false">
+                        <i class="fa fa-truck"></i>
+                        <span class="nav-label">Veículos</span>
+                    </a>
+                </li>
+                <li style="display: none!important;">
+                    <a href="https://e-gov.betha.com.br/transparencia/01030-013/con_servidoresagentes.faces?mun=Tkt1kqNuSWlk0qrMXo7JTg==" aria-expanded="false">
+                        <i class="fa fa-user"></i>
+                        <span class="nav-label">Agentes Políticos/Vereadores</span>
+                    </a>
+                </li>
+                <li style="display: none!important;">
+                    <a href="https://e-gov.betha.com.br/transparencia/01030-013/con_servidoresativos.faces?mun=Tkt1kqNuSWlk0qrMXo7JTg==" aria-expanded="false">
+                        <i class="fa fa-users"></i>
+                        <span class="nav-label">Servidores/Empregados Ativos</span>
+                    </a>
+                </li>
+                <li style="display: none!important;">
+                    <a href="https://e-gov.betha.com.br/transparencia/01030-013/con_servidoresefetivos.faces?mun=Tkt1kqNuSWlk0qrMXo7JTg==" aria-expanded="false">
+                        <i class="fa fa-user"></i>
+                        <span class="nav-label">Servidores Efetivos</span>
+                    </a>
+                </li>
+                <li style="display: none!important;">
+                    <a href="https://e-gov.betha.com.br/transparencia/01030-013/con_quadropessoal.faces?mun=Tkt1kqNuSWlk0qrMXo7JTg==" aria-expanded="false">
+                        <i class="fa fa-users"></i>
+                        <span class="nav-label">Quadro de Pessoal</span>
+                    </a>
+                </li>
+                <li style="display: none!important;">
+                    <a href="https://e-gov.betha.com.br/transparencia/01030-013/con_servidorescomissionados.faces?mun=Tkt1kqNuSWlk0qrMXo7JTg==" aria-expanded="false">
+                        <i class="fa fa-users"></i>
+                        <span class="nav-label">Servidores Comissionados</span>
+                    </a>
+                </li>
+                <li style="display: none!important;">
+                    <a href="https://e-gov.betha.com.br/transparencia/01030-013/con_servidoresinativos.faces?mun=Tkt1kqNuSWlk0qrMXo7JTg==" aria-expanded="false">
+                        <i class="fa fa-user-times"></i>
+                        <span class="nav-label">Servidores Inativos</span>
+                    </a>
+                </li>
+                <li style="display: none!important;">
+                    <a href="https://e-gov.betha.com.br/transparencia/01030-013/con_niveissalariais.faces?mun=Tkt1kqNuSWlk0qrMXo7JTg==" aria-expanded="false">
+                        <i class="fa fa-users"></i>
+                        <span class="nav-label">Níveis Salariais</span>
+                    </a>
+                </li>
+                <li style="display: none!important;">
+                    <a href="https://e-gov.betha.com.br/transparencia/01030-013/con_totalfolhapagamento.faces?mun=Tkt1kqNuSWlk0qrMXo7JTg==" aria-expanded="false">
+                        <i class="fa fa-users"></i>
+                        <span class="nav-label">Total da Folha de Pagamento</span>
+                    </a>
+                </li>
+
+                <li id="abaCeisCnep">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-users"></i>
+                        <span class="nav-label">Fornecedores e Penalidades</span>
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="nav nav-second-level collapse" role="menu">
+
+                        <li>
+                            <a class="negrito" href="https://portaldatransparencia.gov.br/sancoes/consulta?cadastro=1&amp;ordenarPor=nomeSancionado&amp;direcao=asc" onclick="aguardeSemControl();">CEIS</a>
+                        </li>
+
+                        <li>
+                            <a class="negrito" href="https://portaldatransparencia.gov.br/sancoes/consulta?cadastro=2&amp;ordenarPor=nomeSancionado&amp;direcao=asc" onclick="aguardeSemControl();">CNEP</a>
+                        </li>
+
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav><input type="hidden" name="javax.faces.ViewState" id="javax.faces.ViewState" value="-7415318747847251459:1568596210879263550" autocomplete="off" />
+</form>
+</html>
+
+        <div id="page-wrapper" class="gray-bg animated fadeInDown"><html xmlns="http://www.w3.org/1999/xhtml">
+<form id="formulario-navbar" name="formulario-navbar" method="post" action="/contrato/ver/2274688/" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="formulario-navbar" value="formulario-navbar" />
+<script type="text/javascript">$(function() {$(document).bind('keydown', 'alt+0', function(){PrimeFaces.ab({s:'formulario-navbar:j_idt44',f:'formulario-navbar',onco:function(xhr,status,args){window.location='/acessibilidade/';;}});;return false;});});</script><script type="text/javascript">$(function() {$(document).bind('keydown', 'alt+1', function(){PrimeFaces.ab({s:'formulario-navbar:j_idt45',f:'formulario-navbar',onco:function(xhr,status,args){window.location='/home/';;}});;return false;});});</script><script type="text/javascript">$(function() {$(document).bind('keydown', 'alt+2', function(){PrimeFaces.ab({s:'formulario-navbar:j_idt46',f:'formulario-navbar',onco:function(xhr,status,args){window.location='/calamidade-publica/';;}});;return false;});});</script><script type="text/javascript">$(function() {$(document).bind('keydown', 'alt+3', function(){PrimeFaces.ab({s:'formulario-navbar:j_idt47',f:'formulario-navbar',onco:function(xhr,status,args){window.location='/receita/';;}});;return false;});});</script><script type="text/javascript">$(function() {$(document).bind('keydown', 'alt+4', function(){PrimeFaces.ab({s:'formulario-navbar:j_idt48',f:'formulario-navbar',onco:function(xhr,status,args){window.location='/despesa/';;}});;return false;});});</script><script type="text/javascript">$(function() {$(document).bind('keydown', 'alt+5', function(){PrimeFaces.ab({s:'formulario-navbar:j_idt49',f:'formulario-navbar',onco:function(xhr,status,args){window.location='/diaria/';;}});;return false;});});</script><script type="text/javascript">$(function() {$(document).bind('keydown', 'alt+6', function(){PrimeFaces.ab({s:'formulario-navbar:j_idt50',f:'formulario-navbar',onco:function(xhr,status,args){window.location='/bem/';;}});;return false;});});</script><script type="text/javascript">$(function() {$(document).bind('keydown', 'alt+7', function(){PrimeFaces.ab({s:'formulario-navbar:j_idt51',f:'formulario-navbar',onco:function(xhr,status,args){window.location='/servidor/';;}});;return false;});});</script><script type="text/javascript">$(function() {$(document).bind('keydown', 'alt+8', function(){PrimeFaces.ab({s:'formulario-navbar:j_idt52',f:'formulario-navbar',onco:function(xhr,status,args){window.location='/licitacao';;}});;return false;});});</script>
+
+    <nav class="navbar navbar-static-top" role="navigation" style="margin-bottom: 0">
+        <div class="navbar-header">
+            <a class="navbar-minimalize minimalize-styl-2 btn btn-success" href="#">
+                <i class="fa fa-bars"></i>
+            </a>
+        </div>
+        <ul class="nav navbar-top-links navbar-right">
+            <li class="m-t m-l-xs"><input id="formulario-navbar:input-pesquisar" name="formulario-navbar:input-pesquisar" type="text" value="" placeholder="Pesquisar" onkeypress="if (event.keyCode == 13) {pesquisar();return false; };" style="width: 300px;" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all" /><script id="formulario-navbar:input-pesquisar_s" type="text/javascript">PrimeFaces.cw("InputText","widget_formulario_navbar_input_pesquisar",{id:"formulario-navbar:input-pesquisar",widgetVar:"widget_formulario_navbar_input_pesquisar"});</script>
+            </li>
+            <li class="m-t m-l-xs">
+
+                <button type="button" class="btn btn-success " onclick="pesquisar();"><i class="fa fa-search"></i>
+                </button><script type="text/javascript">pesquisar = function() {PrimeFaces.ab({s:'formulario-navbar:j_idt55',f:'formulario-navbar',onst:function(cfg){aguarde();},onco:function(xhr,status,args){window.location='/consulta/';;},pa:arguments[0]});}</script>
+
+            </li>
+            <li class="m-t m-l-xs">
+                <button type="button" class="btn btn-default" onclick="contraste()">
+                    Contraste
+                </button>
+
+                <button type="button" class="btn btn-success " onclick="retornarFontePadrao();">
+                    <i class="fa fa-font" aria-hidden="true"> </i>
+                </button><script type="text/javascript">retornarFontePadrao = function() {PrimeFaces.ab({s:'formulario-navbar:j_idt57',f:'formulario-navbar',onst:function(cfg){aguarde();;},onco:function(xhr,status,args){window.location='';;},pa:arguments[0]});}</script>
+
+            </li>
+            <li class="m-t m-l-xs">
+
+                <button type="button" class="btn btn-success " onclick="aumentarFonte();">
+                    <i class="fa fa-font" aria-hidden="true">+</i>
+                </button><script type="text/javascript">aumentarFonte = function() {PrimeFaces.ab({s:'formulario-navbar:j_idt59',f:'formulario-navbar',onst:function(cfg){aguarde();;},onco:function(xhr,status,args){window.location='';;},pa:arguments[0]});}</script>
+
+            </li>
+            <li class="m-t m-l-xs">
+                <button type="button" class="btn btn-success " onclick="diminuirFonte();">
+                    <i class="fa fa-font" aria-hidden="true">-</i>
+                </button><script type="text/javascript">diminuirFonte = function() {PrimeFaces.ab({s:'formulario-navbar:j_idt61',f:'formulario-navbar',u:'@all',onst:function(cfg){aguarde();;},onco:function(xhr,status,args){window.location='';;},pa:arguments[0]});}</script>
+
+            </li>
+            <li class="m-t m-l-xs">
+                <button type="button" class="btn btn-info btn-circle" onclick="navegarAcessibilidade();">
+                    <i class="fa fa-question" aria-hidden="true"></i>
+                </button><script type="text/javascript">navegarAcessibilidade = function() {PrimeFaces.ab({s:'formulario-navbar:j_idt63',f:'formulario-navbar',onco:function(xhr,status,args){window.location='/acessibilidade/';;},pa:arguments[0]});}</script>
+
+            </li>
+        </ul>
+    </nav><input type="hidden" name="javax.faces.ViewState" id="javax.faces.ViewState" value="-7415318747847251459:1568596210879263550" autocomplete="off" />
+</form>
+</html>
+
+
+            <div class="row wrapper border-bottom white-bg page-heading ">
+
+                <div class="col-sm-8 col-lg-10">
+                    <h1 class="font-bold">Portal da Transparência</h1>
+                </div>
+                <div class="col-sm-4 col-lg-2 text-right">
+                    <h4>
+                        Atualizado:
+                        24/02/2026
+                    </h4>
+                    <h4>
+                        Acessado: 553039
+                    </h4>
+                    <h4>
+                        Online: -63
+                    </h4>
+                </div>
+
+            </div>
+
+            <div class="wrapper wrapper-content ">
+                <div class="ibox">
+                    <div class="ibox-title">
+                        <h5>Detalhes de Contrato
+                        </h5>
+                    </div>
+                    <div class="ibox-content">
+<form id="Formulario" name="Formulario" method="post" action="/contrato/ver/2274688/" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="Formulario" value="Formulario" />
+
+            <script type="text/javascript">
+                $(document).ready(function () {
+                    abrirLicitacao();
+                });
+            </script>
+
+            <script type="text/javascript">
+                $(document).ready(function () {
+                    let urlParams = new URLSearchParams(window.location.search);
+                    let tab = urlParams.get('tab');
+
+                    if (tab != null && tab != undefined) {
+                        var comp = document.getElementById(tab.replace('tab', 'btn'));
+                        if (comp != null && comp != undefined) {
+                            comp.click();
+                        }
+                    } else {
+                        var comp = document.getElementById('btnFasePreparatoria');
+                        if (comp != null && comp != undefined) {
+                            comp.click();
+                        }
+                    }
+                });
+
+                function openTab(evt, name) {
+                    // Declare all variables
+                    var i, tabcontent, tablinks;
+
+                    // Get all elements with class="tabcontent" and hide them
+                    tabcontent = document.getElementsByClassName("tabcontent");
+                    for (i = 0; i < tabcontent.length; i++) {
+                        tabcontent[i].style.display = "none";
+                    }
+
+                    // Get all elements with class="tablinks" and remove the class "active"
+                    tablinks = document.getElementsByClassName("tablinks");
+                    for (i = 0; i < tablinks.length; i++) {
+                        tablinks[i].className = tablinks[i].className.replace("-active", "");
+                    }
+
+                    // Show the current tab, and add an "active" class to the button that opened the tab
+                    document.getElementById(name).style.display = "block";
+                    evt.currentTarget.className += "-active";
+                }
+            </script>
+
+            <div class="form-group">
+                <div class="form-horizontal">
+                    <div class="form-group">
+                        <div class="col-md-7">
+                        </div>
+                        <div class="col-md-5">
+
+    <table>
+        <tr>
+            <td>
+            </td>
+            <td>
+                <div class="fa-border">
+                    <h4 class="titled-pane text-center">
+                        Exportar
+                    </h4><table style="width: 100%">
+<tbody>
+<tr>
+<td>
+<script type="text/javascript" src="/faces/javax.faces.resource/jsf.js?ln=javax.faces"></script>
+<a href="#" title="Clique para gerar em PDF" onclick="mojarra.jsfcljs(document.getElementById('Formulario'),{'Formulario:j_idt72:j_idt78':'Formulario:j_idt72:j_idt78'},'_blank');return false" class="link-discreto">PDF
+                            <img src="/resources/images/icons/pdf.png" /></a></td>
+<td><a href="#" title="Clique para gerar em EXCEL" onclick="mojarra.jsfcljs(document.getElementById('Formulario'),{'Formulario:j_idt72:j_idt80':'Formulario:j_idt72:j_idt80'},'');return false" class="link-discreto">EXCEL
+                            <img src="/resources/images/icons/excel.png" /></a></td>
+<td><a href="#" title="Clique para gerar em TEXTO" onclick="mojarra.jsfcljs(document.getElementById('Formulario'),{'Formulario:j_idt72:j_idt82':'Formulario:j_idt72:j_idt82'},'');return false" class="link-discreto">TEXTO
+                            <img src="/resources/images/icons/text.png" /></a></td>
+</tr>
+</tbody>
+</table>
+
+                </div>
+            </td>
+            <td>
+                <div class="fa-border">
+                    <h4 class="titled-pane text-center">
+                        Dados Abertos
+                    </h4><table style="width: 100%">
+<tbody>
+<tr>
+<td><a href="#" title="Clique para gerar em CSV" onclick="mojarra.jsfcljs(document.getElementById('Formulario'),{'Formulario:j_idt72:j_idt86':'Formulario:j_idt72:j_idt86'},'');return false" class="link-discreto">CSV
+                            <img src="/resources/images/icons/csv.png" /></a></td>
+<td><a href="#" title="Clique para gerar em JSON" onclick="mojarra.jsfcljs(document.getElementById('Formulario'),{'Formulario:j_idt72:j_idt88':'Formulario:j_idt72:j_idt88'},'');return false" class="link-discreto">JSON
+                            <img src="/resources/images/icons/json.png" /></a></td>
+<td><a href="#" title="Clique para gerar em ODS" onclick="mojarra.jsfcljs(document.getElementById('Formulario'),{'Formulario:j_idt72:j_idt90':'Formulario:j_idt72:j_idt90'},'');return false" class="link-discreto">ODS
+                            <img src="/resources/images/icons/ods.png" /></a></td>
+</tr>
+</tbody>
+</table>
+
+                </div>
+            </td>
+        </tr>
+    </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+    <table class="table table-striped">
+                <tr>
+                    <td class="negrito"> Número do Termo:</td>
+                    <td><span class="link-discreto">1100007</span></td>
+                </tr>
+                <tr>
+                    <td class="negrito"> Número do Contrato:</td>
+                    <td><span class="link-discreto">3898</span></td>
+                </tr>
+                <tr>
+                    <td class="negrito"> Número do Processo:</td>
+                    <td><span class="link-discreto">3006</span></td>
+                </tr>
+                <tr>
+                    <td class="negrito"> Exercício:</td>
+                    <td><span class="link-discreto">2024</span></td>
+                </tr>
+                <tr>
+                    <td class="negrito"> Objeto:</td>
+                    <td><span class="link-discreto">Contratação de empresa especializada na confecção de material e serviços gráficos, para atender a demanda da Secretaria Municipal de Saúde, no Município de Rio Branco - AC</span></td>
+                </tr>
+                <tr>
+                    <td class="negrito"> Secretaria:</td>
+                    <td><span class="link-discreto"><a href='/institucional/ver/4065/'>01.10.00.00000.000.00 - Secretaria Municipal de Saúde - SEMSA</a></span></td>
+                </tr>
+                <tr>
+                    <td class="negrito"> Valor:</td>
+                    <td><span class="link-discreto">R$ 31.200,00</span></td>
+                </tr>
+                <tr>
+                    <td class="negrito"> Data de Lançamento:</td>
+                    <td><span class="link-discreto">29/01/2024</span></td>
+                </tr>
+                <tr>
+                    <td class="negrito"> Situação do Contrato:</td>
+                    <td><span class="link-discreto">Deferido</span></td>
+                </tr>
+                <tr>
+                    <td class="negrito"> Valor Atual:</td>
+                    <td><span class="link-discreto">R$ 31.200,00</span></td>
+                </tr>
+                <tr>
+                    <td class="negrito"> Saldo Atual:</td>
+                    <td><span class="link-discreto">R$ 31.200,00</span></td>
+                </tr>
+                <tr>
+                    <td class="negrito"> Variação Atual:</td>
+                    <td><span class="link-discreto">R$ 0,00</span></td>
+                </tr>
+
+    </table>
+            <br />
+
+            <div class="tab tab-calamidade">
+                <button class="tablinks tablinks-calamidade" style="color: #337ab7!important; font-weight: bold!important;" type="button" onclick="openTab(event, 'tabItens')" id="btnFasePreparatoria">ITENS
+                </button>
+
+                <button class="tablinks tablinks-calamidade" style="color: #337ab7!important; font-weight: bold!important;" type="button" onclick="openTab(event, 'tabArquivos')" id="btnAnexo">ARQUIVOS
+                </button>
+
+                <button class="tablinks tablinks-calamidade" style="color: #337ab7!important; font-weight: bold!important;" type="button" onclick="openTab(event, 'tabAlteracaoContratual')" id="btnAlteracaoContratual">ALTERAÇÕES CONTRATUAIS
+                </button>
+
+                <button class="tablinks tablinks-calamidade" style="color: #337ab7!important; font-weight: bold!important;" type="button" onclick="openTab(event, 'tabGestores')" id="btnGestorContrato">GESTORES
+                </button>
+
+                <button class="tablinks tablinks-calamidade" style="color: #337ab7!important; font-weight: bold!important;" type="button" onclick="openTab(event, 'tabOrdemServico')" id="btnOrdemServico">ORDENS DE SERVIÇOS
+                </button>
+            </div>
+
+            <div id="tabItens" class="tabcontent">
+                <h3 style="color : #1D5987; font-weight: normal;text-align: center">ITENS</h3>
+    <table class="table table-hover table-striped">
+        <tr>
+                <th> Item</th>
+                <th> Registro na Anvisa</th>
+                <th> Quantidade</th>
+                <th> Valor Unitário</th>
+                <th> Valor Total</th>
+        </tr>
+            <tr>
+                    <td><span class="link-discreto">Coletor de Material Perfurocortante</span></td>
+                    <td><span class="link-discreto"></span></td>
+                    <td><span class="link-discreto"><b>3.000,00</b></span></td>
+                    <td><span class="link-discreto"><b>5,00</b></span></td>
+                    <td><span class="link-discreto"><b>15.000,00</b></span></td>
+            </tr>
+            <tr>
+                    <td><span class="link-discreto">Broche / Boton / Pin</span></td>
+                    <td><span class="link-discreto"></span></td>
+                    <td><span class="link-discreto"><b>18.000,00</b></span></td>
+                    <td><span class="link-discreto"><b>0,90</b></span></td>
+                    <td><span class="link-discreto"><b>16.200,00</b></span></td>
+            </tr>
+    </table>
+            </div>
+
+            <div id="tabArquivos" class="tabcontent">
+                <h3 style="color : #1D5987; font-weight: normal;text-align: center">ARQUIVOS</h3>
+    <table class="table table-hover table-striped">
+        <tr>
+                <th> Arquivo</th>
+                <th> Tipo</th>
+        </tr>
+    </table><div id="Formulario:j_idt118:j_idt115" class="ui-outputpanel ui-widget centro"><span class="negrito">Nenhum registro encontrado</span></div>
+            </div>
+
+            <div id="tabAlteracaoContratual" class="tabcontent">
+                <h3 style="color : #1D5987; font-weight: normal;text-align: center">ALTERAÇÕES CONTRATUAIS</h3>
+    <table class="table table-hover table-striped">
+        <tr>
+                <th> Número</th>
+                <th> Número do Termo</th>
+                <th> Data de Lançamento</th>
+                <th> Data de Aprovação</th>
+                <th> Data de Deferimento</th>
+                <th> Justificativa</th>
+                <th> Tipo de Alteração Contratual</th>
+                <th> Situação</th>
+                <th> Exercício</th>
+                <th> Contrato</th>
+        </tr>
+    </table><div id="Formulario:j_idt120:j_idt115" class="ui-outputpanel ui-widget centro"><span class="negrito">Nenhum registro encontrado</span></div>
+            </div>
+
+            <div id="tabGestores" class="tabcontent">
+                <h3 style="color : #1D5987; font-weight: normal;text-align: center">GESTORES</h3>
+    <table class="table table-hover table-striped">
+        <tr>
+                <th> Início da Vigência</th>
+                <th> Final da Vigência</th>
+                <th> Servidor</th>
+                <th> Contrato</th>
+        </tr>
+    </table><div id="Formulario:j_idt122:j_idt115" class="ui-outputpanel ui-widget centro"><span class="negrito">Nenhum registro encontrado</span></div>
+            </div>
+
+            <div id="tabOrdemServico" class="tabcontent">
+                <h3 style="color : #1D5987; font-weight: normal;text-align: center">ORDENS DE SERVIÇOS</h3>
+    <table class="table table-hover table-striped">
+        <tr>
+                <th> Número</th>
+                <th> Data do Recebimento</th>
+                <th> Data da Expedição</th>
+                <th> Tipo de Ordem</th>
+                <th> Contrato</th>
+        </tr>
+    </table><div id="Formulario:j_idt124:j_idt115" class="ui-outputpanel ui-widget centro"><span class="negrito">Nenhum registro encontrado</span></div>
+            </div><input type="hidden" name="javax.faces.ViewState" id="javax.faces.ViewState" value="-7415318747847251459:1568596210879263550" autocomplete="off" />
+</form>
+                    </div>
+                </div>
+            </div><?xml version='1.0' encoding='UTF-8' ?>
+<html xmlns="http://www.w3.org/1999/xhtml"><body>
+<form id="FormularioRelatorio" name="FormularioRelatorio" method="post" action="/contrato/ver/2274688/" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="FormularioRelatorio" value="FormularioRelatorio" />
+
+        <div class="modal fade in" id="relatorio" tabindex="-1" role="dialog" aria-labelledby="label-relatorio">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                        <h4 class="modal-title" id="label-relatorio">Impressão de Relatório</h4>
+                    </div>
+                    <div class="modal-body">
+                        Se seu navegador não pode abrir o arquivo,
+                        <a id="FormularioRelatorio:j_idt131" href="#" class="ui-commandlink ui-widget" onclick="PrimeFaces.addSubmitParam('FormularioRelatorio',{'FormularioRelatorio:j_idt131':'FormularioRelatorio:j_idt131'}).submit('FormularioRelatorio');return false;">clique aqui</a>
+                        para efetuar o download.
+                        
+                    </div>
+
+                </div>
+            </div>
+        </div><input type="hidden" name="javax.faces.ViewState" id="javax.faces.ViewState" value="-7415318747847251459:1568596210879263550" autocomplete="off" />
+</form></body>
+</html><html xmlns="http://www.w3.org/1999/xhtml">
+<div class="row">
+    <div class="col-md-12 animated fadeInDown " align="center">
+        <div class="col-md-3 text-center">
+            <a href="http://portalcgm.riobranco.ac.gov.br/lai/" target="_blank" class="sem-link titulo-inicio">
+                        <span class="titulo-inicio-text">
+                            <p class="text-justify font-bold" style="padding: 5px!important;">
+                                 ACESSO À INFORMAÇÃO<br />
+                                      Divulga dados que são de interesse coletivo, com o objetivo de
+                                facilitar o acesso à informação pública, conforme determinam
+                                a Lei Federal n° 12.527 de 18 de novembro de 2011
+                                e a Lei Municipal n° 1.915 de 25 junho de 2012.
+                                    </p>
+                        </span>
+                <div><img id="j_idt137" src="/resources/images/acesso-a-informacao.png?pfdrid_c=true" alt="Brasão Prefeitura" width="150" />
+                </div>
+            </a>
+        </div>
+            <div class="col-md-3 text-center">
+
+                <a href="https://portalcovid.riobranco.ac.gov.br/" class="sem-link titulo-inicio">
+                    <span class="titulo-inicio-text">
+                        <p class="text-justify font-bold" style="padding: 5px!important;">
+                             Este espaço reúne atos normativos,  processos de contratações concluídos e outras informações relacionadas ao Enfrentamento da Emergência em Saúde Pública-COVID 19 no Município de Rio Branco.<br />
+                        </p>
+                    </span>
+                    <div><img id="j_idt141" src="/resources/images/transparenciaCovid19.png?pfdrid_c=true" alt="Brasão Prefeitura" width="150" />
+                    </div>
+                </a>
+            </div>
+        <div class="col-md-3 text-center">
+            <a href="https://sistema.ouvidorias.gov.br/publico/AC/RioBranco/manifestacao/RegistrarManifestacao " target="_blank" class="sem-link titulo-inicio">
+                        <span class="titulo-inicio-text">
+                            <p class="text-justify font-bold" style="padding: 5px!important;">
+                                Fala.BR<br />
+                                      Fala.BR é uma Plataforma Integrada de Ouvidoria e Acesso à Informação,
+                                que atende à Lei Federal nº 13.460, de 26 de junho de 2017, o art. 7º,
+                                inciso XIX da Portaria Interministerial nº 424, de 30 de dezembro de 2016
+                                e à Lei Federal nº 12.527, de 18 de novembro de 2011. Por meio da Fala.Br qualquer pessoa,
+                                física ou jurídica, pode encaminhar manifestações (denúncias, reclamações, solicitações,
+                                sugestões e elogios) e pedidos de acesso à informação, para órgãos e entidades do Poder
+                                Executivo Municipal. Além de fazer o registro, é  possível acompanhar o prazo de
+                                atendimento pelo número de protocolo gerado, receber a resposta por e-mail,
+                                interpor recursos e consultar as respostas recebidas.
+                            </p>
+                        </span>
+                <div><img id="j_idt144" src="/resources/images/fala-br.png?pfdrid_c=true" alt="Brasão Prefeitura" height="110" />
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 text-center">
+            <a href="https://radardatransparencia.atricon.org.br/panel.html " target="_blank" class="sem-link titulo-inicio">
+                <div><img id="j_idt146" src="/resources/images/deOlhoNaObra.png?pfdrid_c=true" alt="Radar da Transparência" width="244.75" height="58.17" />
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+</html>
+            <br />
+    <div class="container">
+        <div class="col-md-7 col-sm-7 pull-left">
+            <h3 class="negrito">Controladoria-Geral do Município de Rio Branco</h3>
+            <h5 class="negrito">Endereço: Rua Alvorada, n°281, Bosque – 5° Andar <br/>CEP 69900-664 – Rio Branco/AC</h5>
+            <h5 class="negrito">E-mail: cgmrb@riobranco.ac.gov.br
+            </h5>
+            <h5 class="negrito">Tel.: (68) 3212-7385
+            </h5>
+            <h5 class="negrito">SERVIÇO DE INFORMAÇÃO AO CIDADÃO – SIC <br/>Atendimento presencial de segunda à sexta-feira <br/>Das 7:00h às 14:00h
+            </h5>
+            <h5 class="negrito">Endereço: Rua Alvorada, n°281, Bosque – 5° Andar <br/>CEP 69900-664 – Rio Branco/AC</h5>
+            <h5 class="negrito">Tel.: (68) 3212-7419</h5>
+            <h5 class="negrito">
+                <a href="http://www.riobranco.ac.gov.br/"><span style="font-weight: bold !important;">http://www.riobranco.ac.gov.br/</span>
+                </a>
+            </h5>
+        </div>
+    </div>
+        </div></body>
+
+</html>

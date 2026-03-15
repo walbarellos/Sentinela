@@ -1,0 +1,2142 @@
+[2026-03-13 02:16:22 -05] enrich_rb_contratos_licitacao.py aplicado no bloco 3799
+- Processo mapeado: 3799 -> licitacao 2364182 (SEMSA, 2024)
+- Script novo: scripts/enrich_rb_contratos_licitacao.py
+- Regra de auto-update: confidence >= 75
+- Matches gravados em rb_contratos_licitacao_match: 6
+- Contratos atualizados em rb_contratos: 6
+- Cobertura municipal SUS apos a carga: 11/13 com CNPJ e 11/13 com fornecedor
+- Pendencias restantes: processo 3006 (contratos 3896 e 3898, total R$ 49.198,30)
+- Caso critico permanece: contrato 3895 / NORTE DISTRIBUIDORA / 37.306.014/0001-48 / R$ 82.950,00 / RB_CONTRATO_SANCIONADO
+- Match table:
+  57 -> COMERCIAL DE CARNES KANA LTDA / 17.332.592/0001-41 / confidence 82
+  58 -> D L RAMOS / 05.146.814/0001-52 / confidence 97
+  59 -> E C O MOURA / 28.572.074/0001-11 / confidence 75
+  60 -> JC ALIMENTOS E SERVICOS LTDA / 46.376.616/0001-62 / confidence 97
+  61 -> J S COMERCIO IMPORTACAO E EXPORTACAO LTDA / 11.338.721/0001-22 / confidence 97
+  63 -> KELLE DE MELO OLIVEIRA / 29.422.974/0001-45 / confidence 92
+- Proximo alvo: resolver processo 3006 via licitacao/proposta ou outra origem municipal
+
+[2026-03-13 02:58:20 -05] processo 3006 resolvido parcialmente via licitacao 2274334
+- Script ajustado: scripts/enrich_rb_contratos_licitacao.py
+- Novo hint: processo 3006 -> licitacao 2274334 (SEMSA, 2023, processo de compra 3006/2023)
+- Bridge agora tem fallback para PDF do detalhe do contrato quando o JSON nao devolve itens utilizaveis
+- Bridge agora escolhe a melhor ocorrencia por descricao/lote e aceita match por descricao contida, sem regredir o fluxo exato do 3799
+- Contrato 3896 resolvido automaticamente:
+  fornecedor = JAQUELINE C DE OLIVEIRA LTDA
+  cnpj = 06.916.063/0001-79
+  evidencia = 16/16 itens batendo por descricao no processo 3006, 11 itens com preco proximo, median_rel_diff=0.03, confidence=84
+- Contrato 3898 permaneceu em review:
+  json do detalhe confirmou itens [Coletor de Material Perfurocortante, Broche / Boton / Pin]
+  match forte nao apareceu
+  ranking bruto gravado em rb_contratos_licitacao_match.raw_json
+  candidato lider atual = JAQUELINE C DE OLIVEIRA LTDA / 06.916.063/0001-79 / confidence 42
+- Cobertura municipal SUS apos o rerun: 12/13 contratos com CNPJ e fornecedor
+- Pendencia municipal restante condensada em 1 contrato:
+  processo 3006 -> contrato 3898 -> R$ 31.200,00 -> buscar_fonte_externa
+- Evidencia importante descoberta no portal:
+  a pagina da licitacao 2274334 lista explicitamente os contratos 3896 e 3898 dentro do processo 3006, confirmando o vinculo institucional com a licitacao mae
+- Proximo alvo: fechar o 3898 via fonte externa/PNCP/portal de compras, ou via vencedor por lote do PE 82/2023 se essa camada for recuperada
+
+[2026-03-13 09:00:26 -05] auditoria documental do ultimo contrato SUS municipal pendente
+- Novo script: scripts/sync_rb_contratos_inconsistencias.py
+- Objetivo da mudanca: parar de forcar fornecedor fraco no contrato 3898 e materializar so o que ficou probatorio no proprio portal + edital oficial da CPL
+- Fontes oficiais usadas na auditoria do processo 3006:
+  licitacao mae 2274334 no portal de transparencia de Rio Branco
+  publicacoes CPL 1554 (aviso + edital do PE SRP 141/2023)
+  publicacoes CPL 1640 (retificacao/reabertura do mesmo pregao)
+- Validacao de engenharia feita antes de subir insight:
+  a leitura do lote 8 das propostas confirmou que o parser de itens/propostas estava correto
+  o comparativo por preco contra proposta inicial foi removido do auditor por ser mais fraco juridicamente do que eu aceito sem camada de lances finais
+  depois do endurecimento da regra, o falso positivo no contrato 3896 caiu
+- Resultado final materializado no banco:
+  rb_contratos_item_audit = 57 linhas auditadas
+  v_rb_contratos_inconsistencias = 1 caso
+  insights RB_CONTRATO_LICITACAO_INCONSISTENTE = 1
+- Caso que permaneceu de pe:
+  contrato 3898 / processo 3006 / licitacao 2274334 / R$ 31.200,00
+  item divergente = "Coletor de Material Perfurocortante"
+  status = ITEM_FORA_EDITAL_E_PROPOSTAS
+  achado = o item aparece no contrato, mas nao apareceu nas propostas do portal nem no edital/retificacao oficiais da CPL para o PE SRP 141/2023
+- Leitura operacional apos a auditoria:
+  o ultimo contrato municipal sem CNPJ nao foi resolvido por fornecedor
+  em vez disso, virou um caso documental mais forte: contrato ligado a licitacao mae confirmada, mas com item fora do edital e fora das propostas publicas
+- Integracao na fila final municipal:
+  nova view = v_rb_contratos_triagem_final
+  nova view prioritaria = v_rb_contratos_prioritarios
+  fila final agora consolidada:
+    3895 / processo 3044 / NORTE DISTRIBUIDORA / prioridade 100 / denuncia_imediata
+    3898 / processo 3006 / sem fornecedor confirmado / prioridade 95 / auditoria_documental_licitacao
+- Novo proximo alvo:
+  tentar so a prova complementar externa (TCE/licitacoes-e/PNCP) para o item 3898, se quisermos sair de anomalia documental para identificacao do fornecedor/lote
+
+[2026-03-13 09:40:25 -05] viabilidade real das fontes externas para o contrato 3898
+- Objetivo: verificar se ainda era possivel fechar fornecedor/lote do processo 3006 fora do portal municipal
+- Resultado da checagem em 2026-03-13:
+  TCE-AC:
+    https://sistemas.tce.ac.gov.br/portaldaslicitacoes/ recusou HTTPS e o endpoint HTTP respondeu 404
+    portanto, hoje nao ha trilha automatizavel util por essa origem
+  licitacoes-e:
+    a URL publica do certame 1013158 continua atras de bloqueio 403/Cloudflare
+    sem sessao de navegador valida, a fonte nao fecha automaticamente
+  PNCP:
+    a API de consulta publica esta viva em /api/consulta/v1
+    modalidade 6 = Pregao Eletronico
+    modalidade 7 = Pregao Presencial
+    modalidade 8 = Dispensa
+    o endpoint de contratos para o CNPJ-base da prefeitura (04.034.583/0001-22) retornou 204 em 2024
+    a busca de contratacoes do PNCP para Rio Branco em setembro/2023 (janela do PE 141/2023) retornou 13 registros e zero matches para prefeitura/SEMSA/graficos/processo 3006
+    em janela mais ampla 2023-09 a 2024-08, o PNCP mostrou alguns pregoes eletronicos da prefeitura de Rio Branco, mas apenas 4 do CNPJ-base visiveis no recorte testado e nenhum corresponde ao processo 3006 nem ao objeto de material/servicos graficos da SEMSA
+- Conclusao operacional:
+  sim, foi possivel testar as fontes externas publicas
+  nao, elas nao entregam hoje uma prova complementar automatica suficiente para fechar o 3898
+  o caso 3898 permanece mais forte como anomalia documental municipal (item fora do edital e fora das propostas) do que como match de fornecedor/lote por fonte externa aberta
+
+[2026-03-13 10:11:28 -05] dossie e evidencias congeladas dos dois casos prioritarios municipais
+- Objetivo: sair de views/tabelas e deixar o material pronto para consulta, representacao e preservacao local
+- Entregas geradas em docs/Claude-march/patch_claude/claude_update/patch/:
+  dossie_rb_sus_prioritarios.md
+  denuncia_preliminar_3895.txt
+  denuncia_preliminar_3898.txt
+  evidencias_rb_sus_prioritarios/README.md
+  evidencias_rb_sus_prioritarios/manifest_rb_sus_prioritarios.json
+- Evidencias congeladas do caso 3895:
+  HTML do contrato 1916838
+  PDF anexo do contrato (arquivo 2247658)
+  PDF-relatorio do detalhe do contrato
+- Evidencias congeladas do caso 3898:
+  HTML do contrato 2274688
+  PDF-relatorio do detalhe do contrato
+  HTML da licitacao mae 2274334
+  HTML + PDF das publicacoes CPL 1554 e 1640
+- Integridade:
+  cada arquivo ficou com hash SHA-256 materializado no manifesto
+  isso reduz o risco de o portal mudar, cair ou remover anexos antes da formalizacao externa
+
+[2026-03-13 10:12:07 -05] bundle unico gerado para transporte do material prioritario
+- Arquivo:
+  docs/Claude-march/patch_claude/claude_update/patch/rb_sus_prioritarios_bundle_20260313.tar.gz
+- Conteudo:
+  dossie markdown
+  2 textos preliminares de representacao
+  diretorio evidencias_rb_sus_prioritarios com HTML/PDF/manifesto
+- Hash do bundle:
+  865441cc6eeba2f4c331099efe257231c14c2b4e7dcdf4d8131fef17aa609887
+
+[2026-03-13 11:16:00 -05] pacote estadual priorizado da SESACRE gerado e congelado
+- Objetivo: replicar no eixo estadual o mesmo nivel de prontidao probatoria criado para os casos municipais prioritarios
+- Script novo:
+  scripts/export_sesacre_prioritarios.py
+- Entregas geradas em docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios/:
+  dossie_sesacre_sancoes_prioritarias.md
+  representacao_preliminar_sesacre_top10.txt
+  manifest_sesacre_prioritarios.json
+  evidencias/ com extratos CSV por fornecedor
+- Escopo priorizado:
+  top 5 fornecedores com sancao ativa e maior valor contratado na SESACRE
+  valor agregado = R$ 62.137.324,14
+  contratos agregados = 110
+  sancoes ativas agregadas = 7
+- Casos do topo materializados:
+  CIENTIFICA MEDICA HOSPITAL LTDA EM RECUPERACAO JUDICIAL - R$ 29.410.248,30
+  R. BISPO AGUIAR - R$ 12.329.014,18
+  HOSPSHOP PRODUTOS HOSPITALARES LTDA - R$ 7.577.625,00
+  GOLDENPLUS - COMERCIO DE MEDICAMENTOS E PRODUTOS HOSPITALARES LTDA - R$ 6.590.265,00
+  INDUSTRIA BRASILEIRA DE EQUIPAMENTOS MEDICOS HOSPITALARES LTDA - (LUANNA FREIRE FELIX LTDA) - R$ 6.230.171,66
+- Evidencia preservada:
+  zip aberto do CEIS (20260312)
+  CSV por caso com sancoes colapsadas, sancoes cruas, contratos, CEIS bruto, QSA e socios
+- Bundle unico:
+  docs/Claude-march/patch_claude/claude_update/patch/sesacre_prioritarios_bundle_20260313.tar.gz
+  hash = d5684af8b6fb0131e852bd6edfab39559d882cff4210dae5604a2c0707c3da0f
+
+[2026-03-13 11:17:00 -05] indice unico dos artefatos prioritarios criado
+- Arquivo:
+  docs/Claude-march/patch_claude/claude_update/patch/INDEX_PRIORITARIOS.md
+- Funcao:
+  apontar rapidamente para os bundles, dossies, rascunhos de representacao e log do eixo municipal e estadual
+
+[2026-03-13 12:02:47 -05] relatorio final unico do recorte Acre / Rio Branco / SUS gerado
+- Script novo:
+  scripts/export_relatorio_final_acre_sus.py
+- Entregas:
+  docs/Claude-march/patch_claude/claude_update/patch/relatorio_final_acre_rio_branco_sus.md
+  docs/Claude-march/patch_claude/claude_update/patch/painel_prioridades_acre_rio_branco_sus.csv
+  docs/Claude-march/patch_claude/claude_update/patch/manifest_relatorio_final_acre_rio_branco_sus.json
+- Resumo consolidado do snapshot:
+  Rio Branco = 20.403 servidores com lotacao materializada, 4.427 SUS, 13 contratos SUS, 12 com CNPJ, 2 casos finais
+  SESACRE = 67 fornecedores com sancao ativa, R$ 101.329.947,27 agregados, 147 linhas de cruzamento bruto, 67 insights
+- Painel priorizado:
+  12 linhas = 2 municipais + top 10 estadual da SESACRE
+- Ajuste de integridade:
+  hash vigente do bundle municipal confirmado em 865441cc6eeba2f4c331099efe257231c14c2b4e7dcdf4d8131fef17aa609887
+
+[2026-03-13 12:03:00 -05] bundle mestre do recorte gerado
+- Arquivo:
+  docs/Claude-march/patch_claude/claude_update/patch/acre_rio_branco_sus_master_bundle_20260313.tar.gz
+- Conteudo:
+  relatorio final markdown
+  painel csv
+  manifesto final
+  bundle municipal
+  bundle estadual SESACRE
+  indice prioritario
+- Hash:
+  b50786673e17c9cb02bdffd71c284f4e3a97f561a4b0b908cc267379e2348089
+
+[2026-03-13 12:06:03 -05] pacote estadual ampliado de top 5 para top 10 e consolidado final reemitido
+- Ajuste executado:
+  scripts/export_sesacre_prioritarios.py passou a emitir top 10
+  representacao_preliminar_sesacre_top10.txt substituiu a versao top 5
+- Novo resumo estadual do bundle:
+  10 casos priorizados
+  R$ 80.183.078,73 agregados
+  172 contratos agregados
+  27 sancoes ativas agregadas
+- Integridade atualizada:
+  bundle SESACRE = d5684af8b6fb0131e852bd6edfab39559d882cff4210dae5604a2c0707c3da0f
+  relatorio final = e38c43e7aaa37192bd28f633b85f89d61fac32c74907d9916e04c1ec70ef4c0d
+  bundle mestre = b50786673e17c9cb02bdffd71c284f4e3a97f561a4b0b908cc267379e2348089
+
+[2026-03-13 12:08:00 -05] hash do bundle mestre estabilizado sem autorreferencia
+- Ajuste:
+  o hash do bundle mestre foi removido do INDEX_PRIORITARIOS.md para evitar recursao de conteudo
+- Hash final estavel:
+  a0bfb2bef6473e0c71642f8ab67c9891df1c2e76192457d3b0dcc92dca29725f
+
+[2026-03-13 12:15:26 -05] preenchimento dirigido do top 10 sancionado da SESACRE
+- Script novo:
+  scripts/fill_sesacre_prioritarios.py
+- Objetivo:
+  preencher lacunas do pacote estadual sem rerodar o sync completo do Acre
+  foco em QSA/socios e detalhe financeiro dos top 10 fornecedores sancionados ativos da SESACRE
+- Resultado da execucao real:
+  10 empresas QSA resolvidas
+  10 linhas targeted em estado_ac_fornecedor_qsa
+  58 linhas QSA recalculadas
+  7 insights societarios SESACRE_QSA_%
+  23 linhas de detalhe financeiro inseridas
+- Cobertura apos o preenchimento:
+  top 10 SESACRE = 10/10 com QSA
+  top 10 SESACRE = 9/10 com socios
+
+[2026-03-13 20:31:44 -05] follow-up CNES aprofundado com historico individual oficial do caso CEDIMP
+- Objetivo:
+  endurecer o caso `CEDIMP` sem extrapolar conclusao, saindo da coincidencia nominal no modulo profissional para concomitancia documental no historico individual oficial do `CNES`
+- Scripts alterados:
+  scripts/sync_vinculo_societario_saude_followup.py
+  scripts/export_vinculo_societario_saude_followup.py
+- Ajuste tecnico relevante:
+  o parser do `CNES` passou a usar `requests.Session()` persistente no fluxo `Mod_Profissional.asp -> Exibe_Ficha_Prof_Sus.asp?J=...`
+  sem a mesma sessao, a ficha individual do profissional nao devolve o historico correto
+- Dados novos materializados no banco:
+  vinculo_societario_saude_followup:
+    n_cnes_profissionais_match = 2
+    n_cnes_profissionais_historico = 2
+  caso unico mantido = `CEDIMP` / `13.325.100/0001-30`
+  historico oficial do `CNES` agora materializa:
+    `MAIRA SANTIAGO PIRES PARENTE` / CNS `700708906395971`
+    `MARCOS PAULO PARENTE ARAUJO` / CNS `700105928933618`
+    `131` competencias com concomitancia documental entre linha `ESTATUTARIO / SERVIDOR PROPRIO` e linha da `CEDIMP`
+- Leitura probatoria:
+
+[2026-03-14 00:39:00 -05] refatoracao real do painel Streamlit para reduzir monolitos e redundancia
+- Objetivo:
+  tornar a UI operacional mais simples de evoluir sem continuar inflando `app.py` ou concentrando logica de dados/render em um unico arquivo
+- Resultado de arquitetura:
+  `app.py` caiu para 41 linhas e virou apenas bootstrap + roteamento de paginas
+  paginas quebradas em modulos dedicados:
+    `src/ui/streamlit_home.py`
+    `src/ui/streamlit_alerts.py`
+    `src/ui/streamlit_federal.py`
+    `src/ui/streamlit_people.py`
+    `src/ui/streamlit_sidebar.py`
+    `src/ui/streamlit_theme.py`
+  a aba operacional foi quebrada mais uma vez:
+    `src/ui/streamlit_ops.py` = 49 linhas
+    `src/ui/ops_shared.py`
+    `src/ui/ops_data.py`
+    `src/ui/ops_preview.py`
+    `src/ui/ops_sections.py`
+- Ajuste funcional relevante:
+  a sidebar deixou de mostrar status estetico fixo e passou a refletir estado real do banco operacional
+  a aba `📂 OPERAÇÕES` manteve os mesmos fluxos principais:
+    visao geral
+    bancada de casos
+    runtime
+- Validacao executada:
+  `python -m py_compile` dos modulos novos e do `app.py`
+  `streamlit run app.py --server.headless true --server.port 8768`
+  `curl -I http://localhost:8768` -> `HTTP 200`
+  contadores no banco:
+    `ops_case_registry = 13`
+    `ops_case_artifact = 34`
+    `v_ops_source_cache_latest = 7`
+    `ops_source_cache (historico) = 14`
+- Leitura operacional:
+  a modularizacao foi concluida sem quebrar o painel
+  o proximo ciclo correto agora e `inbox operacional`, nao mais refatoracao estrutural grande
+
+[2026-03-14 00:47:00 -05] inbox operacional entregue com rerun sem shell para o caso CEDIMP
+- Objetivo:
+  fechar o loop entre pedido oficial, recebimento de documento e rerun da trilha do caso dentro do proprio painel operacional
+- Novas pecas:
+  `src/core/ops_inbox.py`
+  `src/ui/ops_inbox.py`
+  `scripts/sync_ops_inbox.py`
+- O que foi implementado:
+  tabela `ops_case_inbox_document`
+  view `v_ops_case_inbox_document`
+  sincronizacao do indice CSV oficial da caixa `cedimp_respostas_index.csv`
+  upload guiado para `cedimp_respostas/anexos/...`
+  persistencia de `status_documento`, `protocolo`, `recebido_em`, `sha256`, `size_bytes` e caminho local
+  botao de rerun do workflow do caso `CEDIMP` sem shell
+- Correcao estrutural relevante:
+  `app.py` deixou de abrir DuckDB no fluxo `📂 OPERAÇÕES`
+  a conexao do workflow tambem passou a soltar o banco durante os subprocessos para evitar lock contra os scripts do caso
+- Validacao executada:
+  `python -m py_compile app.py src/core/ops_inbox.py src/ui/ops_inbox.py src/ui/streamlit_ops.py scripts/sync_ops_inbox.py`
+  `.venv/bin/python scripts/sync_ops_inbox.py --case-id cedimp:saude_societario:13325100000130` -> `rows_written = 12`
+  `.venv/bin/python -c "from src.core.ops_inbox import run_case_workflow; ..."` -> `success 5`
+  etapas validadas:
+    `sync_vinculo_societario_saude_respostas.py`
+    `sync_vinculo_societario_saude_maturidade.py`
+    `export_vinculo_societario_saude_respostas.py`
+    `validate_cedimp_quality.py`
+    `sync_ops_case_registry.py`
+  `streamlit run app.py --server.headless true --server.port 8770` -> `HTTP 200`
+  estado no banco apos a entrega:
+    `ops_case_registry = 13`
+    `ops_case_artifact = 34`
+    `ops_case_inbox_document = 12`
+    `v_ops_source_cache_latest = 7`
+    `ops_case_workflow:*` ultimo status = `success`
+- Leitura operacional:
+  o painel agora ja suporta um caso completo em modo vivo
+  o proximo ciclo correto e generalizar a inbox para outros casos e adicionar timeline/diff documental
+
+[2026-03-14 00:54:00 -05] timeline documental e diff por caso entregues na bancada operacional
+- Objetivo:
+  transformar a aba operacional em mesa de investigacao de verdade, com historico do caso e comparacao direta entre artefatos suportados
+- Novas pecas:
+  `src/core/ops_timeline.py`
+  `scripts/sync_ops_timeline.py`
+  `src/ui/ops_diff.py`
+- O que foi implementado:
+  view `v_ops_case_timeline_event` derivada de:
+    `ops_case_registry`
+    `ops_case_artifact`
+    `ops_case_inbox_document`
+    `ops_pipeline_run` do workflow do caso
+  bancada do caso em 4 abas:
+    `Resumo`
+    `Evidencias`
+    `Timeline`
+    `Diff`
+  diff textual para:
+    `md`
+    `txt`
+    `json`
+    `csv`
+    `html`
+    `pdf` com `.txt` espelho
+- Correcao relevante:
+  a validacao da timeline precisou ser rerodada em serie, nao em paralelo, porque o DuckDB estava disputando lock entre sync e leitura
+- Validacao executada:
+  `python -m py_compile` dos modulos novos
+  `.venv/bin/python scripts/sync_ops_timeline.py` -> `timeline_events = 63`
+  amostra do caso `CEDIMP`:
+    eventos de `WORKFLOW_RUN`
+    indexacao de artefatos
+    refresh de caso
+    documentos da inbox
+  `streamlit run app.py --server.headless true --server.port 8771` -> `HTTP 200`
+- Leitura operacional:
+  a bancada do caso agora tem historia, prova e comparacao
+  o proximo ciclo correto e generalizar inbox/timeline para outros casos e melhorar diff por semantica, nao por reestruturacao crua
+
+[2026-03-14 01:08:00 -05] inbox operacional escalada para RB_SUS e SESACRE com fila de pendencias
+- Objetivo:
+  sair do modo `caso unico` e transformar a caixa operacional em camada reutilizavel para o municipio e o estado sem script artesanal por dossie
+- O que mudou:
+  `src/core/ops_inbox.py` passou a gerar `spec` dinamico por familia de caso
+  seed automatico de `README.md` e indice CSV por caso
+  caixas novas materializadas para:
+    `rb:contrato:3895`
+    `rb:contrato:3898`
+    `10` casos `sesacre:sancao:*`
+  a UI ganhou fila de pendencias documentais por caso na aba `Inbox`
+- Inspiracao operacional incorporada:
+  padrao `Oversight.gov` de recomendacoes abertas virou fila de documentos pendentes
+  padrao `USAspending` de drill-down por sujeito/orgao foi mantido na selecao do caso
+  padrao `EDGAR` de documento primeiro foi mantido no preview/timeline/diff
+- Validacao executada:
+  `.venv/bin/python scripts/sync_ops_inbox.py` -> `rows_written = 85`
+  distribuicao:
+    `RB_SUS = 13 docs`
+    `SESACRE = 60 docs`
+    `CEDIMP = 12 docs`
+  workflows genericos validados:
+    `rb:contrato:3895` -> `success 3`
+    `sesacre:sancao:07847837000110` -> `success 3`
+  estado no banco:
+    `ops_case_inbox_document = 85`
+    `cases_with_inbox = 13`
+    `v_ops_case_timeline_event = 138`
+  `streamlit run app.py --server.headless true --server.port 8772` -> `HTTP 200`
+- Leitura operacional:
+  o produto ja escala de forma util para o municipio de Rio Branco
+  o proximo ciclo correto e busca full-text e diff semantico, nao mais multiplicacao de scripts manuais
+
+[2026-03-14 01:18:00 -05] indice textual local e aba de busca operacional entregues
+- Objetivo:
+  reduzir o tempo para achar trecho probatorio dentro dos artefatos locais sem abrir arquivo por arquivo
+- Novas pecas:
+  `src/core/ops_search.py`
+  `src/ui/ops_search.py`
+  `scripts/sync_ops_search_index.py`
+- O que foi implementado:
+  tabela `ops_artifact_text_index`
+  view `v_ops_artifact_text_index`
+  indexacao de:
+    artefatos do caso (`ops_case_artifact`)
+    anexos locais recebidos na inbox (`ops_case_inbox_document`)
+  suporte atual de extracao textual:
+    `md`
+    `txt`
+    `json`
+    `csv`
+    `html`
+    `pdf` com `.txt` espelho
+  nova aba `Busca` no painel operacional
+  reindexacao manual via botao `🔎 Reindexar Texto`
+- Inspiracao EUA incorporada com criterio:
+  `EDGAR` -> busca por documento e anexo com leitura local primeiro
+  `USAspending` -> filtros fortes continuam antes do drill-down
+  `Oversight` -> a busca foi acoplada a casos e diligencias, nao solta como vitrine
+- Validacao executada:
+  `.venv/bin/python scripts/sync_ops_search_index.py` -> `indexed_docs = 31 / candidates = 34`
+  busca de amostra `NORTE` retornou:
+    `rb:contrato:3895 / denuncia_preliminar_3895`
+    `rb:contrato:3895 / dossie_rb_sus`
+    `rb:contrato:3898 / dossie_rb_sus`
+  `streamlit run app.py --server.headless true --server.port 8773` -> `HTTP 200`
+- Leitura operacional:
+  o painel agora ja suporta localizar, abrir e comparar evidencia sem sair da mesa operacional
+  o proximo ciclo correto e `timeline por fase + diff semantico`, nao mais ampliar layout sem ganho real
+  isso nao prova sozinho impedimento legal, acumulo ilicito ou nepotismo
+  isso prova coexistencia documental em fonte primaria de saude entre:
+    historico funcional estatutario/servidor proprio
+    historico profissional da `CEDIMP`
+    base municipal local da `SEMSA`
+    contrato estadual `779/2023` da `SESACRE`
+- Insight novo no banco:
+  `vps_saude_hist:13325100000130`
+  kind = `VINCULO_EXATO_CNES_HISTORICO_PUBLICO_PRIVADO_SAUDE`
+  classificacao = `FATO_DOCUMENTAL / DOCUMENTAL_PRIMARIO / APTO_APURACAO`
+- Validacao executada:
+  python -m py_compile scripts/sync_vinculo_societario_saude_followup.py scripts/export_vinculo_societario_saude_followup.py
+  .venv/bin/python scripts/sync_vinculo_societario_saude_followup.py
+  .venv/bin/python scripts/export_vinculo_societario_saude_followup.py
+- Artefatos atualizados:
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_DOSSIE.md
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_vinculo_societario_saude_followup.csv
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_MANIFEST.json
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/README.md
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/PROXIMO_PASSO.md
+- Hashes atuais dos artefatos de saude:
+  dossier = `bf73d1bf6502d0570577d958563cd464b2503f7a61bb9973cc20fcfd31c8c119`
+  csv = `09f4bdaf9b36b39ee54573e04261b14c2ec8c81c34497ed3a84b33b8b2ba46f6`
+  manifest = `dcfb11397162d10b6106fcbda436ccd8ad9c669f43732f78c6a4c5daf878ea13`
+- Proximo alvo correto:
+  transformar essa concomitancia historica em metrica documental de carga por competencia e confrontar com o regime/jornada aplicavel, sem subir o caso alem do que a prova atual permite
+
+[2026-03-13 20:49:12 -05] metricas documentais de carga concomitante implementadas no caso CEDIMP
+- Objetivo:
+  converter a concomitancia historica do `CNES` em numeros auditaveis por competencia, sem tratar isso como veredito juridico automatico
+- Scripts alterados:
+  scripts/sync_vinculo_societario_saude_followup.py
+  scripts/export_vinculo_societario_saude_followup.py
+- Documento novo:
+  docs/Claude-march/patch_claude/claude_update/patch/RF_RNF_VINCULO_SOCIETARIO_SAUDE.md
+- RF/RNF fixados para o modulo:
+  usar apenas match exato nesta etapa
+  separar `sobreposicao`, `profissional no CNES`, `historico concomitante` e `carga documentada`
+  tratar `>=60h` e `>=80h` apenas como marcos tecnicos de triagem, nunca como ilegalidade automatica
+- Dados novos materializados no banco:
+  n_profissionais_concomitancia = `2`
+  n_competencias_concomitantes_total = `262`
+  n_competencias_ge_60h = `234`
+  n_competencias_ge_80h = `28`
+  max_ch_total_publico = `80`
+  max_ch_total_empresa = `40`
+  max_ch_total_concomitante = `100`
+- Insight novo no banco:
+  `vps_saude_carga:13325100000130`
+  kind = `VINCULO_EXATO_CNES_CARGA_CONCOMITANTE_SAUDE`
+  classificacao = `FATO_DOCUMENTAL / DOCUMENTAL_PRIMARIO / APTO_APURACAO`
+- Validacao executada:
+  python -m py_compile scripts/sync_vinculo_societario_saude_followup.py scripts/export_vinculo_societario_saude_followup.py
+  .venv/bin/python scripts/sync_vinculo_societario_saude_followup.py
+  .venv/bin/python scripts/export_vinculo_societario_saude_followup.py
+- Artefatos atualizados:
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_DOSSIE.md
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/README.md
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/PROXIMO_PASSO.md
+- Leitura probatoria:
+  o sistema agora nao so prova a coexistencia documental em fonte primaria, mas tambem mede a carga concomitante documentada
+  isso ainda nao basta para afirmar acumulacao ilicita ou impedimento; o passo seguinte e confrontar regime, jornada e norma aplicavel
+
+[2026-03-13 21:07:55 -05] matriz juridico-funcional do caso CEDIMP criada com normas oficiais
+- Objetivo:
+  transformar o caso de saude em material utilizavel por controle externo, sem empurrar conclusao juridica automatica
+- Fontes normativas oficiais usadas:
+  Constituicao Federal, art. 37, XVI, c e XVII
+  Lei Municipal 1.794/2009 de Rio Branco, arts. 107, X; 108, §2; 123 e 124
+- Scripts novos:
+  scripts/sync_vinculo_societario_saude_juridico.py
+  scripts/export_vinculo_societario_saude_juridico.py
+- Documento novo:
+  docs/Claude-march/patch_claude/claude_update/patch/RF_RNF_VINCULO_SOCIETARIO_SAUDE.md
+- Resultado materializado:
+  vinculo_societario_saude_juridico = `1` caso
+  caso = `CEDIMP` / `13.325.100/0001-30`
+  `1` socio-administradora (`MAIRA SANTIAGO PIRES PARENTE`) com coincidencia exata em base publica municipal
+  matriz com perguntas de apuracao para:
+    compatibilidade de horarios
+    alcance do art. 107, X, da Lei 1.794/2009
+    eventual procedimento por acumulacao ilegal
+- Artefatos gerados:
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_JURIDICO_DOSSIE.md
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_JURIDICO_MANIFEST.json
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_vinculo_societario_saude_juridico.csv
+- Hashes:
+  dossier juridico = `9f403253de5e95d6aca288981416c5a8bbe3bd83df63054876f326923271e2bf`
+  csv juridico = `63954427010a65ee0006481954d0c06289f7d5fa8d0073533296ad68cbb0959c`
+  manifest juridico = `683702faa3aef028318f2867053cbdc6ed35a41161d83ae1b32ecfe5fabc78bf`
+- Validacao executada:
+  python -m py_compile scripts/sync_vinculo_societario_saude_juridico.py scripts/export_vinculo_societario_saude_juridico.py
+  .venv/bin/python scripts/sync_vinculo_societario_saude_juridico.py
+  .venv/bin/python scripts/export_vinculo_societario_saude_juridico.py
+- Leitura operacional:
+  o sistema agora entrega o caso em quatro camadas:
+    sobreposicao societaria
+    coincidencia profissional no CNES
+    historico concomitante no CNES
+    metrica documental de carga
+  e acrescenta uma quinta camada separada:
+    matriz juridico-funcional com normas oficiais e perguntas de apuracao
+
+[2026-03-13 21:19:08 -05] pacote de diligencias dirigidas do caso CEDIMP gerado
+- Objetivo:
+  transformar a trilha probatoria atual em pedidos objetivos de documentos, sem linguagem acusatoria
+- Script novo:
+  scripts/export_vinculo_societario_saude_diligencias.py
+- Resultado:
+  `16` itens de diligencia organizados por destino
+  destinos:
+    `SEMSA_RH`
+    `SESACRE`
+    `CONTROLE`
+- Artefatos gerados:
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_DILIGENCIAS.md
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_DILIGENCIAS_MANIFEST.json
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_vinculo_societario_saude_diligencias.csv
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/pedido_preliminar_semsa_cedimp.txt
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/pedido_preliminar_sesacre_cedimp.txt
+- Hashes:
+  dossier diligencias = `f4fcb43db6a7e4db3dff916defba1deb975a19ec2e430b393e2d96ba44c87a68`
+  csv diligencias = `8f64257f6f2fc4050c21bf300708ee005b5fe52882a0ddb7621cb9f1ab2352c4`
+  pedido SEMSA = `24a45eccb232a66fe7c88d6d0a97545073278df4952450d02981b5496c0a4704`
+  pedido SESACRE = `90902728dcc75b57499a8993affc3e27704a1970f6a894d6a020452756734cd7`
+  manifest diligencias = `63d1115fbf91a363905a3020d6996d3206bc116627b1ffb792f64f752368ed0e`
+- Leitura operacional:
+  o caso `CEDIMP` agora esta pronto para o ciclo seguinte sem nova engenharia pesada:
+    obter documentos de `SEMSA/RH`
+    obter documentos de `SESACRE`
+    confrontar ficha funcional, declaracoes de acumulacao, escalas e execucao contratual
+
+[2026-03-13 21:27:42 -05] matriz de maturidade probatoria do caso CEDIMP gerada e corrigida
+- Objetivo:
+  dizer explicitamente o que o sistema pode afirmar hoje, o que ainda depende de documento e o que esta sem base atual
+- Scripts novos:
+  scripts/sync_vinculo_societario_saude_maturidade.py
+  scripts/export_vinculo_societario_saude_maturidade.py
+- Resultado:
+  `11` linhas de maturidade probatoria
+  eixos `COMPROVADO_DOCUMENTAL`:
+    contrato_estadual
+    qsa_socios
+    socio_administrador
+    cnes_profissional_ativo
+    cnes_historico_concomitante
+    carga_concomitante_extrema
+  eixos pendentes:
+    compatibilidade_horarios = `PENDENTE_DOCUMENTO`
+    vedacao_art_107_x = `PENDENTE_ENQUADRAMENTO`
+    acumulacao_ilegal = `SEM_CONCLUSAO_AUTOMATICA`
+  eixos vedados a afirmacao automatica:
+    nepotismo = `SEM_BASE_ATUAL`
+    fraude_penal = `SEM_BASE_ATUAL`
+- Correcao aplicada:
+  a primeira versao havia rebaixado `socio_administrador` por nao puxar a coluna juridica correta; isso foi corrigido e rerodado
+- Artefatos gerados:
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_MATURIDADE_DOSSIE.md
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_MATURIDADE_MANIFEST.json
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/trace_vinculo_societario_saude_maturidade.csv
+- Hashes:
+  dossier maturidade = `63c3f21528fdcb678ea4ccd449b01614dedf20eb11bbf5b95741b5c799a4269c`
+  csv maturidade = `de5cb8459a97e60a0ee29743624112ad82f6bf41a3e03ccf1a7772019fec29d9`
+  manifest maturidade = `c41661e668b402c485813df5bae634364730e6679a29d657041a2a0b84b4b334`
+- Leitura operacional:
+  o caso `CEDIMP` agora esta fechado em seis camadas complementares:
+    1. sobreposicao societaria
+    2. profissional ativo no CNES
+    3. historico concomitante
+    4. metrica documental de carga
+    5. matriz juridico-funcional
+    6. pacote de diligencias e matriz de maturidade
+
+[2026-03-13 23:18:49 -05] bundle unico do caso CEDIMP gerado
+- Objetivo:
+  consolidar o caso `CEDIMP` em um artefato unico, estavel e transportavel
+- Script novo:
+  scripts/pack_cedimp_case.py
+- Resultado:
+  `22` arquivos incluidos
+  bundle = docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/cedimp_case_bundle_20260313.tar.gz
+  tamanho = `159K`
+  hash SHA-256 = `f05f7c51d3720780dc1278f9014d7e86a6e6252920d3638e2d4fc9975ae4b1cd`
+- Manifesto:
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/CEDIMP_CASE_BUNDLE_MANIFEST.json
+- Conteudo consolidado:
+  trilha societaria basica
+  follow-up de saude
+  matriz juridico-funcional
+  triagem funcional
+  diligencias dirigidas
+  maturidade probatoria
+  pedidos preliminares de documentos
+- Leitura operacional:
+  o caso `CEDIMP` agora esta pronto para circulacao controlada como pacote unico, sem depender de reconstruir manualmente a cadeia de arquivos
+  top 10 SESACRE = 1/10 com detalhe financeiro
+- Artefatos reemitidos:
+  relatorio_final_acre_rio_branco_sus.md
+  sesacre_prioritarios/dossie_sesacre_sancoes_prioritarias.md
+  sesacre_prioritarios/representacao_preliminar_sesacre_top10.txt
+  sesacre_prioritarios_bundle_20260313.tar.gz
+  acre_rio_branco_sus_master_bundle_20260313.tar.gz
+- Integridade atual:
+  relatorio final = edd8f5473b47c54d134f1536e106fdebe7eca222cb653f6d339b6e929893d545
+  bundle SESACRE = e12595b5b0052ddb2bd556e927b4d17a178e28e06241d210832109fd19618989
+  bundle mestre = a0bfb2bef6473e0c71642f8ab67c9891df1c2e76192457d3b0dcc92dca29725f
+
+[2026-03-13 14:25:12 -05] pasta curada de entrega para denuncias criada
+- Pasta:
+  docs/Claude-march/patch_claude/claude_update/patch/entrega_denuncia_atual/
+- Conteudo principal:
+  relatorio_final_acre_rio_branco_sus.md
+  painel_prioridades_acre_rio_branco_sus.csv
+  denuncia_preliminar_3895.txt
+  denuncia_preliminar_3898.txt
+  representacao_preliminar_sesacre_top10.txt
+  acre_rio_branco_sus_master_bundle_20260313.tar.gz
+  CASO_NORTE_DISTRIBUIDORA.md
+  PROXIMO_PASSO.md
+- Ajuste de integridade no caso NORTE:
+  o insight RB_CONTRATO_SANCIONADO estava superestimando o valor do contrato 3895 por duplicacao das sancoes
+  a agregacao foi corrigida em scripts/sync_rb_contratos.py e o valor voltou para R$ 82.950,00
+- Recorte factual NORTE consolidado:
+  contrato municipal 3895 / processo 3044 / SEMSA / R$ 82.950,00
+  CNPJ 37.306.014/0001-48
+  sancoes CEIS ativas materializadas
+  QSA basico consultado: ANA TARCIA ALVES GONCALVES como socio-administradora
+- Leitura operacional:
+  NORTE ja e alvo legitimo de trilha propria no software
+  nepotismo, fraude licitatoria estrutural e substituicao de efetivos continuam como hipoteses fortes, mas ainda nao fechadas como prova pelo banco atual
+
+[2026-03-13 14:41:12 -05] trilha focal TRACE_NORTE materializada e exportada
+- Scripts novos:
+  scripts/sync_trace_norte.py
+  scripts/export_trace_norte.py
+- Tabelas / view novas:
+  trace_norte_contratos
+  trace_norte_sancoes
+  trace_norte_socios
+  trace_norte_leads
+  v_trace_norte_resumo
+- Resultado do CNPJ focal 37.306.014/0001-48:
+  10 contratos no Acre
+  R$ 905.873,95 mapeados
+  1 contrato municipal / R$ 82.950,00
+  9 contratos estaduais / R$ 822.923,95
+  3 sancoes CEIS ativas
+  1 socia materializada
+  0 coincidencias nominais exatas da socia nas bases locais carregadas
+  0 contratos com sinal textual direto de terceirizacao de pessoal para este CNPJ
+- Leitura tecnica principal:
+  para este CNPJ especifico, o banco prova colisao contrato + sancao e concentracao em fornecimento de bens
+  a alegacao de substituicao de servidores nao fechou neste CNPJ
+- Camada separada de triagem:
+  11 leads por nome semelhante NORT(E) em contratos estaduais com terceirizacao textual
+  valor agregado dos leads = R$ 5.156.810,37
+  exemplos fortes:
+  CENTRAL NORTE COMERCIO E SERVICOS DE APOIO ADMINISTRATIVO / CNPJ 36.990.588/0001-15 / SEPLANH / R$ 1.404.178,40
+  NORTE - CENTRO DE DISTRIBUICAO DE MERCADORIAS EM GERAL LTDA / CNPJ 21.813.150/0001-94 / SEJUSP / R$ 1.215.990,24
+- Artefatos de entrega atualizados:
+  entrega_denuncia_atual/TRACE_NORTE_DOSSIE.md
+  entrega_denuncia_atual/TRACE_NORTE_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_contratos.csv
+  entrega_denuncia_atual/README.md
+  entrega_denuncia_atual/PROXIMO_PASSO.md
+
+[2026-03-13 15:15:18 -05] expansao inicial da rede TRACE_NORTE concluida
+- Scripts novos:
+  scripts/sync_trace_norte_rede.py
+  scripts/export_trace_norte_rede.py
+- Tabelas / view novas:
+  trace_norte_rede_empresas
+  trace_norte_rede_socios
+  v_trace_norte_rede_resumo
+- Cobertura:
+  3 empresas-lead enriquecidas
+  9 socios materializados
+  0 shared_socio_with_focal
+  0 socio_match_local
+- Principais leads de terceirizacao:
+  NORTE - CENTRO DE DISTRIBUICAO DE MERCADORIAS EM GERAL LTDA / CNPJ 21.813.150/0001-94 / 4 contratos / R$ 3.129.579,48 / Plácido de Castro-AC
+  CENTRAL NORTE SERVICOS TERCEIRIZADOS LTDA / CNPJ 36.990.588/0001-15 / 5 contratos / R$ 2.020.878,88 / Palmas-TO
+  AGRO NORTE IMPORTACAO E EXPORTACAO LTDA / CNPJ 04.582.979/0001-04 / 2 contratos com terceirizacao residual / R$ 6.352,01 / Rio Branco-AC
+- Leitura operacional:
+  a hipotese de substituicao de servidores por este CNPJ focal da NORTE enfraqueceu
+  a fila correta passou a ser auditar os contratos concretos dos leads de terceirizacao mais fortes
+- Artefatos de entrega atualizados:
+  entrega_denuncia_atual/TRACE_NORTE_REDE_DOSSIE.md
+  entrega_denuncia_atual/TRACE_NORTE_REDE_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_rede_empresas.csv
+
+[2026-03-13 15:17:55 -05] export de auditoria contratual dos leads TRACE_NORTE concluido
+- Ajuste no pacote de rede:
+  trace_norte_rede_contratos materializado com 47 contratos
+  export CSV pronto para leitura de processo/unidade gestora
+- Artefatos:
+  entrega_denuncia_atual/TRACE_NORTE_REDE_DOSSIE.md
+  entrega_denuncia_atual/TRACE_NORTE_REDE_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_rede_empresas.csv
+  entrega_denuncia_atual/trace_norte_rede_contratos.csv
+- Leitura operacional:
+  a proxima etapa deixa de ser descobrir empresa e passa a ser auditar os contratos 2024 dos dois leads mais fortes de terceirizacao
+
+[2026-03-13 15:46:52 -05] ponte contrato -> licitacao candidata dos leads TRACE_NORTE materializada
+- Scripts novos:
+  scripts/sync_trace_norte_rede_match.py
+  scripts/export_trace_norte_rede_match.py
+- Tabelas / view novas:
+  trace_norte_rede_match
+  v_trace_norte_rede_match_best
+- Resultado final:
+  7 matches candidatos no recorte dos dois leads prioritarios
+  bloco mais coeso = CENTRAL NORTE x processo 282 / SEPLAN, cobrindo 5 contratos de 2024
+  candidatos secundarios = processo 582 / IAPEN para contrato 076/2024 e processo 122 / SEAD para contrato 021/2024
+- Leitura operacional:
+  o foco tecnico agora deve sair do nome da empresa e entrar na leitura de edital, termo de referencia e anexos do processo 282/SEPLAN
+  os matches 582 e 122 ficam como trilha secundaria, nao como vinculo fechado
+- Artefatos de entrega atualizados:
+  entrega_denuncia_atual/TRACE_NORTE_REDE_MATCH_DOSSIE.md
+  entrega_denuncia_atual/TRACE_NORTE_REDE_MATCH_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_rede_match_best.csv
+
+[2026-03-13 16:11:46 -05] vinculo exato contrato -> licitacao resolvido para a rede TRACE_NORTE
+- Scripts novos:
+  scripts/sync_trace_norte_rede_vinculo_exato.py
+  scripts/export_trace_norte_rede_vinculo_exato.py
+- Tabelas / views novas:
+  trace_norte_rede_vinculo_exato
+  trace_norte_rede_vinculo_audit
+  v_trace_norte_rede_vinculo_exato
+  v_trace_norte_rede_vinculo_divergencias
+- Resultado:
+  47 vinculos exatos materializados a partir do proprio portal estadual
+  7 linhas auditadas contra a heuristica anterior
+  5 divergencias reais no bloco CENTRAL NORTE / SEPLAN
+  insight novo: TRACE_NORTE_REDE_VINCULO_EXATO
+- Virada principal:
+  os 5 contratos da CENTRAL NORTE em SEPLAN nao apontam para o processo 282/2024
+  o portal de contratos resolve todos para id_licitacao 27462
+  o portal de licitacoes resolve esse id como Pregao Presencial 053/2023, processo 0088.016739.00008/2023-72, homologado
+- Artefatos de entrega atualizados:
+  entrega_denuncia_atual/TRACE_NORTE_REDE_VINCULO_EXATO_DOSSIE.md
+  entrega_denuncia_atual/TRACE_NORTE_REDE_VINCULO_EXATO_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_rede_vinculo_exato.csv
+  entrega_denuncia_atual/trace_norte_rede_vinculo_divergencias.csv
+  entrega_denuncia_atual/trace_norte_rede_vinculo_exato_raw/
+
+[2026-03-13 16:47:41 -05] auditoria documental do PP 053/2023 e fila de pendencias exportadas
+- Scripts novos:
+  scripts/sync_trace_norte_rede_pp053_audit.py
+  scripts/export_trace_norte_rede_pp053_audit.py
+  scripts/export_trace_norte_rede_pendencias.py
+- Tabelas / views novas:
+  trace_norte_rede_pp053_audit
+  v_trace_norte_rede_pp053_audit
+- Resultado:
+  DOE oficial do processo 0088.016739.00008/2023-72 homologa o PP 053/2023 para NORTE COMERCIO E SERVICOS, CNPJ 21.813.150/0001-94
+  o portal de contratos liga os 5 contratos de 2024 ao mesmo id_licitacao, mas em nome de CENTRAL NORTE, CNPJ 36.990.588/0001-15
+  delta entre homologacao e contratos atuais = R$ 16.600,00
+  1 aditivo capturado para o contrato 001/2024 sob o mesmo processo
+  insight novo: TRACE_NORTE_REDE_VENCEDOR_DIVERGENTE
+  fila de pendencias exportada com 22 blocos; maiores alvos = AGRO NORTE / SEJUSP, AGRO NORTE / DETRAN, NORTE - CENTRO / SEJUSP
+- Artefatos de entrega atualizados:
+  entrega_denuncia_atual/TRACE_NORTE_PP053_DOSSIE.md
+  entrega_denuncia_atual/TRACE_NORTE_PP053_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_pp053_audit.csv
+  entrega_denuncia_atual/trace_norte_pp053/
+  entrega_denuncia_atual/TRACE_NORTE_REDE_PENDENCIAS.md
+  entrega_denuncia_atual/TRACE_NORTE_REDE_PENDENCIAS_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_rede_pendencias.csv
+
+[2026-03-13 16:50:52 -05] camada de contratos sem id_licitacao exposto no portal materializada
+- Scripts novos:
+  scripts/sync_trace_norte_rede_sem_licitacao.py
+  scripts/export_trace_norte_rede_sem_licitacao.py
+- Tabelas / views novas:
+  trace_norte_rede_sem_licitacao
+  v_trace_norte_rede_sem_licitacao
+- Resultado:
+  20 blocos contratuais com origem = C e id_licitacao ausente no portal
+  13 insights TRACE_NORTE_REDE_CONTRATO_SEM_ID_LICITACAO para blocos >= R$ 500 mil
+  maiores blocos:
+    AGRO NORTE / SEJUSP = R$ 2.987.976,00
+    AGRO NORTE / ISE = R$ 2.484.000,00
+    AGRO NORTE / DETRAN = R$ 2.296.950,00
+    NORTE - CENTRO / SEJUSP = R$ 1.215.990,24
+- Leitura operacional:
+  o proximo ciclo sai do caso PP 053/2023 e passa a atacar contratos altos cuja origem licitatoria nao esta exposta no proprio portal estadual
+- Artefatos de entrega atualizados:
+  entrega_denuncia_atual/TRACE_NORTE_REDE_SEM_LICITACAO.md
+  entrega_denuncia_atual/TRACE_NORTE_REDE_SEM_LICITACAO_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_rede_sem_licitacao.csv
+
+[2026-03-13 17:38:36 -05] recorte SEJUSP da trilha NORTE isolado e empacotado
+- Scripts novos:
+  scripts/sync_trace_norte_sejusp_prioritarios.py
+  scripts/export_trace_norte_sejusp_prioritarios.py
+- Tabelas / views novas:
+  trace_norte_sejusp_blocos
+  v_trace_norte_sejusp_blocos
+  trace_norte_sejusp_docs
+  v_trace_norte_sejusp_docs
+- Resultado materializado:
+  2 blocos atuais no recorte proprio da unidade SEJUSP
+  1 insight TRACE_NORTE_SEJUSP_TERCEIRIZACAO_SEM_ID_LICITACAO
+  AGRO NORTE / SEJUSP = R$ 2.987.976,00 em 6 contratos de viaturas/caminhonetes sem id_licitacao exposto
+  NORTE-CENTRO / SEJUSP = R$ 1.215.990,24 no contrato 076/2024 de apoio operacional-administrativo com mao de obra, sem id_licitacao exposto
+  3 documentos publicos congelados para a linha do tempo SEJUSP:
+    2020 / NORTE-CENTRO / PE SRP 023/2019 / apoio administrativo-logistica-operacional / R$ 2.069.261,04
+    2023 / JWC / PE SRP 241/2021 / apoio operacional-administrativo com dedicacao exclusiva / R$ 339.313,85 mensal repactuado
+    2025 / NORTE-CENTRO / contrato 26/2021 / limpeza com mao de obra
+- Leitura operacional:
+  o recorte SEJUSP fechou a separacao objetiva entre terceirizacao/apoio e aquisicao de viaturas
+  o proximo alvo correto ficou mais estreito:
+    localizar a base formal do contrato 076/2024
+    resolver a origem dos 6 contratos AGRO NORTE / SEJUSP
+- Artefatos de entrega atualizados:
+  entrega_denuncia_atual/TRACE_NORTE_SEJUSP_PRIORITARIOS.md
+  entrega_denuncia_atual/TRACE_NORTE_SEJUSP_PRIORITARIOS_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_sejusp_blocos.csv
+  entrega_denuncia_atual/trace_norte_sejusp_docs.csv
+  entrega_denuncia_atual/trace_norte_sejusp/
+  entrega_denuncia_atual/trace_norte_sejusp_bundle_20260313.tar.gz
+
+[2026-03-13 18:12:23 -05] recorte SEJUSP reforcado com DOE 2024 e bundle reemitido com hash estavel
+- Scripts atualizados:
+  scripts/sync_trace_norte_sejusp_prioritarios.py
+  scripts/export_trace_norte_sejusp_prioritarios.py
+- Ajuste estrutural:
+  o sync do SEJUSP passou a absorver atos formais de 2024 do Diario Oficial em data/tmp/sejusp_formal/
+  o export do bundle deixou de incluir o proprio manifest para evitar divergencia de SHA-256
+- Resultado materializado:
+  trace_norte_sejusp_blocos = 2
+  trace_norte_sejusp_docs = 10
+  insights TRACE_NORTE_SEJUSP_TERCEIRIZACAO_SEM_ID_LICITACAO = 1
+  insights TRACE_NORTE_SEJUSP_VIATURAS_RASTRO_DOE = 1
+- Base formal fechada para NORTE-CENTRO / SEJUSP:
+  DOE de 26/12/2024 liga o contrato 076/2024 a ARP 04/2024, PP 053/2023 e processo 0819.014451.00277/2024-18
+  valor total aditivado materializado = R$ 1.388.780,92
+- Base formal parcial fechada para AGRO NORTE / SEJUSP:
+  contrato 082/2024 + adesao 33/2024 -> processo 0819.016417.00053/2024-94 / ARP 49/2023 / PE 206/2023 / R$ 733.491,00
+  contrato 147/2024 -> processo 0064.014914.00006/2024-48 / ARP 49/2023 / PE 206/2023 / R$ 977.988,00
+  adesao 69/2024 -> mesmo processo / ARP 49/2023 / PE 206/2023 / R$ 2.200.473,00
+  portaria do contrato 149/2024 -> processo 0819.012834.00145/2024-93 / FNSP
+- Artefatos reemitidos:
+  entrega_denuncia_atual/TRACE_NORTE_SEJUSP_PRIORITARIOS.md
+  entrega_denuncia_atual/TRACE_NORTE_SEJUSP_PRIORITARIOS_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_sejusp_blocos.csv
+  entrega_denuncia_atual/trace_norte_sejusp_docs.csv
+  entrega_denuncia_atual/trace_norte_sejusp/
+  entrega_denuncia_atual/trace_norte_sejusp_bundle_20260313.tar.gz
+- Hash atual do bundle SEJUSP:
+  71a0897aaa4a2fb7f2c82487cf05a6d34d45c5736f94ae6acfc822a1dce81390
+- Follow-up controlado nos contratos AGRO de 2023:
+  buscas no Diario por 004/2023 e 151/2023 ainda nao fecharam atos formais do bloco AGRO / SEJUSP
+  a busca exata por 004/2023 trouxe falso positivo de outro orgao/unidade (PCAC / F.R. SOARES DAMASCENO LTDA), entao o vinculo nao foi forçado
+  151/2023 segue sem rastro formal local confirmado por busca textual simples
+
+[2026-03-13 18:47:41 -0500] pacote AGRO fora da SEJUSP materializado e exportado
+- Scripts novos:
+  scripts/sync_trace_agro_unidades_followup.py
+  scripts/export_trace_agro_unidades_followup.py
+- Tabelas / views novas:
+  trace_agro_unidades_followup
+  v_trace_agro_unidades_followup
+  trace_agro_unidades_resumo
+  v_trace_agro_unidades_resumo
+- Resultado materializado:
+  contratos = 8
+  blocos = 2
+  AGRO / DETRAN = R$ 2.716.895,28 em 5 contratos
+    aquisicao principal 022/2023 = R$ 2.296.950,00, sem id_licitacao exposto no portal
+    manutencoes / revisoes posteriores = 001/2023, 071/2023, 007/2024, 086/2024
+    insight novo: TRACE_AGRO_DETRAN_FROTA_CADEIA
+  AGRO / execucao penal = R$ 4.068.000,00 em 3 contratos
+    038/2023 / FUNPENACRE = R$ 1.330.000,00
+    073/2023 / IAPEN = R$ 254.000,00
+    072/2024 / ISE = R$ 2.484.000,00
+    os tres blocos seguem sem id_licitacao exposto no portal
+    insight novo: TRACE_AGRO_EXECUCAO_PENAL_FROTA
+- Artefatos de entrega atualizados:
+  entrega_denuncia_atual/TRACE_AGRO_UNIDADES_FOLLOWUP.md
+  entrega_denuncia_atual/TRACE_AGRO_UNIDADES_FOLLOWUP_MANIFEST.json
+  entrega_denuncia_atual/trace_agro_unidades_resumo.csv
+  entrega_denuncia_atual/trace_agro_unidades_followup.csv
+  entrega_denuncia_atual/trace_agro_unidades_bundle_20260313.tar.gz
+- Hash atual do bundle AGRO follow-up:
+  8876b98849d0d1b15f9ffad65a017bb16bd3d90860f889b814aef105e5912251
+- Leitura operacional:
+  o ciclo seguinte deixa de ser genericamente "fechar a NORTE" e passa a ser:
+    DETRAN 022/2023
+    ISE 072/2024
+    FUNPENACRE 038/2023
+  o 170/2023 da SEJUSP permanece como pendencia isolada e ja nao bloqueia a evolucao da trilha AGRO
+
+[2026-03-13 19:10:12 -0500] contrato 170/2023 da SEJUSP ganhou rastro formal parcial local e pacote SEJUSP foi reemitido
+- Scripts atualizados:
+  scripts/sync_trace_norte_sejusp_prioritarios.py
+  scripts/export_trace_norte_sejusp_prioritarios.py
+- Evidencia nova incorporada:
+  data/tmp/sejusp_170_probe/2023-12-08.txt
+  data/tmp/sejusp_170_probe/2023-12-08.pdf
+  portaria SEJUSP 624/2023 com contrato 170/2023, processo SEI 0819.012803.00093/2023-03, AGRO NORTE e objeto de 2 caminhonetes para a PMAC
+- Resultado materializado:
+  trace_norte_sejusp_docs = 14
+  insight TRACE_NORTE_SEJUSP_170_RASTRO_DOE_PARCIAL = 1
+  insight TRACE_NORTE_SEJUSP_TERCEIRIZACAO_SEM_ID_LICITACAO = 1
+  insight TRACE_NORTE_SEJUSP_VIATURAS_RASTRO_DOE = 1
+  insight TRACE_NORTE_SEJUSP_PORTAL_OBJETO_DIVERGENTE = 1
+- Leitura de rigor:
+  170/2023 deixou de ser um ponto sem trilha local
+  agora ha rastro formal parcial via DOE 08/12/2023
+  o que continua em aberto e a origem da contratacao em ARP/pregao/extrato contratual mais forte
+- Artefatos reemitidos:
+  entrega_denuncia_atual/TRACE_NORTE_SEJUSP_PRIORITARIOS.md
+  entrega_denuncia_atual/TRACE_NORTE_SEJUSP_PRIORITARIOS_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_sejusp_docs.csv
+  entrega_denuncia_atual/trace_norte_sejusp_bundle_20260313.tar.gz
+- Hash atual do bundle SEJUSP:
+  089d6a6d2b6501703d3ea09b9699a49f9ef1e86a730f312f1a09f27a909be201
+- Ajuste de consistencia no pacote AGRO:
+  bundle AGRO follow-up reemitido com hash correto
+  novo hash = 434d1a8ee19c9122e24e6342664df4eba120306bebc2a136f34716e4fe6b0dc2
+
+[2026-03-13 19:18:44 -0500] follow-up tecnico do 170/2023 nao fechou a origem licitatoria, mas reduziu o espaco de busca
+- Consultas executadas:
+  busca textual por processo SEI 0819.012803.00093/2023-03 e objeto do contrato em data/tmp/sejusp_170_probe/
+  consulta canônica em estado_ac_licitacoes por caminhonete + PMAC/policia militar + fortalecimento das instituicoes de seguranca publica
+- Resultado:
+  nenhum candidato objetivo apareceu em estado_ac_licitacoes para o contrato 170/2023
+  a prova local continua sendo:
+    portal contratual do 170/2023 com valor R$ 532.000,00
+    portaria DOE de 08/12/2023 com processo SEI 0819.012803.00093/2023-03
+- Leitura de rigor:
+  o gargalo do 170/2023 permanece na origem ARP/pregao/extrato contratual
+  a ausencia de licitacao candidata no catalogo canônico estadual sugere ou publicacao incompleta no portal, ou origem fora da camada já ingerida
+
+[2026-03-13 19:58:41 -0500] pacote AGRO reforcado com docs estruturados e auditoria formal
+- Scripts atualizados:
+  scripts/sync_trace_agro_unidades_followup.py
+  scripts/export_trace_agro_unidades_followup.py
+- Tabelas / views novas:
+  trace_agro_unidades_docs
+  v_trace_agro_unidades_docs
+  trace_agro_unidades_audit
+  v_trace_agro_unidades_audit
+- Resultado materializado:
+  trace_agro_unidades_docs = 3
+  trace_agro_unidades_audit = 2
+  insights TRACE_AGRO_DETRAN_FROTA_CADEIA = 1
+  insights TRACE_AGRO_EXECUCAO_PENAL_FROTA = 1
+  insights TRACE_AGRO_ISE_PORTAL_VALOR_DIVERGENTE = 1
+- Fechamentos novos:
+  DETRAN 022/2023 com processo 0068.008553.00042/2023-71, 6 unidades e valor unitario R$ 382.825,00
+  auditoria de compatibilidade quantitativa entre 022/2023 e 071/2023: 6 unidades no DOE x 6 veiculos L200 na manutencao
+  ISE 072/2024 com 10 unidades e valor oficial DOE de R$ 2.480.000,00
+  divergencia nominal objetiva no 072/2024: portal R$ 2.484.000,00 x DOE R$ 2.480.000,00
+- Artefatos reemitidos:
+  entrega_denuncia_atual/TRACE_AGRO_UNIDADES_FOLLOWUP.md
+  entrega_denuncia_atual/TRACE_AGRO_UNIDADES_FOLLOWUP_MANIFEST.json
+  entrega_denuncia_atual/trace_agro_unidades_docs.csv
+  entrega_denuncia_atual/trace_agro_unidades_audit.csv
+  entrega_denuncia_atual/trace_agro_unidades_bundle_20260313.tar.gz
+- Hash atual do bundle AGRO follow-up:
+  e8d9008323e13b5b6fdb8e27f9ce05f4e5d18f1bd4ea52a19995beb951f5cb5b
+- Proximo alvo tecnico:
+  fechar a ponte formal do 038/2023
+  aprofundar o 073/2023 do IAPEN
+
+[2026-03-13 20:24:11 -0500] DOE de 04/08/2023 fechou o 073/2023 do IAPEN e isolou o 170/2023 como proximo gargalo
+- Scripts atualizados:
+  scripts/sync_trace_agro_unidades_followup.py
+  scripts/export_trace_agro_unidades_followup.py
+- Evidencia nova incorporada:
+  data/tmp/agro_followup_doe/073_2023_iapen_1.pdf
+  data/tmp/agro_followup_doe/073_2023_iapen_1.txt
+  contrato 073/2023 do IAPEN com termo de adesao 26/2023/IAPEN
+  processo 4005.014141.00047/2023-70
+  PE SRP 258/2022
+  ARP 010/2022-SEPA
+  valor R$ 254.000,00
+- Resultado materializado:
+  trace_agro_unidades_docs = 6
+  trace_agro_unidades_audit = 4
+  insight TRACE_AGRO_IAPEN_073_PORTAL_CIAP = 1
+  auditoria PORTAL_X_DOE_ORIGEM / 073/2023 = CONSISTENTE_PORTAL_DOE
+- Leitura de rigor:
+  o 073/2023 saiu da condicao de rastro de card
+  agora ha contrato exato publicado em DOE e card estadual convergente
+  o proximo buraco relevante do eixo AGRO passou a ser o 170/2023 da SEJUSP/PMAC
+- Artefatos reemitidos:
+  entrega_denuncia_atual/TRACE_AGRO_UNIDADES_FOLLOWUP.md
+  entrega_denuncia_atual/TRACE_AGRO_UNIDADES_FOLLOWUP_MANIFEST.json
+  entrega_denuncia_atual/trace_agro_unidades_docs.csv
+  entrega_denuncia_atual/trace_agro_unidades_audit.csv
+  entrega_denuncia_atual/trace_agro_unidades_bundle_20260313.tar.gz
+  entrega_denuncia_atual/trace_agro_unidades/073_2023_iapen_1.pdf
+  entrega_denuncia_atual/trace_agro_unidades/073_2023_iapen_1.txt
+- Hash atual do bundle AGRO follow-up:
+  35662bb9a5d6162b8367dec4085d2d31df14263e9f5c26739433dc3b19eed1b3
+
+[2026-03-13 20:39:23 -0500] TJAC fechou a origem do 170/2023 da SEJUSP e o pacote SEJUSP foi reemitido
+- Evidencia primaria nova:
+  data/tmp/sejusp_170_probe/tjac/0005193-89.2023-Homologacao-publicada-PE-91-2023-TJAC.pdf
+  data/tmp/sejusp_170_probe/tjac/0005193-89.2023-Homologacao-publicada-PE-91-2023-TJAC.txt
+  DJE/TJAC de 24/10/2023 autorizando a SEJUSP a aderir a ARP 304/2022, oriunda do PE SRP 74/2022
+  quantitativos do Oficio 4782/2023/SEJUSP: 2 pick-ups, R$ 266.000,00 cada, total R$ 532.000,00
+- Scripts atualizados:
+  scripts/sync_trace_norte_sejusp_prioritarios.py
+  scripts/export_trace_norte_sejusp_prioritarios.py
+- Resultado materializado:
+  trace_norte_sejusp_docs = 15
+  trace_norte_sejusp_audit = 3
+  170/2023 = CONSISTENTE_ORIGEM_ADESAO
+  insight TRACE_NORTE_SEJUSP_170_ORIGEM_ADESAO_TJAC = 1
+- Leitura de rigor:
+  o 170/2023 saiu da condicao de rastro parcial e passou a ter origem formal fechada
+  o proximo buraco relevante da trilha AGRO deixou de ser SEJUSP e migrou para DETRAN/ISE
+- Artefatos reemitidos:
+  entrega_denuncia_atual/TRACE_NORTE_SEJUSP_PRIORITARIOS.md
+  entrega_denuncia_atual/TRACE_NORTE_SEJUSP_PRIORITARIOS_MANIFEST.json
+  entrega_denuncia_atual/trace_norte_sejusp_bundle_20260313.tar.gz
+  novo hash = abf3715be9ab926aea21ca6bf5712f6fed93336762f624012e352910824a26c4
+
+[2026-03-13 20:47:27 -0500] manutencao_git
+- Motivo:
+  push anterior subiu bundles e evidencias binarias geradas para o historico do master
+- Acao executada:
+  reescrita do historico removendo bundles .tar.gz e pastas de evidencias geradas do indice git
+  preservacao local dos artefatos em backup temporario e restauracao como arquivos ignorados
+  protecao adicionada em .gitignore para evitar reincidencia
+- Validacao:
+  git count-objects -vH -> size-pack 3.28 MiB
+  maiores blobs restantes ficaram abaixo de 1.3 MiB
+  arvore local com evidencias continuou acessivel fora do indice
+- Observacao:
+  sera necessario force-push do branch master limpo para alinhar o remoto
+
+[2026-03-13 21:49:53 -0500] camada_probatoria_backend
+- Objetivo:
+  endurecer o sistema contra falso positivo e separar fato, divergencia, cruzamento e hipotese
+- Arquivos atualizados:
+  src/core/insight_classification.py
+  backend/app/main.py
+  backend/app/schemas.py
+  scripts/sync_v2.py
+  v2_core.sql
+  frontend/lib/types.ts
+  docs/Claude-march/patch_claude/claude_update/patch/PROTOCOLO_PROBATORIO.md
+- Regra incorporada:
+  cada insight agora recebe classe_achado, grau_probatorio, fonte_primaria, uso_externo, inferencia_permitida e limite_conclusao
+- Validacao:
+  py_compile dos arquivos Python alterados passou
+  sync_insight_classification() executou com sucesso no DuckDB principal
+  filtros por classe_achado e uso_externo funcionaram no backend
+- Estado observado no banco:
+  CRUZAMENTO_SANCIONATORIO / DOCUMENTAL_CORROBORADO / APTO_APURACAO = 765
+  DIVERGENCIA_DOCUMENTAL / DOCUMENTAL_PRIMARIO / APTO_APURACAO = 4
+  FATO_DOCUMENTAL / DOCUMENTAL_PRIMARIO ou CORROBORADO / APTO_APURACAO = 6
+  RASTRO_CONTRATUAL / INDICIARIO ou EXPLORATORIO = 15
+  HIPOTESE_INVESTIGATIVA / INDICIARIO ou EXPLORATORIO = 293
+- Exemplos conferidos:
+  RB_CONTRATO_LICITACAO_INCONSISTENTE -> DIVERGENCIA_DOCUMENTAL
+  RB_CONTRATO_SANCIONADO -> CRUZAMENTO_SANCIONATORIO
+  TRACE_NORTE_SEJUSP_170_ORIGEM_ADESAO_TJAC -> FATO_DOCUMENTAL
+  TRACE_AGRO_DETRAN_FROTA_CADEIA -> RASTRO_CONTRATUAL
+
+[2026-03-13 22:08:11 -0500] vinculo_politico_societario_conservador
+- Objetivo:
+  criar uma camada estritamente objetiva para sobreposicao entre QSA, contratos publicos e bases politicas/servidores, sem chamar nepotismo automaticamente
+- Scripts novos:
+  scripts/sync_vinculo_politico_societario.py
+  scripts/export_vinculo_politico_societario.py
+- Correcao importante de rigor:
+  o alvo inicial estava inflando exposicao e numero de contratos pelo numero de socios no JOIN com empresa_socios
+  o join foi trocado para CNPJs distintos e a exposicao do caso positivo caiu de R$ 13,2 mi para R$ 6,6 mi, com 1 contrato real
+- Resultado no banco:
+  vinculo_politico_societario_targets = 37
+  vinculo_politico_societario_matches = 4
+  vinculo_politico_societario_resumo = 37
+  insights RISCO_VINCULO_SOCIETARIO_* = 1
+- Caso objetivo materializado:
+  CEDIMP / 13.325.100/0001-30 / contrato 779/2023 / SESACRE / R$ 6.604.510,00
+  2 socios com match nominal exato em 2 bases municipais de servidor:
+  MAIRA SANTIAGO PIRES PARENTE -> medica ultrasonografista / SEMSA / concursada
+  MARCOS PAULO PARENTE ARAUJO -> medico radiologia / SEMSA / concursado
+- Classificacao probatoria:
+  HIPOTESE_INVESTIGATIVA / EXPLORATORIO / REVISAO_INTERNA
+- Leitura de rigor:
+  isto prova apenas sobreposicao societaria exata com base publica
+  nao prova nepotismo, impedimento legal ou favorecimento sem CPF completo, compatibilidade de carga horaria e regime juridico
+- Artefatos leves gerados:
+  entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_DOSSIE.md
+  entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_MANIFEST.json
+  entrega_denuncia_atual/trace_vinculo_societario_resumo.csv
+  entrega_denuncia_atual/trace_vinculo_societario_matches.csv
+  entrega_denuncia_atual/trace_vinculo_societario_contratos.csv
+
+[2026-03-13 22:21:03 -0500] vinculo_societario_saude_followup
+- Objetivo:
+  fechar um follow-up oficial de saude para o caso positivo da CEDIMP, usando fonte primaria do Ministerio da Saude
+- Scripts novos:
+  scripts/sync_vinculo_societario_saude_followup.py
+  scripts/export_vinculo_societario_saude_followup.py
+- Fonte primaria validada:
+  CNES oficial -> estabelecimento 6861849
+  https://cnes2.datasus.gov.br/Exibe_Ficha_Estabelecimento.asp?VCo_Unidade=1200406861849&VEstado=12&VCodMunicipio=120040
+- Resultado materializado:
+  vinculo_societario_saude_followup = 1
+  insight QSA_VINCULO_SOCIETARIO_SAUDE_EXATO = 1
+  classificacao do insight = HIPOTESE_INVESTIGATIVA / INDICIARIO / REVISAO_INTERNA
+- Caso fechado:
+  CEDIMP / 13.325.100/0001-30 / contrato 779/2023 / SESACRE / R$ 6.604.510,00
+  CNES 6861849 / SADT ISOLADO / gestao ESTADUAL / Rio Branco
+  2 socios com match exato em base municipal:
+  MAIRA SANTIAGO PIRES PARENTE / medica ultrasonografista / 20h / SEMSA
+  MARCOS PAULO PARENTE ARAUJO / medico radiologia / 20h / SEMSA
+  8 classificacoes oficiais no CNES, incluindo RADIOLOGIA, TOMOGRAFIA COMPUTADORIZADA e ULTRASONOGRAFIA
+- Leitura de rigor:
+  isso reforca objetivamente a correlacao entre atividade privada, contrato estadual e funcao publica municipal
+  ainda nao prova impedimento legal, conflito ilicito, nepotismo ou acumulo irregular
+- Artefatos leves gerados:
+  entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_DOSSIE.md
+  entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_MANIFEST.json
+  entrega_denuncia_atual/trace_vinculo_societario_saude_followup.csv
+
+[2026-03-13 22:29:18 -0500] cnes_profissionais_cedimp
+- Objetivo:
+  verificar se os socios publicos da CEDIMP tambem aparecem no modulo oficial de profissionais do CNES
+- Fonte primaria validada:
+  https://cnes2.datasus.gov.br/Mod_Profissional.asp?VCo_Unidade=1200406861849
+- Resultado:
+  os 2 nomes aparecem como profissionais ativos do estabelecimento
+  MAIRA SANTIAGO PIRES PARENTE -> CBO 225320 / MEDICO EM RADIOLOGIA E DIAGNOSTICO POR IMAGEM / 20h amb / vinculo empregaticio / celetista
+  MARCOS PAULO PARENTE ARAUJO -> CBO 225320 / MEDICO EM RADIOLOGIA E DIAGNOSTICO POR IMAGEM / 20h amb / autonomo / pessoa fisica
+- Efeito no banco:
+  vinculo_societario_saude_followup.n_cnes_profissionais_match = 2
+  insight novo = VINCULO_EXATO_CNES_PROFISSIONAL_SAUDE
+  classificacao = FATO_DOCUMENTAL / DOCUMENTAL_CORROBORADO / APTO_APURACAO
+- Leitura de rigor:
+  isso prova coincidencia documental nominal entre estabelecimento privado, ficha oficial de profissionais do CNES, contrato estadual e base municipal de servidores
+  ainda nao prova impedimento legal ou conflito ilicito sem amarracao juridica adicional
+[2026-03-13 23:49:12 -05] camada de respostas oficiais do caso CEDIMP implementada
+
+objetivo:
+  sair de dossie estatico para ciclo probatorio real, absorvendo documentos oficiais de `SEMSA/RH` e `SESACRE` com hash, indice e impacto controlado na maturidade
+
+arquivos principais:
+  scripts/sync_vinculo_societario_saude_respostas.py
+  scripts/export_vinculo_societario_saude_respostas.py
+  docs/Claude-march/patch_claude/claude_update/patch/RF_RNF_VINCULO_SOCIETARIO_SAUDE_RESPOSTAS.md
+  entrega_denuncia_atual/cedimp_respostas/README.md
+  entrega_denuncia_atual/cedimp_respostas/cedimp_respostas_index.csv
+  entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_RESPOSTAS_DOSSIE.md
+  entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_RESPOSTAS_MANIFEST.json
+  entrega_denuncia_atual/trace_vinculo_societario_saude_respostas.csv
+
+resultado esperado:
+  `12` documentos esperados materializados no indice inicial
+  a maturidade do caso agora pode reagir a cobertura documental real
+  sem arquivo local, nada sobe de status probatorio por automatismo
+
+[2026-03-13 23:35:46 -0500] camada de respostas oficiais validada no banco e no bundle do caso
+
+validacao executada:
+  python -m py_compile scripts/sync_vinculo_societario_saude_respostas.py scripts/export_vinculo_societario_saude_respostas.py scripts/sync_vinculo_societario_saude_maturidade.py scripts/validate_cedimp_quality.py scripts/pack_cedimp_case.py
+  .venv/bin/python scripts/sync_vinculo_societario_saude_respostas.py
+  .venv/bin/python scripts/sync_vinculo_societario_saude_maturidade.py
+  .venv/bin/python scripts/export_vinculo_societario_saude_respostas.py
+  .venv/bin/python scripts/export_vinculo_societario_saude_maturidade.py
+  .venv/bin/python scripts/pack_cedimp_case.py
+  .venv/bin/python scripts/validate_cedimp_quality.py
+
+resultado real:
+  respostas = `12`
+  eixos de cobertura = `4`
+  referencias quebradas = `0`
+  maturidade = `11` linhas
+  bundle do caso CEDIMP = `24` arquivos
+  hash do bundle = `21b415a775e5b485615595b216fbbf4a6939491081945dbfa919774b8b31d6d5`
+  validacao de qualidade = `23` checks / `all_pass=True`
+
+leitura:
+  o caso continua conservador
+  `compatibilidade_horarios` segue `PENDENTE_DOCUMENTO`
+  `vedacao_art_107_x` segue `PENDENTE_ENQUADRAMENTO`
+  `acumulacao_ilegal` segue `SEM_CONCLUSAO_AUTOMATICA`
+  a diferenca agora e operacional: existe um trilho controlado para quando os documentos oficiais chegarem
+
+[2026-03-13 23:58:10 -0500] gate operacional do caso CEDIMP implementado
+
+objetivo:
+  impedir salto indevido de `dossie forte` para `representacao`
+  transformar a maturidade e a cobertura documental em decisao conservadora de uso
+
+arquivos principais:
+  scripts/sync_vinculo_societario_saude_gate.py
+  scripts/export_vinculo_societario_saude_gate.py
+  entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_GATE_DOSSIE.md
+  entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_GATE_MANIFEST.json
+  entrega_denuncia_atual/trace_vinculo_societario_saude_gate.csv
+  entrega_denuncia_atual/nota_operacional_cedimp.txt
+
+resultado esperado:
+  estagio atual = `APTO_OFICIO_DOCUMENTAL`
+  uso recomendado = `PEDIDO_DOCUMENTAL`
+  externo permitido = `sim`, mas restrito a oficios e pedidos de documento
+  representacao preliminar continua bloqueada enquanto nao houver documento funcional recebido e analisado
+
+[2026-03-14 00:02:11 -0500] gate operacional validado e bundle do caso CEDIMP reemitido
+
+validacao executada:
+  python -m py_compile scripts/sync_vinculo_societario_saude_gate.py scripts/export_vinculo_societario_saude_gate.py scripts/validate_cedimp_quality.py scripts/pack_cedimp_case.py
+  .venv/bin/python scripts/sync_vinculo_societario_saude_gate.py
+  .venv/bin/python scripts/export_vinculo_societario_saude_gate.py
+  .venv/bin/python scripts/pack_cedimp_case.py
+  .venv/bin/python scripts/validate_cedimp_quality.py
+
+resultado real:
+  gate = `APTO_OFICIO_DOCUMENTAL`
+  uso recomendado = `PEDIDO_DOCUMENTAL`
+  pode_uso_externo = `True`
+  bundle do caso CEDIMP = `27` arquivos
+  hash do bundle = `e69a70846fe7967ff4141581cab9321b29e52c07fd9cfecb229aed5793d6ad84`
+  validacao de qualidade = `27` checks / `all_pass=True`
+
+leitura:
+  o sistema agora nao apenas encontra o caso e separa o que esta provado
+  ele tambem diz, de forma conservadora, qual e o uso externo permitido hoje
+  no estado atual, `CEDIMP` esta apto para oficios e pedidos documentais, mas ainda bloqueado para representacao preliminar
+
+[2026-03-14 00:18:04 -0500] fundacao operacional do painel implementada
+
+objetivo:
+  tirar o projeto do modo `colecao de scripts` e preparar o backend vivo para um painel real
+
+arquivos principais:
+  src/core/ops_registry.py
+  scripts/sync_ops_case_registry.py
+  docs/Claude-march/patch_claude/claude_update/patch/RF_RNF_MER_DER_AUTOMACAO_OPERACIONAL.md
+  backend/app/main.py
+  backend/app/schemas.py
+  frontend/lib/api.ts
+  frontend/lib/types.ts
+
+resultado esperado:
+  casos operacionais materializados a partir de:
+    `v_rb_contratos_prioritarios`
+    `sancoes_collapsed`
+    `v_vinculo_societario_saude_gate`
+  endpoints novos:
+    `/ops/summary`
+    `/ops/cases`
+    `/ops/cases/{case_id}`
+    `/ops/cases/{case_id}/artifacts`
+
+[2026-03-14 00:23:31 -0500] registry operacional validado com dados reais e endpoints ativos
+
+validacao executada:
+  python -m py_compile src/core/ops_registry.py scripts/sync_ops_case_registry.py backend/app/main.py backend/app/schemas.py
+  .venv/bin/python scripts/sync_ops_case_registry.py
+  fastapi TestClient -> `/ops/summary`
+  fastapi TestClient -> `/ops/cases?limit=5`
+  fastapi TestClient -> `/ops/cases/cedimp:saude_societario:13325100000130`
+  fastapi TestClient -> `/ops/cases/cedimp:saude_societario:13325100000130/artifacts`
+
+resultado real:
+  registry = `13` casos
+  artifacts = `34`
+  familias:
+    `sesacre_sancao` = `10`
+    `rb_sus_contrato` = `2`
+    `saude_societario` = `1`
+  estagios:
+    `APTO_REPRESENTACAO_PRELIMINAR` = `12`
+    `APTO_OFICIO_DOCUMENTAL` = `1`
+  caso `CEDIMP` = `APTO_OFICIO_DOCUMENTAL` / `PEDIDO_DOCUMENTAL` / `5` artefatos
+
+leitura:
+  ainda nao existe UI web real
+  mas agora ja existe backend vivo suficiente para um painel:
+    lista de casos
+    detalhe do caso
+    artefatos do caso
+    resumo operacional por estagio e familia
+
+[2026-03-14 00:41:52 -0500] correcao de trilha: o projeto ja tinha painel web real em Streamlit
+
+correcao:
+  a leitura anterior sobre `nao existir UI web real` estava errada
+  o painel ativo do projeto ja existia em:
+    `app.py`
+  e a operacao principal ja estava documentada no:
+    `README.md`
+  nao foi encontrada aplicacao `Dash` separada como interface principal
+
+decisao de engenharia:
+  a automacao operacional nova passa a ser integrada ao `Streamlit` existente
+  nao sera aberta uma segunda UI paralela
+
+[2026-03-14 00:49:10 -0500] aba operacional integrada ao Streamlit com visualizador de artefatos
+
+arquivos principais:
+  app.py
+  README.md
+  docs/Claude-march/patch_claude/claude_update/patch/RF_RNF_MER_DER_AUTOMACAO_OPERACIONAL.md
+  docs/Claude-march/patch_claude/claude_update/patch/RF_RNF_UI_OPERACIONAL_STREAMLIT.md
+
+resultado entregue:
+  nova aba `📂 OPERAÇÕES` no `app.py`
+  refresh manual do `ops_case_registry` pelo proprio painel
+  filtros por familia / estagio / orgao / uso externo / texto
+  detalhe do caso no proprio Streamlit
+  preview local de artefatos:
+    `md`
+    `txt`
+    `json`
+    `csv`
+    `html`
+    `pdf`
+
+leitura:
+  a partir daqui a refatoracao de UX deve acontecer em cima do painel real do projeto
+  o foco deixa de ser `mais um frontend`
+  e passa a ser `centro operacional investigativo`
+
+[2026-03-14 01:04:33 -0500] referencias oficiais de UX de controle consolidadas
+
+arquivo:
+  docs/Claude-march/patch_claude/claude_update/patch/REFERENCIAS_EUA_CONTROLE_UX.md
+
+fontes-base:
+  `USAspending`
+  `Oversight.gov`
+  `SEC/EDGAR`
+
+traducao para o produto:
+  filtro forte antes de grafico
+  drill-down por caso
+  documento no mesmo fluxo
+  status operacional explicito
+  nada de score opaco ou interface cosmetica
+
+[2026-03-14 00:15:02 -0500] inicio formal da fase `ops_pipeline_run + ops_source_cache`
+
+arquivo de handoff:
+  docs/Claude-march/patch_claude/claude_update/patch/FASE_AUTOMACAO_OPERACIONAL_20260314.md
+
+decisao:
+  a proxima fase passa a ser infraestrutura operacional do painel
+  prioridade:
+    `ops_pipeline_run`
+    `ops_source_cache`
+  depois:
+    `inbox operacional`
+    `timeline`
+    `diff documental`
+
+[2026-03-14 00:24:41 -0500] runtime operacional implementado no banco e ligado ao Streamlit
+
+arquivos principais:
+  src/core/ops_runtime.py
+  scripts/sync_ops_case_registry.py
+  scripts/sync_ops_source_cache.py
+  app.py
+  README.md
+
+resultado entregue:
+  nova tabela `ops_pipeline_run`
+  nova tabela `ops_source_cache`
+  views:
+    `v_ops_pipeline_run_latest`
+    `v_ops_source_cache_latest`
+  `sync_ops_case_registry.py` agora grava run log
+  `sync_ops_source_cache.py` verifica fontes publicas oficiais e grava:
+    `status_code`
+    `etag`
+    `last_modified`
+    `ttl`
+    `response_sha256`
+    `body_path` quando ha snapshot local
+  a aba `📂 OPERAÇÕES` agora mostra:
+    execucoes recentes
+    fontes monitoradas
+    refresh manual de fontes
+    preview de snapshot de fonte quando existir
+
+validacao executada:
+  python -m py_compile app.py src/core/ops_runtime.py scripts/sync_ops_case_registry.py scripts/sync_ops_source_cache.py
+  .venv/bin/python scripts/sync_ops_source_cache.py
+  .venv/bin/python scripts/sync_ops_case_registry.py
+  .venv/bin/python -> leitura de `load_ops_dashboard_data()` e `load_ops_runtime_data()`
+
+resultado real:
+  `ops_case_registry` = `13` casos
+  `ops_case_artifact` = `34` artefatos
+  `ops_pipeline_run` = `3` execucoes recentes lidas no app
+  `ops_source_cache` = `7` fontes oficiais monitoradas
+  todas as `7` fontes responderam `200`
+  `PNCP Dados Abertos` gerou snapshot local:
+    `data/ops_source_cache/pncp_api_orgaos.html`
+
+leitura:
+  o painel deixou de ser apenas visualizacao de caso
+  e passou a ter memoria operacional minima:
+    o que rodou
+    quando rodou
+    quais fontes estao saudaveis
+    qual snapshot local foi capturado
+
+[2026-03-14 00:20:54 -0500] refatoracao do painel operacional para reduzir monolito e redundancia
+
+arquivos principais:
+  app.py
+  src/ui/streamlit_ops.py
+
+resultado entregue:
+  a aba `📂 OPERAÇÕES` saiu do `app.py` e foi isolada em `src/ui/streamlit_ops.py`
+  novo fluxo da aba:
+    `Visão Geral`
+    `Bancada de Casos`
+    `Runtime`
+  a bancada agora usa layout de trabalho:
+    fila de casos
+    detalhe do caso
+    preview de evidencias
+  `app.py` caiu de `936` para `433` linhas
+
+validacao executada:
+  python -m py_compile app.py src/ui/streamlit_ops.py
+  streamlit run app.py --server.headless true --server.port 8767
+  curl -I http://localhost:8767 -> `200`
+
+leitura:
+  a UI ficou menos redundante
+  e a base de desenvolvimento ficou menos fragil
+  ainda ha espaco para modularizar outras paginas,
+  mas a trilha correta agora esta estabelecida
+
+[2026-03-14 01:42:00 -0500] fase operacional - onus probatorio, timeline por fase, diff semantico e busca refinada
+
+arquivos principais:
+  src/core/ops_legal.py
+  src/core/ops_burden.py
+  src/core/ops_semantic.py
+  src/core/ops_registry.py
+  src/core/ops_timeline.py
+  src/core/ops_search.py
+  src/ui/ops_burden.py
+  src/ui/ops_timeline.py
+  src/ui/ops_semantic.py
+  src/ui/ops_data.py
+  src/ui/ops_sections.py
+  src/ui/ops_search.py
+  scripts/sync_ops_burden.py
+  scripts/sync_ops_semantic.py
+  docs/Claude-march/patch_claude/claude_update/patch/RF_RNF_ONUS_TIMELINE_DIFF_BUSCA.md
+  docs/Claude-march/patch_claude/claude_update/patch/FASE_AUTOMACAO_OPERACIONAL_20260314.md
+
+resultado entregue:
+  `ops_case_burden_item` materializado com `66` linhas
+  `ops_case_semantic_issue` materializado com `4` linhas
+  timeline operacional agora tem:
+    `phase_key`
+    `phase_label`
+    `phase_order`
+  a bancada de caso agora exibe:
+    `Resumo`
+    `Ônus`
+    `Evidências`
+    `Timeline`
+    `Diff`
+  a busca full-text agora filtra por:
+    `família`
+    `tipo`
+    `origem`
+    `evento`
+    `órgão`
+    `case_id`
+  snippets agora usam janela densa e destaque de termo
+
+validacao executada:
+  python -m py_compile app.py src/core/ops_legal.py src/core/ops_burden.py src/core/ops_semantic.py src/core/ops_registry.py src/core/ops_timeline.py src/core/ops_search.py src/ui/ops_burden.py src/ui/ops_timeline.py src/ui/ops_semantic.py src/ui/ops_data.py src/ui/ops_sections.py src/ui/ops_search.py scripts/sync_ops_burden.py scripts/sync_ops_semantic.py
+  .venv/bin/python scripts/sync_ops_case_registry.py
+  .venv/bin/python -> leitura de:
+    `ops_case_burden_item`
+    `ops_case_semantic_issue`
+    `v_ops_case_timeline_event`
+    `v_ops_artifact_text_index`
+  streamlit run app.py --server.headless true --server.port 8774
+  curl -I http://localhost:8774 -> `200`
+
+resultado real:
+  `ops_case_registry` = `13`
+  `ops_case_artifact` = `37`
+  `ops_case_burden_item` = `66`
+  `ops_case_semantic_issue` = `4`
+  `v_ops_case_timeline_event` = `141`
+  `ops_artifact_text_index` = `33`
+
+caso `rb:contrato:3898`:
+  onus probatorio:
+    `3` itens `COMPROVADO_DOCUMENTAL`
+    `3` itens `PENDENTE_DOCUMENTO`
+  diff semantico:
+    `numero_processo` = `COERENTE`
+    `objeto` = `COERENTE`
+    `item_x_edital` = `DIVERGENTE`
+    `item_x_propostas` = `DIVERGENTE`
+
+caso `cedimp:saude_societario:13325100000130`:
+  onus probatorio:
+    `2` itens `COMPROVADO_DOCUMENTAL`
+    `1` item `PENDENTE_DOCUMENTO`
+    `1` item `PENDENTE_ENQUADRAMENTO`
+    `1` item `SEM_BASE_ATUAL`
+
+leitura:
+  o painel deixou de ser apenas fluxo de arquivo
+  e passou a mostrar:
+    o que esta provado
+    o que ainda depende de documento
+    onde ha contradicao objetiva
+    qual ancora normativa sustenta a diligencia
+
+[2026-03-14 02:06:00 -0500] fase operacional - saida nao-acusatoria, contradicoes e checklist
+
+arquivos principais:
+  src/core/ops_guard.py
+  src/core/ops_contradiction.py
+  src/core/ops_checklist.py
+  src/core/ops_registry.py
+  src/ui/ops_checklist.py
+  src/ui/ops_sections.py
+  src/ui/ops_shared.py
+  src/ui/streamlit_alerts.py
+  scripts/sync_ops_guard.py
+  scripts/sync_ops_contradiction.py
+  scripts/sync_ops_checklist.py
+  docs/Claude-march/patch_claude/claude_update/patch/PROTOCOLO_SAIDA_NAO_ACUSATORIA.md
+
+resultado entregue:
+  `ops_case_contradiction` materializado
+  `ops_case_checklist` materializado
+  `ops_case_language_guard` materializado
+  a bancada de caso agora mostra:
+    checklist probatorio
+    contradicoes objetivas
+    gate de linguagem externa
+  o gerador textual da aba de alertas deixou de emitir `DENÚNCIA`
+  e passou a emitir `RELATO PARA APURACAO PRELIMINAR`
+  labels de saida visiveis no painel foram suavizados:
+    `APTO_REPRESENTACAO` -> `APTO_A_NOTICIA_DE_FATO`
+    `APTO_REPRESENTACAO_PRELIMINAR` -> `APTO_A_NOTICIA_DE_FATO`
+
+artefatos saneados:
+  entrega_denuncia_atual/denuncia_preliminar_3895.txt
+  entrega_denuncia_atual/denuncia_preliminar_3898.txt
+  sesacre_prioritarios/representacao_preliminar_sesacre_top10.txt
+  entrega_denuncia_atual/TRACE_VINCULO_SOCIETARIO_SAUDE_GATE_DOSSIE.md
+  entrega_denuncia_atual/nota_operacional_cedimp.txt
+  dossie_rb_sus_prioritarios.md
+
+validacao executada:
+  python -m py_compile src/core/ops_guard.py src/core/ops_contradiction.py src/core/ops_checklist.py src/core/ops_registry.py src/core/ops_burden.py src/ui/ops_checklist.py src/ui/ops_sections.py src/ui/ops_shared.py src/ui/streamlit_alerts.py src/ui/streamlit_ops.py scripts/sync_ops_guard.py scripts/sync_ops_contradiction.py scripts/sync_ops_checklist.py scripts/sync_ops_case_registry.py
+  .venv/bin/python scripts/sync_ops_case_registry.py
+  streamlit run app.py --server.headless true --server.port 8775
+  curl -I http://localhost:8775 -> `200`
+
+resultado real:
+  `contradiction_rows` = `2`
+  `checklist_rows` = `66`
+  `language_guard_rows` = `0`
+
+leitura:
+  o sistema agora nao so organiza prova
+  como tambem vigia o proprio tom da saida externa
+  a regra operacional ficou:
+    relatar
+    documentar
+    pedir apuracao
+    nunca imputar culpa automaticamente
+
+[2026-03-14 02:18:00 -0500] fase operacional - exportacao segura on-demand
+
+arquivos principais:
+  src/core/ops_export.py
+  src/core/ops_registry.py
+  src/ui/ops_export.py
+  src/ui/ops_sections.py
+  src/ui/streamlit_ops.py
+  src/ui/ops_data.py
+  scripts/sync_ops_export_gate.py
+  scripts/validate_ops_output_guard.py
+
+resultado entregue:
+  `ops_case_export_gate` materializado
+  aba `Exportação` adicionada na bancada do caso
+  modos suportados:
+    `NOTA_INTERNA`
+    `PEDIDO_DOCUMENTAL`
+    `NOTICIA_FATO`
+  o painel agora:
+    mostra os modos permitidos por caso
+    bloqueia modo externo quando o caso nao atingiu maturidade suficiente
+    gera texto neutro on-demand
+    permite baixar `.txt` sem reaproveitar texto legado acusatorio
+
+validacao executada:
+  python -m py_compile src/core/ops_export.py src/ui/ops_export.py src/ui/ops_sections.py src/ui/streamlit_ops.py src/ui/ops_data.py scripts/sync_ops_export_gate.py
+  .venv/bin/python scripts/sync_ops_case_registry.py
+  .venv/bin/python scripts/validate_ops_output_guard.py
+  streamlit run app.py --server.headless true --server.port 8776
+  curl -I http://localhost:8776 -> `200`
+
+resultado real:
+  `export_gate_rows` = `39`
+  caso bloqueado para `NOTICIA_FATO`:
+    `cedimp:saude_societario:13325100000130`
+    motivo: depende de documentos funcionais e enquadramento humano
+  `language_guard_rows` = `0`
+
+leitura:
+  o painel agora nao depende mais de rascunho legado para saida externa
+  a saida nasce do banco operacional atual
+  com:
+    modo permitido
+    limite da conclusao
+    contradicoes
+    base documental minima
+
+[2026-03-14 02:21:00 -0500] fase operacional - congelamento da exportacao segura
+
+arquivos principais:
+  src/core/ops_export.py
+  src/core/ops_registry.py
+  src/core/ops_timeline.py
+  src/ui/ops_data.py
+  src/ui/ops_export.py
+  src/ui/ops_sections.py
+  scripts/freeze_ops_case_export.py
+  scripts/sync_ops_case_registry.py
+  scripts/validate_ops_output_guard.py
+
+resultado entregue:
+  a exportacao segura agora pode ser congelada como artefato controlado do caso
+  com:
+    arquivo `.txt` persistido em `entrega_denuncia_atual/ops_exports/...`
+    `sha256`
+    `size_bytes`
+    `actor`
+    `created_at`
+  nova tabela:
+    `ops_case_generated_export`
+  novos artefatos aparecem automaticamente em:
+    `v_ops_case_artifact`
+    timeline do caso
+    preview do painel
+    busca textual local
+  o painel agora mostra:
+    exportacoes congeladas por caso
+    botao `Congelar exportacao controlada`
+    contagem global de `Exports congelados`
+
+validacao executada:
+  python -m py_compile src/core/ops_export.py src/core/ops_registry.py src/core/ops_timeline.py src/ui/ops_data.py src/ui/ops_export.py src/ui/ops_sections.py scripts/freeze_ops_case_export.py scripts/validate_ops_output_guard.py scripts/sync_ops_case_registry.py
+  .venv/bin/python scripts/sync_ops_case_registry.py
+  .venv/bin/python scripts/freeze_ops_case_export.py --case-id rb:contrato:3898 --mode NOTICIA_FATO
+  .venv/bin/python scripts/freeze_ops_case_export.py --case-id cedimp:saude_societario:13325100000130 --mode PEDIDO_DOCUMENTAL
+  .venv/bin/python scripts/validate_ops_output_guard.py
+  streamlit run app.py --server.headless true --server.port 8778
+  curl -I http://localhost:8778 -> `200`
+
+resultado real:
+  `generated_export_rows` = `2`
+  `v_ops_case_artifact kind=generated_export` = `2`
+  `timeline_events` = `145`
+  `artifacts` = `39`
+  `indexed_docs` = `35`
+  exports congelados:
+    `rb:contrato:3898` / `NOTICIA_FATO`
+    `cedimp:saude_societario:13325100000130` / `PEDIDO_DOCUMENTAL`
+
+leitura:
+  agora a peca segura pode deixar de ser transitoria
+  e virar evidencia operacional versionada do proprio caso
+  sem perder:
+    gate de linguagem
+    cadeia de custodia
+    preview local
+    timeline
+    busca
+
+[2026-03-14 02:38:00 -0500] fase operacional - legitimidade das regras e diff entre versoes congeladas
+
+arquivos principais:
+  src/core/ops_legal.py
+  src/core/ops_semantic.py
+  src/core/ops_export.py
+  src/core/ops_rulebook.py
+  src/core/ops_registry.py
+  src/ui/ops_data.py
+  src/ui/ops_export.py
+  src/ui/ops_sections.py
+  scripts/sync_ops_rulebook.py
+  scripts/validate_ops_rulebook.py
+  AUDITORIA_LEGITIMIDADE_REGRAS_20260314.md
+
+resultado entregue:
+  rulebook materializado com:
+    `5` regras centrais
+    base legal
+    benchmark internacional
+    uso permitido
+    risco de falso positivo
+  validador de legitimidade implementado
+  comparacao de objeto em `ops_semantic` ficou conservadora
+  diff entre versoes congeladas de exportacao entrou na arquitetura:
+    `ops_case_generated_export_diff`
+    view `v_ops_case_generated_export_diff`
+  painel operacional mostra:
+    falhas de regra
+    diffs de exportacao congelada quando existirem
+
+validacao executada:
+  python -m py_compile src/core/ops_legal.py src/core/ops_semantic.py src/core/ops_rulebook.py src/core/ops_export.py src/core/ops_registry.py src/ui/ops_data.py src/ui/ops_export.py src/ui/ops_sections.py scripts/sync_ops_rulebook.py scripts/validate_ops_rulebook.py scripts/sync_ops_case_registry.py
+  .venv/bin/python scripts/sync_ops_case_registry.py
+  .venv/bin/python scripts/validate_ops_rulebook.py
+  .venv/bin/python scripts/validate_ops_output_guard.py
+  streamlit run app.py --server.headless true --server.port 8779
+  curl -I http://localhost:8779 -> `200`
+
+resultado real:
+  `rule_rows` = `5`
+  `rule_validation_rows` = `6`
+  `rule_validation_fail_rows` = `0`
+  `generated_export_diff_rows` = `0`
+  `language_guard_rows` = `0`
+  `export_gate_rows` = `39`
+  `generated_export_rows` = `2`
+
+achado importante desta fase:
+  o primeiro validador acusou falso positivo nas exportacoes congeladas
+  porque o proprio disclaimer continha `fraude consumada` e `crime` em contexto negativo
+  isso foi corrigido adicionando contexto seguro `nao imputa`
+  e rerodando a auditoria ate zerar os FAILs
+
+leitura:
+  o produto hoje e legitimo para:
+    noticia de fato
+    pedido documental
+    apuracao preliminar
+    triagem probatoria
+  e nao e legitimo para:
+    acusacao penal automatica
+    nepotismo automatico
+    fraude consumada automatica
+    pedalada fiscal automatica
+
+2026-03-14 — correção crítica pós-auditoria `claude_feedback`
+
+o feedback procedia em pontos materiais e foi portado ao código real:
+- `3895 / NORTE DISTRIBUIDORA` caiu do fluxo sancionatório municipal
+- `validate_sancao_timeline.py` confirmou `5` cruzamentos brutos e `5` falsos positivos temporais
+- `v_rb_contrato_ceis_valida = 0`
+- `v_rb_contrato_ceis_invalida = 5`
+- `RB_CONTRATO_SANCIONADO = 0`
+
+hardening aplicado:
+- `scripts/sync_rb_contratos.py`
+  - cruzamento sancionatório municipal agora exige temporalidade válida
+  - escopo municipal sem `abrangencia` explícita não promove insight externo
+  - views novas:
+    - `v_rb_contrato_ceis_valida`
+    - `v_rb_contrato_ceis_revisao`
+    - `v_rb_contrato_ceis_invalida`
+- `scripts/validate_sancao_timeline.py`
+  - validador standalone da timeline CEIS x contratos SUS
+- `src/core/cross_reference_engine.py`
+  - schema compatível com o banco atual
+  - campos probatórios no `alerts`
+  - `fracionamento` corrigido para `R$ 50.000,00`
+  - `outlier_salarial` exige `n >= 30`
+  - `nepotismo` por sobrenome rebaixado para `REVISAO_INTERNA`
+  - detectores sensíveis bloqueados por padrão sem `--allow-internal`
+- streamlit:
+  - `🚩 ALERTAS CRÍTICOS` virou `🧪 ALERTAS LEGADOS (QUARENTENA)`
+  - aba legada não gera mais relato externo
+  - home parou de usar `alerts` como KPI central
+
+validação executada:
+- `python -m py_compile app.py src/ui/streamlit_alerts.py src/ui/streamlit_home.py src/ui/streamlit_sidebar.py src/core/cross_reference_engine.py scripts/sync_rb_contratos.py scripts/validate_sancao_timeline.py`
+- `.venv/bin/python scripts/validate_sancao_timeline.py`
+- rebuild local de views/insights com `build_views()` + `build_insights()`
+- `.venv/bin/python scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/validate_ops_output_guard.py`
+- `streamlit run app.py --server.headless true --server.port 8780`
+- `curl -I http://localhost:8780 -> 200`
+
+estado operacional final:
+- `cases = 12`
+- `artifacts = 35`
+- `burden_rows = 61`
+- `semantic_rows = 4`
+- `contradiction_rows = 2`
+- `checklist_rows = 61`
+- `language_guard_rows = 0`
+- `export_gate_rows = 36`
+- `generated_export_rows = 2`
+- `rule_validation_fail_rows = 0`
+- `indexed_docs = 32`
+
+famílias vivas no registry:
+- `sesacre_sancao = 10`
+- `rb_sus_contrato = 1` (`3898`)
+- `saude_societario = 1` (`CEDIMP`)
+
+rerun final do registry operacional:
+- `estagio_operacional` ativo no banco:
+  - `APTO_A_NOTICIA_DE_FATO`
+  - `APTO_OFICIO_DOCUMENTAL`
+
+limpeza do acervo ativo apos feedback:
+- `3895` saiu dos artefatos ativos e virou `nota_historica_3895_sancao_invalidada.txt`
+- o relato municipal ativo agora e `relato_apuracao_3898.txt`
+- o relato estadual ativo agora e `sesacre_prioritarios/relato_apuracao_sesacre_top10.txt`
+- `INDEX_PRIORITARIOS.md`, `relatorio_final_acre_rio_branco_sus.md`, `entrega_denuncia_atual/README.md` e `CASO_NORTE_DISTRIBUIDORA.md` foram corrigidos
+- `painel_prioridades_acre_rio_branco_sus.csv` ficou com `3898` como unico caso municipal ativo
+
+validacao final da limpeza:
+- `python -m py_compile scripts/export_rb_casos_prioritarios.py scripts/export_sesacre_prioritarios.py scripts/export_relatorio_final_acre_sus.py src/core/ops_registry.py`
+- `.venv/bin/python scripts/export_rb_casos_prioritarios.py`
+- `.venv/bin/python scripts/export_sesacre_prioritarios.py`
+- `.venv/bin/python scripts/export_relatorio_final_acre_sus.py`
+- `.venv/bin/python scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/validate_ops_output_guard.py`
+- `.venv/bin/python scripts/validate_sancao_timeline.py`
+- `streamlit run app.py --server.headless true --server.port 8781`
+- `curl -I http://localhost:8781 -> 200`
+
+remocao final de residuos legados:
+- removidos do disco:
+  - `denuncia_preliminar_3895.txt`
+  - `denuncia_preliminar_3898.txt`
+  - `entrega_denuncia_atual/denuncia_preliminar_3895.txt`
+  - `entrega_denuncia_atual/denuncia_preliminar_3898.txt`
+  - `entrega_denuncia_atual/representacao_preliminar_sesacre_top10.txt`
+  - `sesacre_prioritarios/representacao_preliminar_sesacre_top10.txt`
+  - `sesacre_prioritarios/representacao_preliminar_sesacre_top5.txt`
+- compatibilidade mantida apenas em:
+  - `src/ui/ops_shared.py`
+  - `src/core/ops_guard.py`
+
+runbook operacional por caso:
+- nova camada em `src/core/ops_runbook.py`
+- nova aba `Runbook` na bancada de caso
+- `12` runbooks materializados
+- `60` passos materializados
+- exemplos:
+  - `3898` -> `NOTICIA_FATO` -> `Controladoria Geral do Municipio de Rio Branco`
+  - `CEDIMP` -> `PEDIDO_DOCUMENTAL` -> `SEMSA/RH`
+  - `SESACRE sancao` -> `NOTICIA_FATO` -> `Controladoria-Geral do Estado do Acre`
+
+validacao do runbook:
+- `python -m py_compile src/core/ops_runbook.py src/ui/ops_runbook.py src/core/ops_registry.py src/ui/ops_data.py src/ui/ops_sections.py src/ui/streamlit_ops.py scripts/sync_ops_runbook.py`
+- `.venv/bin/python scripts/sync_ops_runbook.py`
+- `.venv/bin/python scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/validate_ops_output_guard.py`
+- `streamlit run app.py --server.headless true --server.port 8782`
+- `curl -I http://localhost:8782 -> 200`
+
+auditoria de utilidade dos modulos:
+- matriz criada em `AUDITORIA_UTILIDADE_MODULOS_20260314.md`
+- nucleo classificado como essencial:
+  - `ops_case_registry`
+  - `ops_burden`
+  - `ops_semantic`
+  - `ops_contradiction`
+  - `ops_checklist`
+  - `ops_export_gate`
+  - `ops_guard`
+  - `ops_inbox`
+- `ops_runbook` rebaixado para camada de apoio (`6.8/10`)
+
+poda segura aplicada:
+- aba `Runbook` removida do primeiro nivel da bancada
+- encaminhamento operacional movido para expander dentro de `Exportacao`
+- metricas de `runbook` removidas do overview
+- refresh do painel deixou de destacar `runbooks/passos`
+
+validacao:
+- `python -m py_compile src/ui/ops_export.py src/ui/ops_runbook.py src/ui/ops_sections.py src/ui/ops_data.py src/ui/streamlit_ops.py`
+- `.venv/bin/python scripts/sync_ops_case_registry.py`
+- `streamlit run app.py --server.headless true --server.port 8783`
+- `curl -I http://localhost:8783 -> 200`
+
+auditoria de confianca por familia:
+- matriz criada em `AUDITORIA_CONFIANCA_FAMILIAS_20260314.md`
+- `rb_sus_contrato`
+  - segue com `1` caso ativo
+  - `rb_sancao_ativos = 0`
+- `sesacre_sancao`
+  - linguagem rebaixada de `concomitante` para cruzamento conservador
+  - `sesacre_overclaim = 0`
+- `saude_societario`
+  - rotulo operacional de `nepotismo` removido
+  - `saude_nf_allowed = 0`
+  - `labels_saude_nepot = 0`
+
+mudancas no backend:
+- `src/core/ops_burden.py`
+- `src/core/ops_registry.py`
+- `src/core/ops_runbook.py`
+- `src/core/ops_rulebook.py`
+
+novas cercas:
+- `FAMILY_CONFIDENCE_GUARD:rb_false_positive_cleanup`
+- `SESACRE_SANCTION_CROSS:documentary_limits`
+- `SESACRE_SANCTION_CROSS:claim_language`
+- `SAUDE_SOCIETARIO_CNES:no_nepotism_operational_label`
+- `SAUDE_SOCIETARIO_CNES:external_cap`
+
+validacao:
+- `python -m py_compile src/core/ops_burden.py src/core/ops_registry.py src/core/ops_runbook.py src/core/ops_rulebook.py`
+- `.venv/bin/python scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/validate_ops_rulebook.py`
+
+calibracao empirica:
+- camada nova em `src/core/ops_calibration.py`
+- scripts novos:
+  - `scripts/sync_ops_calibration.py`
+  - `scripts/validate_ops_calibration.py`
+- benchmarks ativos:
+  - `RB_3898_ACTIVE_DOCUMENTAL`
+  - `RB_3895_FALSE_POSITIVE_REMOVED`
+  - `CEDIMP_DOCUMENT_REQUEST_ONLY`
+  - `SESACRE_REFERENCE_CASE_ACTIVE`
+  - `GLOBAL_LANGUAGE_GUARD_CLEAN`
+  - `RB_3898_CORE_DOCS_PENDING`
+  - `CEDIMP_PARENTESCO_UNPROVEN`
+  - `SESACRE_REFERENCE_DUE_DILIGENCE_PENDING`
+
+estado da calibracao:
+- `calibration_benchmark_rows = 8`
+- `calibration_result_rows = 8`
+- `calibration_fail_rows = 0`
+- `calibration_warn_rows = 0`
+- resumo:
+  - `confirmado = 4 PASS`
+  - `descartado = 1 PASS`
+  - `inconclusivo = 3 PASS`
+
+validacao:
+- `python -m py_compile src/core/ops_calibration.py src/core/ops_registry.py src/ui/ops_data.py src/ui/ops_sections.py src/ui/streamlit_ops.py scripts/sync_ops_calibration.py scripts/validate_ops_calibration.py scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/validate_ops_calibration.py`
+- `.venv/bin/python scripts/validate_ops_rulebook.py`
+- `streamlit run app.py --server.headless true --server.port 8785`
+- `curl -I http://localhost:8785 -> 200`
+
+suite sentinela por regra:
+- camada nova em `src/core/ops_sentinel.py`
+- scripts novos:
+  - `scripts/sync_ops_sentinel.py`
+  - `scripts/validate_ops_sentinel.py`
+- sentinelas ativos:
+  - `RB_TEMPORAL_FALSE_POSITIVE`
+  - `RB_3898_SEMANTIC_TRIAD`
+  - `SAUDE_NO_NEPOTISM_LABEL`
+  - `SAUDE_NOTICIA_FATO_BLOCKED`
+  - `SESACRE_NO_OVERCLAIM_LANGUAGE`
+
+estado:
+- `sentinel_rows = 5`
+- `sentinel_result_rows = 5`
+- `sentinel_fail_rows = 0`
+- `sentinel_warn_rows = 0`
+
+validacao:
+- `python -m py_compile src/core/ops_sentinel.py src/core/ops_registry.py src/ui/ops_data.py src/ui/ops_sections.py src/ui/streamlit_ops.py scripts/sync_ops_sentinel.py scripts/validate_ops_sentinel.py scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/sync_ops_case_registry.py`
+- `.venv/bin/python scripts/validate_ops_sentinel.py`
+- `streamlit run app.py --server.headless true --server.port 8787`
+- `curl -I http://localhost:8787 -> 200`
+
+contencao do legado:
+- `src/core/cross_reference_engine.py` agora fixa `uso_externo = REVISAO_INTERNA` para qualquer alerta legado
+- validador novo:
+  - `scripts/validate_cross_reference_engine.py`
+
+validacao:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- smoke: `Alert(...).uso_externo = REVISAO_INTERNA`
+
+legado em modo opt-in total:
+- todos os `8` detectores do `cross_reference_engine.py` agora ficam em `INTERNAL_ONLY_DEFAULT`
+- execucao sem `--allow-internal` nao roda detector e avisa explicitamente o motivo
+- relatorio em `AUDITORIA_ENGINE_LEGADO_20260314.md`
+
+validacao:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector fracionamento`
+
+quarentena do insights_engine legado:
+- `insights_engine.py` agora fica desligado por padrao e so roda com `allow_internal=True`
+- `outlier_salarial` endurecido para `n >= 30` e `z > 3.0`
+- `viagem_bloco` endurecido para `n >= 4`
+- `concentracao_mercado` e `fracionamento` em obras viraram triagem interna explicita
+- `README.md` deixou de apresentar esses detectores como sinais confiaveis do fluxo ativo
+- `scripts/sync_v2.py` passou a explicitar `allow_internal=False`
+- auditoria em `AUDITORIA_INSIGHTS_ENGINE_20260314.md`
+- validador novo em `scripts/validate_insights_engine.py`
+
+validacao:
+- `python -m py_compile insights_engine.py scripts/validate_insights_engine.py`
+- `python -m py_compile scripts/sync_v2.py`
+- `.venv/bin/python scripts/validate_insights_engine.py`
+
+aposentadoria de detectores fracos do legado:
+- `viagem_bloco` e `concentracao_mercado` agora estao em `RETIRED_DEFAULT`
+- nao rodam mais nem com `--allow-internal`
+- `DETECTOR_STATUS` criado para os `8` detectores do `cross_reference_engine.py`
+- o CLI faz early-exit para detectores aposentados, sem depender de abrir o DuckDB
+- `README.md` deixou de sugerir esses sinais como eixo ativo de obras/diarias
+
+validacao:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector viagem_bloco --allow-internal`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector concentracao_mercado --allow-internal`
+
+segunda rodada de poda do legado:
+- `fim_de_semana` agora esta em `RETIRED_DEFAULT`
+- `outlier_salarial` permaneceu apenas em `LAB_INTERNO`, mas endurecido para:
+  - `n >= 30`
+  - `z > 4.0`
+  - `delta >= R$ 5.000,00`
+- o validador agora trava esses thresholds
+
+validacao:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector fim_de_semana --allow-internal`
+
+destino final de empresa_suspensa e fracionamento:
+- `empresa_suspensa` agora esta em `RETIRED_DEFAULT` com status `COBERTO_OPS`
+- o cruzamento sancionatorio legado deixa de existir como caminho executavel
+- `fracionamento` virou `CANDIDATO_OPS`
+- `fracionamento` agora exige:
+  - `4` contratos minimos
+  - janela maxima de `90` dias
+  - uso externo sempre bloqueado
+- o validador ganhou sample guard sintetico para `fracionamento`
+
+validacao:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector empresa_suspensa --allow-internal`
+
+aposentadoria do detector de sobrenome:
+- `nepotismo_sobrenome` agora esta em `RETIRED_DEFAULT`
+- coincidencia de sobrenome deixa de existir como caminho executavel no legado
+
+validacao:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector nepotismo_sobrenome --allow-internal`
+
+fechamento do mapa do legado:
+- `doacao_contrato` agora esta em `RETIRED_DEFAULT`
+- `fracionamento` agora tambem esta em `RETIRED_DEFAULT`
+- motivo do `fracionamento`: sem superficie minima confiavel nos dados reais atuais
+- `outlier_salarial` agora tambem esta em `RETIRED_DEFAULT`
+- motivo do `outlier_salarial`: base sem competencia explicita e com duplicidade suficiente para ruido estrutural
+- mapa final:
+  - `COBERTO_OPS`: `empresa_suspensa`
+  - `APOSENTADO`: `fracionamento`, `outlier_salarial`, `viagem_bloco`, `concentracao_mercado`, `fim_de_semana`, `nepotismo_sobrenome`, `doacao_contrato`
+
+validacao:
+- `python -m py_compile src/core/cross_reference_engine.py scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python scripts/validate_cross_reference_engine.py`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector doacao_contrato --allow-internal`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector fracionamento --allow-internal`
+- `.venv/bin/python -m src.core.cross_reference_engine --detector outlier_salarial --allow-internal`
+
+quarentena do acervo alerts:
+- criado `scripts/sync_legacy_alerts_quarantine.py`
+- criada view `v_alerts_legacy_quarantine`
+- `src/ui/streamlit_alerts.py` agora le a view sanitizada
+- todas as `1809` linhas da tabela `alerts` ficaram com:
+  - `uso_externo = REVISAO_INTERNA`
+  - `status = QUARENTENA`
+- distribuicao atual da view:
+  - `APOSENTADO = 1809`
+
+validacao:
+- `python -m py_compile scripts/sync_legacy_alerts_quarantine.py src/ui/streamlit_alerts.py`
+- `.venv/bin/python scripts/sync_legacy_alerts_quarantine.py`
+- `streamlit run app.py --server.headless true --server.port 8776`
+
+handoff final em docs:
+- criada a pasta `docs/HANDOFF_CODEX_20260314/`
+- conteudo:
+  - estado atual
+  - o que foi feito
+  - o que falta
+  - arquitetura ativa
+  - regras e limites
+  - legado congelado
+  - comandos essenciais
+  - mapa de arquivos
+  - casos ativos
+  - dificuldades e riscos
+  - validacao e metricas
+  - `manifest_handoff_20260314.json`
